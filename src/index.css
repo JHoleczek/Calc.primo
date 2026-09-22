@@ -178,6 +178,14 @@ a:hover {
   }
 }
 
+@media (max-width: 900px) {
+  /* Przewijanie do elementu (fokus, kotwice) zatrzymuje się pod przyklejonym panelem
+     wizualizacji, a nie za nim. Wynik m² / mb jest też stale widoczny w pasku panelu. */
+  html {
+    scroll-padding-top: calc(50svh + 16px);
+  }
+}
+
 /* ---------- Wizualizacja ---------- */
 
 .viz {
@@ -841,4 +849,9 @@ a:hover {
   * {
     transition: none !important;
   }
+}
+
+/* Wynik w pasku pod wizualizacją – zawsze widoczny, wyróżniony wagą. */
+.viz__meta .viz__meta-result dd {
+  font-weight: 700;
 }

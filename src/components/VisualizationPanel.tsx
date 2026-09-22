@@ -19,6 +19,9 @@ const FrontScene = lazy(() => import('./viz3d/FrontScene'))
 
 type View = '3d' | 'plan'
 
+const fmtNum = (v: number, digits: number) =>
+  Number.isFinite(v) ? v.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—'
+
 interface Props {
   config: Configuration
   result: Result
@@ -97,6 +100,16 @@ export function VisualizationPanel({ config, result }: Props) {
       </div>
 
       <dl className="viz__meta">
+        {!result.individual && (
+          <div className="viz__meta-result">
+            <dt>Wynik</dt>
+            <dd>
+              {result.errors.length > 0
+                ? '—'
+                : `${fmtNum(result.areaM2, 3)} m² · ${fmtNum(result.linearM, 3)} mb`}
+            </dd>
+          </div>
+        )}
         {result.code && (
           <div>
             <dt>Kod</dt>

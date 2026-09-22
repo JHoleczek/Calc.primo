@@ -54,9 +54,13 @@ describe('calculate', () => {
     expect(allowedRadius('narozne', 350)).toBe(350)
   })
 
-  it('wymaga koloru dla lakierowanych i pilnuje wysokości', () => {
-    expect(calculate({ ...base, materialId: 'lakierowane', color: ' ' }).errors).toHaveLength(1)
-    expect(calculate({ ...base, materialId: 'lakierowane', color: 'RAL 9010' }).errors).toEqual([])
+  it('brak koloru przy lakierze to ostrzeżenie, a wynik jest liczony; pilnuje wysokości', () => {
+    const noColor = calculate({ ...base, materialId: 'lakierowane', color: ' ' })
+    expect(noColor.errors).toEqual([])
+    expect(noColor.areaM2).toBeGreaterThan(0)
+    expect(noColor.notes.some((n) => n.level === 'warning' && n.text.includes('kolor'))).toBe(true)
+    const withColor = calculate({ ...base, materialId: 'lakierowane', color: 'RAL 9010' })
+    expect(withColor.notes.some((n) => n.level === 'warning')).toBe(false)
     expect(calculate({ ...base, heightMm: 3300 }).errors).toHaveLength(1)
   })
 })

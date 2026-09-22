@@ -125,9 +125,6 @@ export function calculate(config: Configuration): Result {
     }
   }
   const color = config.color.trim()
-  if (material.colorRequired && color === '') {
-    errors.push(`Dla materiału „${material.name}” wpisz kolor farby.`)
-  }
 
   const path = frontPath(config)
   let arcMm = 0
@@ -160,6 +157,10 @@ export function calculate(config: Configuration): Result {
   }
   if (fluting.id !== SMOOTH_FLUTING_ID) {
     notes.push({ level: 'addon', text: `Ryflowanie ${fluting.id} – ${fluting.name}` })
+  }
+  // Brak koloru nie wpływa na m² / mb – tylko przypominamy, że jest potrzebny do zamówienia.
+  if (material.colorRequired && color === '') {
+    notes.push({ level: 'warning', text: `Wpisz kolor farby – wymagany do zamówienia frontu ${material.name.toLowerCase()}go.` })
   }
   if (color !== '') {
     const label = material.id === 'lakierowane' ? 'Lakierowanie w kolorze' : 'Wykończenie'
