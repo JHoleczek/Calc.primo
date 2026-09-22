@@ -39,7 +39,7 @@ export function ResultPanel({ result, heightMm }: Props) {
 
       {!result.individual && (
         <>
-          <div className={`result__totals${invalid ? ' result__totals--invalid' : ''}`}>
+          <div className="result__totals">
             <div className="total">
               <span className="total__value">{show(result.areaM2, 3)}</span>
               <span className="total__unit">m²</span>
