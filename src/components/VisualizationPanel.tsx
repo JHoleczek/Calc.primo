@@ -1,16 +1,16 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import {
   DEFAULT_HEIGHT_MM,
-  ENDINGS,
-  EXTENSION_RANGE,
   FLUTINGS,
   FRONT_TYPES,
   HEIGHT_RANGE,
   MATERIALS,
-  NO_FLUTING_ID,
+  SMOOTH_FLUTING_ID,
+  THICKNESS_MM,
 } from '../config/catalog'
-import type { Configuration } from '../lib/calculate'
+import type { Configuration, Result } from '../lib/calculate'
 import type { FrontGeometryInput } from '../lib/frontGeometry'
+import { frontPath } from '../lib/frontPath'
 import { resolvePaintColor } from '../lib/paintColor'
 import { PlanView } from './PlanView'
 
@@ -21,41 +21,35 @@ type View = '3d' | 'plan'
 
 interface Props {
   config: Configuration
+  result: Result
 }
 
-export function VisualizationPanel({ config }: Props) {
+export function VisualizationPanel({ config, result }: Props) {
   const [view, setView] = useState<View>('3d')
 
-  const frontType = FRONT_TYPES.find((t) => t.id === config.frontTypeId) ?? FRONT_TYPES[0]
-  const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
+  const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
   const fluting = FLUTINGS.find((f) => f.id === config.flutingId) ?? FLUTINGS[0]
   const paint = useMemo(() => resolvePaintColor(config.color), [config.color])
 
-  // Niepoprawne wartości z pól liczbowych zastępujemy najbliższymi sensownymi, żeby model nie znikał.
-  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
+  // Niepoprawną wysokość z pola liczbowego zastępujemy najbliższą sensowną, żeby model nie znikał.
   const heightMm = Number.isFinite(config.heightMm)
-    ? clamp(config.heightMm, HEIGHT_RANGE.min, HEIGHT_RANGE.max)
+    ? Math.min(HEIGHT_RANGE.max, Math.max(HEIGHT_RANGE.min, config.heightMm))
     : DEFAULT_HEIGHT_MM
-  const extMm =
-    ending.extensions > 0 && Number.isFinite(config.extensionMm)
-      ? clamp(config.extensionMm, 0, EXTENSION_RANGE.max)
-      : 0
+  const { typeId, radiusMm, endingId, lengthMm, widthMm, sideExtension, zMm } = config
 
-  const geometry = useMemo<FrontGeometryInput>(
-    () => ({
-      radiusMm: config.radiusMm,
-      angleDeg: frontType.angleDeg,
-      convex: frontType.direction === 'convex',
-      thicknessMm: material.thicknessMm,
-      heightMm,
-      // N1: przedłużenie po stronie, z której front „wychodzi” (lewej), N2: po obu.
-      extensionLeftMm: ending.extensions >= 1 ? extMm : 0,
-      extensionRightMm: ending.extensions === 2 ? extMm : 0,
-      fluting: fluting.profile,
-    }),
-    [config.radiusMm, frontType, material.thicknessMm, heightMm, ending.extensions, extMm, fluting.profile],
-  )
+  const geometry = useMemo<FrontGeometryInput | null>(() => {
+    const path = frontPath({
+      typeId,
+      radiusMm,
+      endingId,
+      lengthMm: Number.isFinite(lengthMm) ? lengthMm : radiusMm + 1,
+      widthMm,
+      sideExtension,
+      zMm: Number.isFinite(zMm) ? zMm : radiusMm + 1,
+    })
+    return path ? { path, thicknessMm: THICKNESS_MM, heightMm, fluting: fluting.profile } : null
+  }, [typeId, radiusMm, endingId, lengthMm, widthMm, sideExtension, zMm, heightMm, fluting.profile])
 
   const colorText = config.color.trim()
 
@@ -86,7 +80,9 @@ export function VisualizationPanel({ config }: Props) {
       </div>
 
       <div className={`viz__stage${view === 'plan' ? ' viz__stage--plan' : ''}`} role="tabpanel" aria-labelledby={`viz-tab-${view}`}>
-        {view === '3d' ? (
+        {!geometry ? (
+          <p className="viz__loading">{frontType.name}: wykonanie na indywidualne zamówienie – brak podglądu.</p>
+        ) : view === '3d' ? (
           <Suspense fallback={<p className="viz__loading">Ładowanie modelu 3D…</p>}>
             <FrontScene
               geometry={geometry}
@@ -101,24 +97,30 @@ export function VisualizationPanel({ config }: Props) {
       </div>
 
       <dl className="viz__meta">
+        {result.code && (
+          <div>
+            <dt>Kod</dt>
+            <dd>{result.code}</dd>
+          </div>
+        )}
         <div>
           <dt>Typ</dt>
           <dd>{frontType.name}</dd>
         </div>
-        <div>
-          <dt>R / H</dt>
-          <dd>
-            {config.radiusMm} / {Number.isFinite(config.heightMm) ? config.heightMm : '—'} mm
-          </dd>
-        </div>
-        <div>
-          <dt>Lico</dt>
-          <dd>{frontType.direction === 'convex' ? 'zewnętrzne' : 'wewnętrzne'}</dd>
-        </div>
-        {fluting.id !== NO_FLUTING_ID && (
+        {geometry && (
+          <div>
+            <dt>R / H</dt>
+            <dd>
+              {config.radiusMm} / {Number.isFinite(config.heightMm) ? config.heightMm : '—'} mm
+            </dd>
+          </div>
+        )}
+        {fluting.id !== SMOOTH_FLUTING_ID && (
           <div>
             <dt>Ryflowanie</dt>
-            <dd>{fluting.profile ? fluting.name : `${fluting.name} (bez podglądu)`}</dd>
+            <dd>
+              {fluting.id} {fluting.name}
+            </dd>
           </div>
         )}
         {colorText !== '' && (

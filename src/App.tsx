@@ -3,15 +3,19 @@ import { ChoiceGroup } from './components/ChoiceGroup'
 import { ResultPanel } from './components/ResultPanel'
 import { VisualizationPanel } from './components/VisualizationPanel'
 import {
+  CORNER_EXTENSION_MM,
+  DOUBLE_WIDTHS,
+  DOUBLE_Z,
   ENDINGS,
-  EXTENSION_RANGE,
+  EXTENDED_LENGTH,
   FLUTINGS,
   FRONT_TYPES,
   HEIGHT_RANGE,
   MATERIALS,
-  RADIUS_OPTIONS,
+  THICKNESS_MM,
+  type FrontTypeId,
 } from './config/catalog'
-import { calculate, DEFAULT_CONFIGURATION, type Configuration } from './lib/calculate'
+import { allowedRadius, calculate, DEFAULT_CONFIGURATION, type Configuration } from './lib/calculate'
 
 function Step({ n, title, hint, children }: { n: number; title: string; hint?: ReactNode; children: ReactNode }) {
   return (
@@ -95,115 +99,210 @@ export default function App() {
   const set = <K extends keyof Configuration>(key: K, value: Configuration[K]) =>
     setConfig((c) => ({ ...c, [key]: value }))
 
-  const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
+  const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
+  const t = config.typeId
+  const shaped = t !== 'bryla'
+
+  // Zmiana typu: promień dociągamy do listy katalogowej danego typu.
+  const setType = (typeId: FrontTypeId) =>
+    setConfig((c) => ({ ...c, typeId, radiusMm: allowedRadius(typeId, c.radiusMm) }))
+
+  const radii = frontType.radii
+  const radiusHint =
+    radii.length === 1
+      ? `Stały promień ${radii[0]} mm (po zewnętrznej powierzchni łuku).`
+      : `Promień po zewnętrznej powierzchni łuku, ${radii[0]}–${radii[radii.length - 1]} mm co 50 mm.`
+
+  // Kroki numerowane kolejno; część dotyczy tylko wybranych typów.
+  const steps: { title: string; hint?: ReactNode; body: ReactNode }[] = [
+    {
+      title: 'Typ frontu giętego',
+      body: (
+        <ChoiceGroup
+          name="front-type"
+          variant="cards"
+          value={t}
+          onChange={setType}
+          choices={FRONT_TYPES.map((ft) => ({ value: ft.id, label: ft.name, hint: ft.description }))}
+        />
+      ),
+    },
+  ]
+  if (shaped) {
+    steps.push(
+      {
+        title: 'Promień R',
+        hint: radiusHint,
+        body: (
+          <ChoiceGroup
+            name="radius"
+            value={config.radiusMm}
+            onChange={(v) => set('radiusMm', v)}
+            choices={radii.map((r) => ({ value: r, label: r }))}
+          />
+        ),
+      },
+      {
+        title: 'Wysokość H',
+        body: (
+          <NumberField
+            id="height"
+            label="Wysokość H"
+            value={config.heightMm}
+            min={HEIGHT_RANGE.min}
+            max={HEIGHT_RANGE.max}
+            step={HEIGHT_RANGE.step}
+            onChange={(v) => set('heightMm', v)}
+          />
+        ),
+      },
+    )
+  }
+  if (t === 'narozne') {
+    steps.push({
+      title: 'Zakończenie',
+      hint: `Przedłużenie frontu o ${CORNER_EXTENSION_MM} mm, np. do montażu zawiasów.`,
+      body: (
+        <ChoiceGroup
+          name="ending"
+          variant="cards"
+          columns={3}
+          value={config.endingId}
+          onChange={(v) => set('endingId', v)}
+          choices={ENDINGS.map((e) => ({ value: e.id, label: e.name, hint: e.description }))}
+        />
+      ),
+    })
+  }
+  if (t === 'przedluzane') {
+    steps.push({
+      title: 'Wymiar L',
+      hint: `Całkowity wymiar od lica łuku do końca przedłużenia, max ${EXTENDED_LENGTH.max} mm.`,
+      body: (
+        <NumberField
+          key={`L-${config.radiusMm}`}
+          id="length"
+          label="Wymiar L"
+          value={config.lengthMm}
+          min={config.radiusMm + EXTENDED_LENGTH.minAboveRadius}
+          max={EXTENDED_LENGTH.max}
+          step={1}
+          onChange={(v) => set('lengthMm', v)}
+        />
+      ),
+    })
+  }
+  if (t === 'obustronne') {
+    steps.push(
+      {
+        title: 'Szerokość W',
+        body: (
+          <ChoiceGroup
+            name="width"
+            value={config.widthMm}
+            onChange={(v) => set('widthMm', v)}
+            choices={DOUBLE_WIDTHS.map((w) => ({ value: w, label: w }))}
+          />
+        ),
+      },
+      {
+        title: 'Przedłużenie boków',
+        hint: `Wymiar Z – całkowita głębokość z przedłużeniem, max ${DOUBLE_Z.max} mm.`,
+        body: (
+          <div className="step__stack">
+            <ChoiceGroup
+              name="side-extension"
+              variant="cards"
+              columns={2}
+              value={config.sideExtension ? 'z' : 'none'}
+              onChange={(v) => set('sideExtension', v === 'z')}
+              choices={[
+                { value: 'none', label: 'Bez przedłużenia', hint: `Głębokość ${config.radiusMm} mm` },
+                { value: 'z', label: 'Z przedłużeniem', hint: 'Wariant -Z' },
+              ]}
+            />
+            {config.sideExtension && (
+              <NumberField
+                id="z"
+                label="Wymiar Z"
+                value={config.zMm}
+                min={config.radiusMm + DOUBLE_Z.minAboveRadius}
+                max={DOUBLE_Z.max}
+                step={1}
+                onChange={(v) => set('zMm', v)}
+              />
+            )}
+          </div>
+        ),
+      },
+    )
+  }
+  if (shaped) {
+    steps.push({
+      title: 'Ryflowanie',
+      body: (
+        <ChoiceGroup
+          name="fluting"
+          variant="cards"
+          value={config.flutingId}
+          onChange={(v) => set('flutingId', v)}
+          choices={FLUTINGS.map((f) => ({ value: f.id, label: f.id, hint: f.name }))}
+        />
+      ),
+    })
+  }
+  steps.push(
+    {
+      title: 'Materiał',
+      body: (
+        <ChoiceGroup
+          name="material"
+          value={config.materialId}
+          onChange={(v) => set('materialId', v)}
+          choices={MATERIALS.map((m) => ({ value: m.id, label: m.name }))}
+        />
+      ),
+    },
+    {
+      title: 'Kolor',
+      hint: material.colorRequired ? 'Wymagany dla frontów lakierowanych.' : 'Opcjonalnie.',
+      body: (
+        <input
+          className="text-input"
+          type="text"
+          id="color"
+          aria-label="Kolor farby"
+          placeholder={material.colorPlaceholder}
+          value={config.color}
+          required={material.colorRequired}
+          onChange={(e) => set('color', e.target.value)}
+        />
+      ),
+    },
+  )
 
   return (
     <div className="layout">
       <aside className="layout__viz" aria-label="Wizualizacja">
-        <VisualizationPanel config={config} />
+        <VisualizationPanel config={config} result={result} />
       </aside>
 
       <main className="layout__config">
         <header className="page-head">
-          <p className="page-head__eyebrow">Primo Meble</p>
+          <p className="page-head__eyebrow">Fronty Primo · katalog 2026</p>
           <h1>Kalkulator frontów giętych</h1>
+          <p className="page-head__specs">
+            Grubość {THICKNESS_MM} mm · wysokość do {HEIGHT_RANGE.max} mm
+          </p>
         </header>
 
         <form className="steps" onSubmit={(e) => e.preventDefault()}>
-          <Step n={1} title="Typ frontu giętego">
-            <ChoiceGroup
-              name="front-type"
-              variant="cards"
-              value={config.frontTypeId}
-              onChange={(v) => set('frontTypeId', v)}
-              choices={FRONT_TYPES.map((t) => ({
-                value: t.id,
-                label: t.name,
-                hint: `${t.id} · ${t.description}`,
-              }))}
-            />
-          </Step>
-
-          <Step n={2} title="Promień R" hint="Promień po zewnętrznej powierzchni łuku, 50–600 mm co 50 mm.">
-            <ChoiceGroup
-              name="radius"
-              value={config.radiusMm}
-              onChange={(v) => set('radiusMm', v)}
-              choices={RADIUS_OPTIONS.map((r) => ({ value: r, label: r }))}
-            />
-          </Step>
-
-          <Step n={3} title="Wysokość H">
-            <NumberField
-              id="height"
-              label="Wysokość H"
-              value={config.heightMm}
-              min={HEIGHT_RANGE.min}
-              max={HEIGHT_RANGE.max}
-              step={HEIGHT_RANGE.step}
-              onChange={(v) => set('heightMm', v)}
-            />
-          </Step>
-
-          <Step n={4} title="Zakończenie">
-            <ChoiceGroup
-              name="ending"
-              variant="cards"
-              columns={3}
-              value={config.endingId}
-              onChange={(v) => set('endingId', v)}
-              choices={ENDINGS.map((e) => ({ value: e.id, label: e.name, hint: e.description }))}
-            />
-          </Step>
-
-          <Step
-            n={5}
-            title="Długość przedłużenia"
-            hint={ending.extensions === 0 ? 'Nie dotyczy dla zakończenia N0.' : 'Długość jednego przedłużenia prostego.'}
-          >
-            <NumberField
-              id="extension"
-              label="Długość przedłużenia"
-              value={config.extensionMm}
-              min={EXTENSION_RANGE.min}
-              max={EXTENSION_RANGE.max}
-              step={EXTENSION_RANGE.step}
-              disabled={ending.extensions === 0}
-              onChange={(v) => set('extensionMm', v)}
-            />
-          </Step>
-
-          <Step n={6} title="Ryflowanie">
-            <ChoiceGroup
-              name="fluting"
-              variant="cards"
-              value={config.flutingId}
-              onChange={(v) => set('flutingId', v)}
-              choices={FLUTINGS.map((f) => ({ value: f.id, label: f.name, hint: f.description }))}
-            />
-          </Step>
-
-          <Step n={7} title="Materiał">
-            <ChoiceGroup
-              name="material"
-              value={config.materialId}
-              onChange={(v) => set('materialId', v)}
-              choices={MATERIALS.map((m) => ({ value: m.id, label: m.name }))}
-            />
-          </Step>
-
-          <Step n={8} title="Kolor" hint={material.colorRequired ? 'Wymagany dla frontów lakierowanych.' : 'Opcjonalnie.'}>
-            <input
-              className="text-input"
-              type="text"
-              aria-label="Kolor farby"
-              placeholder={material.colorPlaceholder}
-              value={config.color}
-              required={material.colorRequired}
-              onChange={(e) => set('color', e.target.value)}
-            />
-          </Step>
+          {steps.map((step, i) => (
+            <Step key={step.title} n={i + 1} title={step.title} hint={step.hint}>
+              {step.body}
+            </Step>
+          ))}
         </form>
 
         <ResultPanel result={result} heightMm={config.heightMm} />

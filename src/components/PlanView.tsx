@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { ENDINGS, FRONT_TYPES, MATERIALS } from '../config/catalog'
+import { FRONT_TYPES, THICKNESS_MM } from '../config/catalog'
 import type { Configuration } from '../lib/calculate'
+import { frontPath, outerNormal, samplePath, walkPath } from '../lib/frontPath'
 
 interface Props {
   config: Configuration
@@ -9,7 +10,6 @@ interface Props {
 type Point = [number, number]
 
 const add = (a: Point, b: Point, k = 1): Point => [a[0] + b[0] * k, a[1] + b[1] * k]
-const polar = (r: number, a: number): Point => [r * Math.cos(a), r * Math.sin(a)]
 const fmt = (mm: number) => Math.round(mm).toLocaleString('pl-PL')
 
 interface DimProps {
@@ -61,73 +61,11 @@ function Dimension({ p1, p2, dir, offset, label, px }: DimProps) {
 }
 
 /**
- * Rzut z góry w skali, w stylu rysunku technicznego (jasne linie na ciemnym tle):
- * front wychodzi z lewej (poziomo) i skręca łukiem w dół. Środek łuku leży w (0, 0).
+ * Rzut z góry w skali, w stylu rysunku technicznego (jasne linie na czarnym tle).
+ * Kształt pochodzi z frontPath (ten sam opis co obliczenia i model 3D).
  */
 export function PlanView({ config }: Props) {
   const hatchId = `hatch-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-  const frontType = FRONT_TYPES.find((t) => t.id === config.frontTypeId) ?? FRONT_TYPES[0]
-  const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
-  const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
-
-  const g = material.thicknessMm
-  // R z konfiguracji to promień lica zewnętrznego; powierzchnia wewnętrzna ma R − g.
-  const Ro = config.radiusMm
-  const R = Ro - g
-  const convex = frontType.direction === 'convex'
-  const theta = (frontType.angleDeg * Math.PI) / 180
-  // Kąty w układzie SVG (oś Y w dół): start u góry, łuk zgodnie z ruchem wskazówek zegara.
-  const aS = -Math.PI / 2
-  const aE = aS + theta
-  const aMid = aS + theta / 2
-
-  const ext = Number.isFinite(config.extensionMm) ? Math.max(0, config.extensionMm) : 0
-  const extS = ending.extensions >= 1 ? ext : 0
-  const extE = ending.extensions === 2 ? ext : 0
-  const dirS: Point = [Math.sin(aS), -Math.cos(aS)] // od początku łuku w lewo
-  const dirE: Point = [-Math.sin(aE), Math.cos(aE)] // od końca łuku dalej po stycznej
-  const nS = polar(1, aS)
-  const nE = polar(1, aE)
-
-  const large = theta > Math.PI ? 1 : 0
-  const curve = (r: number) => {
-    const s = polar(r, aS)
-    const e = polar(r, aE)
-    return { s, e, s0: add(s, dirS, extS), e1: add(e, dirE, extE) }
-  }
-  const outer = curve(Ro)
-  const inner = curve(R)
-  const pathOf = (c: ReturnType<typeof curve>, r: number) =>
-    `M ${c.s0[0]} ${c.s0[1]} L ${c.s[0]} ${c.s[1]} A ${r} ${r} 0 ${large} 1 ${c.e[0]} ${c.e[1]} L ${c.e1[0]} ${c.e1[1]}`
-  const outline =
-    `${pathOf(outer, Ro)} L ${inner.e1[0]} ${inner.e1[1]} L ${inner.e[0]} ${inner.e[1]} ` +
-    `A ${R} ${R} 0 ${large} 0 ${inner.s[0]} ${inner.s[1]} L ${inner.s0[0]} ${inner.s0[1]} Z`
-  const face = convex ? pathOf(outer, Ro) : pathOf(inner, R)
-
-  // Gabaryt obrysu frontu.
-  const pts: Point[] = [outer.s0, outer.e1, inner.s0, inner.e1]
-  for (let i = 0; i <= 36; i++) {
-    const a = aS + (theta * i) / 36
-    pts.push(polar(Ro, a), polar(R, a))
-  }
-  const xs = pts.map((p) => p[0])
-  const ys = pts.map((p) => p[1])
-  const box = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
-  const boxW = box.maxX - box.minX
-  const boxH = box.maxY - box.minY
-
-  const extent = Math.max(boxW, boxH, Ro)
-  const unit = extent / 100
-  const off = unit * 7
-
-  // Widok: gabaryt + środek łuku + miejsce na dwa rzędy wymiarów z każdej strony.
-  const pad = off * 3.2
-  const vMinX = Math.min(box.minX, 0) - pad
-  const vMinY = Math.min(box.minY, 0) - pad
-  const vW = Math.max(box.maxX, 0) - Math.min(box.minX, 0) + pad * 2
-  const vH = Math.max(box.maxY, 0) - Math.min(box.minY, 0) + pad * 2
-
-  // Rozmiar SVG na ekranie → ile jednostek rysunku przypada na piksel (viewBox „meet”).
   const svgRef = useRef<SVGSVGElement>(null)
   const [screen, setScreen] = useState<{ w: number; h: number } | null>(null)
   useEffect(() => {
@@ -140,14 +78,60 @@ export function PlanView({ config }: Props) {
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
+
+  const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
+  const path = frontPath(config)
+  if (!path) {
+    return (
+      <p className="plan__empty">
+        {frontType.name}: kształt i wymiary ustalane indywidualnie – brak rysunku katalogowego.
+      </p>
+    )
+  }
+
+  const g = THICKNESS_MM
+  const samples = samplePath(path, 4, 1.5)
+  const outer = samples.map((q) => q.p)
+  const inner = samples.map(({ p, n }): Point => [p[0] - n[0] * g, p[1] - n[1] * g])
+  const walked = walkPath(path)
+  const toD = (pts: Point[]) => pts.map((q, i) => `${i ? 'L' : 'M'} ${q[0]} ${q[1]}`).join(' ')
+  const outline = `${toD(outer)} ${toD([...inner].reverse()).replace(/^M/, 'L')} Z`
+
+  // Gabaryt obrysu frontu.
+  const xs = [...outer, ...inner].map((q) => q[0])
+  const ys = [...outer, ...inner].map((q) => q[1])
+  const box = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
+  const boxW = box.maxX - box.minX
+  const boxH = box.maxY - box.minY
+
+  const extent = Math.max(boxW, boxH)
+  const unit = extent / 100
+  const off = unit * 7
+
+  // Widok: gabaryt + środki łuków + miejsce na dwa rzędy wymiarów z każdej strony.
+  const centers = walked.flatMap((w) => (w.center ? [w.center] : []))
+  const pad = off * 3.2
+  const allX = [box.minX, box.maxX, ...centers.map((c) => c[0])]
+  const allY = [box.minY, box.maxY, ...centers.map((c) => c[1])]
+  const vMinX = Math.min(...allX) - pad
+  const vMinY = Math.min(...allY) - pad
+  const vW = Math.max(...allX) - Math.min(...allX) + pad * 2
+  const vH = Math.max(...allY) - Math.min(...allY) + pad * 2
+  // Jednostki rysunku na piksel – napisy i znaczniki mają stały rozmiar na ekranie.
   const px = screen ? Math.max(vW / screen.w, vH / screen.h) : unit / 4
+
   const dims: ReactNode[] = []
-  if (extS > 0) {
-    dims.push(<Dimension key="extS" p1={outer.s0} p2={outer.s} dir={nS} offset={off} label={`${fmt(extS)}`} px={px} />)
-  }
-  if (extE > 0) {
-    dims.push(<Dimension key="extE" p1={outer.e} p2={outer.e1} dir={nE} offset={off} label={`${fmt(extE)}`} px={px} />)
-  }
+  let lineUp = false
+  let lineRight = false
+  walked.forEach((w, i) => {
+    if (w.segment.kind !== 'line') return
+    const n = outerNormal(w.headingStart)
+    if (n[1] < -0.7) lineUp = true
+    if (n[0] > 0.7) lineRight = true
+    dims.push(
+      <Dimension key={`l${i}`} p1={w.start} p2={w.end} dir={n} offset={off} label={fmt(w.segment.length)} px={px} />,
+    )
+  })
   // Gabaryt: szerokość nad rysunkiem, głębokość po prawej.
   dims.push(
     <Dimension
@@ -155,8 +139,8 @@ export function PlanView({ config }: Props) {
       p1={[box.minX, box.minY]}
       p2={[box.maxX, box.minY]}
       dir={[0, -1]}
-      offset={extS > 0 ? off * 2.2 : off}
-      label={`${fmt(boxW)}`}
+      offset={lineUp ? off * 2.2 : off}
+      label={fmt(boxW)}
       px={px}
     />,
     <Dimension
@@ -164,47 +148,74 @@ export function PlanView({ config }: Props) {
       p1={[box.maxX, box.minY]}
       p2={[box.maxX, box.maxY]}
       dir={[1, 0]}
-      offset={extE > 0 && Math.abs(nE[0]) > 0.7 ? off * 2.2 : off}
-      label={`${fmt(boxH)}`}
+      offset={lineRight ? off * 2.2 : off}
+      label={fmt(boxH)}
       px={px}
     />,
   )
-  // Grubość na początku frontu.
+  // Grubość na końcu frontu.
+  const last = walked[walked.length - 1]
+  const endDir: Point = [Math.cos((last.headingEnd * Math.PI) / 180), Math.sin((last.headingEnd * Math.PI) / 180)]
   dims.push(
     <Dimension
       key="g"
-      p1={inner.s0}
-      p2={outer.s0}
-      dir={dirS}
+      p1={outer[outer.length - 1]}
+      p2={inner[inner.length - 1]}
+      dir={endDir}
       offset={off * 0.9}
       label={`${g}`}
       px={px}
     />,
   )
 
-  // Promień rysujemy poza osią symetrii, żeby nie nachodził na opis kąta.
-  const aR = aS + theta * 0.62
-  // Linia R od środka do lica zewnętrznego, zakończona grotem.
-  const rDir = polar(1, aR)
-  const rEnd = polar(Ro, aR)
-  const arrowLen = px * 11
-  const arrowBase = add(rEnd, rDir, -arrowLen)
-  const perp: Point = [-rDir[1], rDir[0]]
-  const arrow = [rEnd, add(arrowBase, perp, px * 3.5), add(arrowBase, perp, -px * 3.5)]
-  const rLabel = add(polar(Ro * 0.5, aR), perp, -px * 9)
-  const rAngle = (() => {
-    let a = (aR * 180) / Math.PI
-    if (a >= 90) a -= 180
-    if (a < -90) a += 180
-    return a
-  })()
-  const angR = Math.min(R * 0.3, unit * 10)
-  const angS = polar(angR, aS)
-  const angE = polar(angR, aE)
-  const angLabel = polar(angR + px * 16, aMid)
-  // Osie symetrii łuku (linia kreska-kropka), sięgające trochę poza obrys.
-  const axisX = [Math.min(box.minX, 0) - unit * 4, Math.max(box.maxX, 0) + unit * 4]
-  const axisY = [Math.min(box.minY, 0) - unit * 4, Math.max(box.maxY, 0) + unit * 4]
+  // Łuki: kreskowane promienie do końców łuku i linia R z grotem przy licu.
+  const arcs = walked.flatMap((w, i) => {
+    if (w.segment.kind !== 'arc' || !w.center) return []
+    const c = w.center
+    const r = w.segment.radius
+    const ri = r - g
+    const nS = outerNormal(w.headingStart)
+    const nE = outerNormal(w.headingEnd)
+    const aDeg = w.headingStart + Math.min(w.segment.angleDeg / 2, 45)
+    const rDir = outerNormal(aDeg)
+    const rEnd: Point = [c[0] + rDir[0] * r, c[1] + rDir[1] * r]
+    const arrowLen = px * 11
+    const base: Point = [rEnd[0] - rDir[0] * arrowLen, rEnd[1] - rDir[1] * arrowLen]
+    const perp: Point = [-rDir[1], rDir[0]]
+    const arrow = [rEnd, [base[0] + perp[0] * px * 3.5, base[1] + perp[1] * px * 3.5], [base[0] - perp[0] * px * 3.5, base[1] - perp[1] * px * 3.5]]
+    const label: Point = [c[0] + rDir[0] * r * 0.5 - perp[0] * px * 9, c[1] + rDir[1] * r * 0.5 - perp[1] * px * 9]
+    let angle = (Math.atan2(rDir[1], rDir[0]) * 180) / Math.PI
+    if (angle >= 90) angle -= 180
+    if (angle < -90) angle += 180
+    return [
+      <g key={`a${i}`}>
+        <path
+          className="plan__dashed"
+          d={`M ${c[0] + nS[0] * ri} ${c[1] + nS[1] * ri} L ${c[0]} ${c[1]} L ${c[0] + nE[0] * ri} ${c[1] + nE[1] * ri}`}
+        />
+        <line className="plan__thin" x1={c[0]} y1={c[1]} x2={base[0]} y2={base[1]} />
+        <polygon className="plan__arrow" points={arrow.map((q) => q.join(',')).join(' ')} />
+        <text className="plan__text" x={label[0]} y={label[1]} transform={`rotate(${angle} ${label[0]} ${label[1]})`} fontSize={px * 11}>
+          R{r}
+        </text>
+      </g>,
+    ]
+  })
+
+  // Granice łuk / odcinek prosty.
+  const seams = walked.slice(0, -1).map((w, i) => {
+    const n = outerNormal(w.headingEnd)
+    return (
+      <line
+        key={`s${i}`}
+        className="plan__seam"
+        x1={w.end[0]}
+        y1={w.end[1]}
+        x2={w.end[0] - n[0] * g}
+        y2={w.end[1] - n[1] * g}
+      />
+    )
+  })
 
   return (
     <svg
@@ -212,7 +223,7 @@ export function PlanView({ config }: Props) {
       className="viz__svg plan"
       viewBox={`${vMinX} ${vMinY} ${vW} ${vH}`}
       role="img"
-      aria-label={`Rzut z góry: ${frontType.name}, R ${Ro} mm, grubość ${g} mm, zakończenie ${ending.name}, gabaryt ${fmt(boxW)} × ${fmt(boxH)} mm`}
+      aria-label={`Rzut z góry: ${frontType.name}, R ${config.radiusMm} mm, grubość ${g} mm, gabaryt ${fmt(boxW)} × ${fmt(boxH)} mm`}
     >
       <defs>
         {/* Kreskowanie przekroju (jak przekrój gałki na rysunku referencyjnym). */}
@@ -221,37 +232,12 @@ export function PlanView({ config }: Props) {
         </pattern>
       </defs>
 
-      {/* Osie */}
-      <path className="plan__axis" d={`M ${axisX[0]} 0 H ${axisX[1]} M 0 ${axisY[0]} V ${axisY[1]}`} />
+      {arcs}
 
-      {/* Kąt i promień */}
-      <path className="plan__thin" d={`M ${angS[0]} ${angS[1]} A ${angR} ${angR} 0 ${large} 1 ${angE[0]} ${angE[1]}`} />
-      <text className="plan__text" x={angLabel[0]} y={angLabel[1]} fontSize={px * 11}>
-        {frontType.angleDeg}°
-      </text>
-      <line className="plan__thin" x1={0} y1={0} x2={arrowBase[0]} y2={arrowBase[1]} />
-      <polygon className="plan__arrow" points={arrow.map((p) => p.join(',')).join(' ')} />
-      <text
-        className="plan__text"
-        x={rLabel[0]}
-        y={rLabel[1]}
-        transform={`rotate(${rAngle} ${rLabel[0]} ${rLabel[1]})`}
-        fontSize={px * 11}
-      >
-        R{Ro}
-      </text>
-
-      {/* Front: przekrój z kreskowaniem, obrys, lico pogrubione */}
+      {/* Front: przekrój z kreskowaniem, lico pogrubione */}
       <path d={outline} className="plan__section" fill={`url(#${hatchId})`} />
-      {[
-        [outer.s, inner.s],
-        [outer.e, inner.e],
-      ]
-        .filter((_, i) => (i === 0 ? extS > 0 : extE > 0))
-        .map(([a, b], i) => (
-          <line key={i} className="plan__seam" x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} />
-        ))}
-      <path d={face} className="plan__face" />
+      {seams}
+      <path d={toD(outer)} className="plan__face" />
 
       {dims}
 

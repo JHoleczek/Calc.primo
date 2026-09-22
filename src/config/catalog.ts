@@ -1,65 +1,63 @@
-// Dane katalogowe kalkulatora frontów giętych.
-//
-// UWAGA: nazwy, kody i progi poniżej są PLACEHOLDERAMI do uzupełnienia
-// na podstawie https://katalog.primomeble.pl/#katalog. Cała logika UI i
-// obliczeń czyta wyłącznie z tego pliku, więc aktualizacja katalogu
-// sprowadza się do edycji tych tablic.
+// Dane katalogowe kalkulatora frontów giętych – na podstawie
+// „Fronty Primo — Katalog frontów giętych 2026” (https://katalog.primomeble.pl/).
+// Cała logika UI, obliczeń i rysunków czyta wyłącznie z tego pliku.
 
-export type BendDirection = 'convex' | 'concave'
-
-export interface FrontType {
-  id: string
-  name: string
-  /** Kąt gięcia łuku w stopniach. */
-  angleDeg: number
-  /** Wypukły (lico na zewnątrz łuku) lub wklęsły (lico wewnątrz łuku). */
-  direction: BendDirection
-  description: string
-}
-
-export const FRONT_TYPES: FrontType[] = [
-  {
-    id: 'FG-90-W',
-    name: 'Łuk 90° wypukły',
-    angleDeg: 90,
-    direction: 'convex',
-    description: 'Narożnik zewnętrzny, ćwiartka okręgu',
-  },
-  {
-    id: 'FG-90-K',
-    name: 'Łuk 90° wklęsły',
-    angleDeg: 90,
-    direction: 'concave',
-    description: 'Narożnik wewnętrzny, ćwiartka okręgu',
-  },
-  {
-    id: 'FG-180-W',
-    name: 'Półłuk 180° wypukły',
-    angleDeg: 180,
-    direction: 'convex',
-    description: 'Zakończenie zabudowy, półokrąg',
-  },
-  {
-    id: 'FG-45-W',
-    name: 'Łuk 45° wypukły',
-    angleDeg: 45,
-    direction: 'convex',
-    description: 'Narożnik ścięty, 1/8 okręgu',
-  },
-]
-
-/** Promień R [mm]: 50–600 co 50. */
-export const RADIUS_OPTIONS: number[] = Array.from({ length: 12 }, (_, i) => 50 + i * 50)
+/** Grubość wszystkich frontów giętych [mm]. */
+export const THICKNESS_MM = 18
 
 /** Wysokość H [mm]. */
-export const HEIGHT_RANGE = { min: 100, max: 3600, step: 1 }
+export const HEIGHT_RANGE = { min: 100, max: 3200, step: 1 }
 
 /** Domyślna wysokość H [mm]. */
 export const DEFAULT_HEIGHT_MM = 720
 
-/** Powyżej tej wysokości front traktujemy jako ponadstandardowy. */
-export const HEIGHT_OVERSIZE_FROM_MM = 2800
+export type FrontTypeId = 'narozne' | 'przedluzane' | 'obustronne' | 'luk' | 'bryla'
 
+export interface FrontType {
+  id: FrontTypeId
+  name: string
+  description: string
+  /** Dostępne promienie R [mm] (po licu zewnętrznym); pusta lista = brak wyboru. */
+  radii: number[]
+}
+
+const range = (from: number, to: number, step: number) =>
+  Array.from({ length: Math.floor((to - from) / step) + 1 }, (_, i) => from + i * step)
+
+export const FRONT_TYPES: FrontType[] = [
+  {
+    id: 'narozne',
+    name: 'Narożne',
+    description: 'Łuk 90°, zakończenia N0 / N1 / N2',
+    radii: range(50, 600, 50),
+  },
+  {
+    id: 'przedluzane',
+    name: 'Przedłużane',
+    description: 'Łuk 90° z prostym przedłużeniem, wymiar L max 700',
+    radii: range(50, 600, 50),
+  },
+  {
+    id: 'obustronne',
+    name: 'Obustronne',
+    description: 'Dwa łuki R100, szerokość W 600 / 700 / 800',
+    radii: [100],
+  },
+  {
+    id: 'luk',
+    name: 'W łuk',
+    description: 'Półokrąg 180°',
+    radii: range(200, 400, 50),
+  },
+  {
+    id: 'bryla',
+    name: 'Bryła',
+    description: 'Rzeźbiona bryła, wycena indywidualna',
+    radii: [],
+  },
+]
+
+/** Zakończenia elementów narożnych. */
 export type EndingId = 'n0' | 'n1' | 'n2'
 
 export interface Ending {
@@ -71,24 +69,31 @@ export interface Ending {
 }
 
 export const ENDINGS: Ending[] = [
-  { id: 'n0', name: 'N0', extensions: 0, description: 'Sam łuk, bez przedłużeń' },
-  { id: 'n1', name: 'N1', extensions: 1, description: 'Proste przedłużenie z jednej strony' },
-  { id: 'n2', name: 'N2', extensions: 2, description: 'Proste przedłużenia z obu stron' },
+  { id: 'n0', name: 'N0', extensions: 0, description: 'Bez przedłużenia' },
+  { id: 'n1', name: 'N1', extensions: 1, description: 'Przedłużenie jednostronne' },
+  { id: 'n2', name: 'N2', extensions: 2, description: 'Przedłużenie obustronne' },
 ]
 
-/** Długość pojedynczego przedłużenia prostego [mm]. */
-export const EXTENSION_RANGE = { min: 10, max: 1000, step: 1, default: 100 }
+/** Przedłużenie narożnika N1/N2 [mm] – np. do montażu zawiasów. */
+export const CORNER_EXTENSION_MM = 50
+
+/** Elementy przedłużane: całkowity wymiar L (od lica łuku do końca przedłużenia) [mm]. */
+export const EXTENDED_LENGTH = { max: 700, minAboveRadius: 50, default: 700 }
+
+/** Elementy obustronne: szerokość W i opcjonalne przedłużenie boków Z [mm]. */
+export const DOUBLE_WIDTHS = [600, 700, 800]
+export const DOUBLE_Z = { max: 200, minAboveRadius: 10, default: 200 }
 
 /**
  * Kształt frezu w przekroju (patrząc z góry):
- * - round: rowek półokrągły, square: rowek prostokątny, v: rowek trójkątny,
- * - rib: wypukłe lamele (cała podziałka to zaokrąglone żebro).
+ * - round: rowek łukowy (fala), u: wpust z zaokrąglonym dnem, square: wpust prostokątny,
+ * - v: klin / rowek trójkątny, rib: wałek (wypukłe żebro na całą podziałkę).
  */
-export type FlutingShape = 'round' | 'square' | 'v' | 'rib'
+export type FlutingShape = 'round' | 'u' | 'square' | 'v' | 'rib'
 
 export interface FlutingProfile {
   shape: FlutingShape
-  /** Szerokość rowka [mm] (dla 'rib' ignorowana – żebro zajmuje całą podziałkę). */
+  /** Szerokość rowka [mm] (dla 'rib' – szerokość wałka). */
   widthMm: number
   /** Rozstaw osi rowków [mm]. */
   pitchMm: number
@@ -99,31 +104,28 @@ export interface FlutingProfile {
 export interface Fluting {
   id: string
   name: string
-  description: string
-  /** Profil do wizualizacji; brak = lico gładkie lub wzór bez podglądu. */
+  /** Profil do wizualizacji; brak = lico gładkie. */
   profile?: FlutingProfile
 }
 
-export const NO_FLUTING_ID = 'brak'
+export const SMOOTH_FLUTING_ID = 'F00'
 
-/** 15 wzorów ryflowania + opcja „brak”. */
+/** Ryflowanie F00–F13; wymiary z rysunków katalogowych (środki podanych zakresów). */
 export const FLUTINGS: Fluting[] = [
-  { id: NO_FLUTING_ID, name: 'Bez ryflowania', description: 'Gładkie lico' },
-  { id: 'RF-01', name: 'RF-01', description: 'Półokrągłe 10 mm', profile: { shape: 'round', widthMm: 10, pitchMm: 20, depthMm: 5 } },
-  { id: 'RF-02', name: 'RF-02', description: 'Półokrągłe 15 mm', profile: { shape: 'round', widthMm: 15, pitchMm: 25, depthMm: 6 } },
-  { id: 'RF-03', name: 'RF-03', description: 'Półokrągłe 20 mm', profile: { shape: 'round', widthMm: 20, pitchMm: 30, depthMm: 7 } },
-  { id: 'RF-04', name: 'RF-04', description: 'Półokrągłe 30 mm', profile: { shape: 'round', widthMm: 30, pitchMm: 40, depthMm: 7 } },
-  { id: 'RF-05', name: 'RF-05', description: 'Prostokątne 10 mm', profile: { shape: 'square', widthMm: 10, pitchMm: 20, depthMm: 4 } },
-  { id: 'RF-06', name: 'RF-06', description: 'Prostokątne 15 mm', profile: { shape: 'square', widthMm: 15, pitchMm: 25, depthMm: 4 } },
-  { id: 'RF-07', name: 'RF-07', description: 'Prostokątne 20 mm', profile: { shape: 'square', widthMm: 20, pitchMm: 30, depthMm: 5 } },
-  { id: 'RF-08', name: 'RF-08', description: 'Trójkątne (V) 10 mm', profile: { shape: 'v', widthMm: 10, pitchMm: 15, depthMm: 4 } },
-  { id: 'RF-09', name: 'RF-09', description: 'Trójkątne (V) 15 mm', profile: { shape: 'v', widthMm: 15, pitchMm: 20, depthMm: 5 } },
-  { id: 'RF-10', name: 'RF-10', description: 'Trójkątne (V) 20 mm', profile: { shape: 'v', widthMm: 20, pitchMm: 25, depthMm: 6 } },
-  { id: 'RF-11', name: 'RF-11', description: 'Wypukłe (lamela) 15 mm', profile: { shape: 'rib', widthMm: 15, pitchMm: 15, depthMm: 3 } },
-  { id: 'RF-12', name: 'RF-12', description: 'Wypukłe (lamela) 25 mm', profile: { shape: 'rib', widthMm: 25, pitchMm: 25, depthMm: 4 } },
-  { id: 'RF-13', name: 'RF-13', description: 'Frezy rzadkie, rozstaw 50 mm', profile: { shape: 'round', widthMm: 8, pitchMm: 50, depthMm: 4 } },
-  { id: 'RF-14', name: 'RF-14', description: 'Frezy mieszane', profile: { shape: 'square', widthMm: 6, pitchMm: 18, depthMm: 3 } },
-  { id: 'RF-15', name: 'RF-15', description: 'Wzór indywidualny' },
+  { id: 'F00', name: 'Gładki' },
+  { id: 'F01', name: 'Wpust 15', profile: { shape: 'u', widthMm: 15, pitchMm: 27, depthMm: 3 } },
+  { id: 'F02', name: 'Klin 15', profile: { shape: 'v', widthMm: 15, pitchMm: 27, depthMm: 3 } },
+  { id: 'F03', name: 'Fala 18', profile: { shape: 'round', widthMm: 18, pitchMm: 19.5, depthMm: 4 } },
+  { id: 'F04', name: 'Fala 12', profile: { shape: 'u', widthMm: 11.5, pitchMm: 14.5, depthMm: 3 } },
+  { id: 'F05', name: 'Wałek 19', profile: { shape: 'rib', widthMm: 19, pitchMm: 19, depthMm: 5 } },
+  { id: 'F06', name: 'Wałek 25', profile: { shape: 'rib', widthMm: 25, pitchMm: 25, depthMm: 5 } },
+  { id: 'F07', name: 'Wałek 9', profile: { shape: 'rib', widthMm: 9, pitchMm: 9, depthMm: 4 } },
+  { id: 'F08', name: 'Wpust 20', profile: { shape: 'square', widthMm: 20, pitchMm: 40, depthMm: 4 } },
+  { id: 'F09', name: 'Rowek 6', profile: { shape: 'v', widthMm: 6, pitchMm: 25, depthMm: 3 } },
+  { id: 'F10', name: 'Rowek 3', profile: { shape: 'square', widthMm: 3, pitchMm: 23, depthMm: 3 } },
+  { id: 'F11', name: 'Wpust 10', profile: { shape: 'square', widthMm: 10, pitchMm: 20, depthMm: 4 } },
+  { id: 'F12', name: 'Fala 10', profile: { shape: 'round', widthMm: 10, pitchMm: 11.5, depthMm: 5 } },
+  { id: 'F13', name: 'Klin 10', profile: { shape: 'v', widthMm: 8, pitchMm: 18, depthMm: 5 } },
 ]
 
 export type MaterialId = 'lamelowane' | 'fornirowane' | 'lakierowane'
@@ -131,33 +133,16 @@ export type MaterialId = 'lamelowane' | 'fornirowane' | 'lakierowane'
 export interface Material {
   id: MaterialId
   name: string
-  /** Grubość frontu [mm] – potrzebna do promienia strony zewnętrznej. */
-  thicknessMm: number
   /** Czy kolor (farba) jest wymagany. */
   colorRequired: boolean
   colorPlaceholder: string
 }
 
 export const MATERIALS: Material[] = [
-  {
-    id: 'lamelowane',
-    name: 'Lamelowane',
-    thicknessMm: 19,
-    colorRequired: false,
-    colorPlaceholder: 'np. olej naturalny, bejca orzech',
-  },
-  {
-    id: 'fornirowane',
-    name: 'Fornirowane',
-    thicknessMm: 19,
-    colorRequired: false,
-    colorPlaceholder: 'np. dąb naturalny, bejca',
-  },
-  {
-    id: 'lakierowane',
-    name: 'Lakierowane',
-    thicknessMm: 19,
-    colorRequired: true,
-    colorPlaceholder: 'np. RAL 9010, NCS S 0502-Y',
-  },
+  { id: 'lamelowane', name: 'Lamelowane', colorRequired: false, colorPlaceholder: 'np. olej naturalny, bejca orzech' },
+  { id: 'fornirowane', name: 'Fornirowane', colorRequired: false, colorPlaceholder: 'np. dąb naturalny, bejca' },
+  { id: 'lakierowane', name: 'Lakierowane', colorRequired: true, colorPlaceholder: 'np. RAL 9010, NCS S 0502-Y' },
 ]
+
+/** Kontakt do wyceny (z katalogu). */
+export const CONTACT = { email: 'biuro.primomeble@gmail.com', phone: '691-766-559' }

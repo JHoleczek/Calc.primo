@@ -1,22 +1,17 @@
 import type { FlutingProfile } from '../config/catalog'
+import { samplePath, type FrontPath, type Point } from './frontPath'
 
 // Geometria frontu giętego jako lista trójkątów (bez zależności od three.js).
 //
-// Układ współrzędnych (metry): X w prawo, Y w górę, Z w stronę oglądającego.
-// Środek łuku leży w (0, 0, 0), łuk jest symetryczny względem osi Z, a front
-// stoi na płaszczyźnie Y = 0. R to promień powierzchni zewnętrznej, wewnętrzna
-// ma promień R − g. Lico wypukłego frontu jest na zewnątrz, wklęsłego wewnątrz.
-// Ryflowanie to pionowe frezy w licu.
+// Wejście to kształt w rzucie (po licu zewnętrznym, patrz frontPath.ts).
+// Wyjście w metrach: X w prawo, Y w górę, Z w stronę oglądającego. Model jest
+// obrócony tak, by lico było zwrócone do oglądającego (+Z), wyśrodkowany w X/Z
+// i postawiony na płaszczyźnie Y = 0. Ryflowanie to pionowe frezy w licu.
 
 export interface FrontGeometryInput {
-  /** Promień powierzchni zewnętrznej [mm]. */
-  radiusMm: number
-  angleDeg: number
-  convex: boolean
+  path: FrontPath
   thicknessMm: number
   heightMm: number
-  extensionLeftMm: number
-  extensionRightMm: number
   fluting?: FlutingProfile
 }
 
@@ -29,16 +24,20 @@ export interface FrontGeometryData {
   max: [number, number, number]
 }
 
-type Vec2 = [number, number]
-
 const MM = 0.001
 
 /** Głębokość frezu [mm] w punkcie x liczonym od osi rowka (|x| ≤ pitch/2). */
 export function flutingDepth(profile: FlutingProfile, x: number, maxDepthMm: number): number {
   const depth = Math.min(profile.depthMm, maxDepthMm)
-  const half = profile.shape === 'rib' ? profile.pitchMm / 2 : profile.widthMm / 2
-  const t = Math.abs(x) / half
-  if (t >= 1) return profile.shape === 'rib' ? depth : 0
+  const half = profile.widthMm / 2
+  const ax = Math.abs(x)
+  if (profile.shape === 'rib') {
+    // Wałek: zaokrąglone żebro na szerokość rozstawu, między wałkami pełna głębokość.
+    const t = ax / (profile.pitchMm / 2)
+    return t >= 1 ? depth : depth * (1 - Math.sqrt(1 - t * t))
+  }
+  if (ax >= half) return 0
+  const t = ax / half
   switch (profile.shape) {
     case 'round':
       return depth * Math.sqrt(1 - t * t)
@@ -46,50 +45,29 @@ export function flutingDepth(profile: FlutingProfile, x: number, maxDepthMm: num
       return depth
     case 'v':
       return depth * (1 - t)
-    case 'rib':
-      return depth * (1 - Math.sqrt(1 - t * t))
+    case 'u': {
+      // Wpust z zaokrąglonym dnem: pionowe ścianki przechodzą łukiem w płaskie dno.
+      const r = Math.min(depth, half)
+      const dx = ax - (half - r)
+      return dx <= 0 ? depth : depth - r + Math.sqrt(Math.max(0, r * r - dx * dx))
+    }
   }
 }
 
 export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData {
-  const { thicknessMm: g, heightMm: H, convex, fluting } = input
-  // R poniżej to promień wewnętrzny (baza stacji); zewnętrzny = R + g = input.radiusMm.
-  const R = Math.max(1, input.radiusMm - g)
-  const theta = (input.angleDeg * Math.PI) / 180
-  const aStart = Math.PI / 2 + theta / 2
-  const aEnd = Math.PI / 2 - theta / 2
-  const faceRadius = convex ? R + g : R
+  const { thicknessMm: g, heightMm: H, fluting } = input
 
-  const extL = Math.max(0, input.extensionLeftMm)
-  const extR = Math.max(0, input.extensionRightMm)
-  const arcLen = faceRadius * theta
-  const total = extL + arcLen + extR
+  const step = fluting ? Math.max(0.4, Math.min(fluting.widthMm, fluting.pitchMm) / 10) : 10
+  const samples = samplePath(input.path, step)
+  const total = samples[samples.length - 1].s
+  const count = samples.length
 
-  const polar = (r: number, a: number): Vec2 => [r * Math.cos(a), r * Math.sin(a)]
-  const leftDir: Vec2 = [-Math.sin(aStart), Math.cos(aStart)]
-  const rightDir: Vec2 = [Math.sin(aEnd), -Math.cos(aEnd)]
-
-  /** Punkt na powierzchni wewnętrznej i normalna (od środka łuku) dla współrzędnej s na licu. */
-  const station = (s: number): { p: Vec2; n: Vec2 } => {
-    if (s < extL) {
-      const t = extL - s
-      const base = polar(R, aStart)
-      return { p: [base[0] + leftDir[0] * t, base[1] + leftDir[1] * t], n: polar(1, aStart) }
-    }
-    if (s <= extL + arcLen) {
-      const a = aStart - (s - extL) / faceRadius
-      return { p: polar(R, a), n: polar(1, a) }
-    }
-    const t = s - extL - arcLen
-    const base = polar(R, aEnd)
-    return { p: [base[0] + rightDir[0] * t, base[1] + rightDir[1] * t], n: polar(1, aEnd) }
-  }
-
-  // Gęstość próbkowania: frez potrzebuje ~10 próbek na szerokość, gładki łuk ~2°.
-  const flutingStep = fluting ? Math.min(fluting.widthMm, fluting.pitchMm) / 10 : Infinity
-  const arcStep = faceRadius * (2 * Math.PI) / 180
-  const step = Math.max(0.5, Math.min(flutingStep, arcStep, 10))
-  const count = Math.max(2, Math.ceil(total / step) + 1)
+  // Obrót tak, by średnia normalna lica wskazywała oglądającego.
+  const avg = samples.reduce<Point>((a, { n }) => [a[0] + n[0], a[1] + n[1]], [0, 0])
+  const phi = -Math.atan2(avg[0], avg[1])
+  const cos = Math.cos(phi)
+  const sin = Math.sin(phi)
+  const rot = (p: Point): Point => [p[0] * cos + p[1] * sin, -p[0] * sin + p[1] * cos]
 
   // Wzór ryflowania wyśrodkowany na licu.
   const maxDepth = g * 0.45
@@ -101,16 +79,21 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
     return flutingDepth(fluting, u - p / 2, maxDepth)
   }
 
-  const face: Vec2[] = []
-  const back: Vec2[] = []
-  for (let i = 0; i < count; i++) {
-    const s = (total * i) / (count - 1)
-    const { p, n } = station(s)
+  const face: Point[] = []
+  const back: Point[] = []
+  for (const { p, n, s } of samples) {
     const d = depthAt(s)
-    const faceOffset = convex ? g - d : d
-    const backOffset = convex ? 0 : g
-    face.push([p[0] + n[0] * faceOffset, p[1] + n[1] * faceOffset])
-    back.push([p[0] + n[0] * backOffset, p[1] + n[1] * backOffset])
+    face.push(rot([p[0] - n[0] * d, p[1] - n[1] * d]))
+    back.push(rot([p[0] - n[0] * g, p[1] - n[1] * g]))
+  }
+
+  // Wyśrodkowanie w X/Z.
+  const all = [...face, ...back]
+  const cx = (Math.min(...all.map((q) => q[0])) + Math.max(...all.map((q) => q[0]))) / 2
+  const cz = (Math.min(...all.map((q) => q[1])) + Math.max(...all.map((q) => q[1]))) / 2
+  for (const q of all) {
+    q[0] -= cx
+    q[1] -= cz
   }
 
   const positions: number[] = []
@@ -132,7 +115,7 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
   }
 
   /** Normalne krzywej w rzucie (różnice centralne), skierowane od drugiej powierzchni. */
-  const curveNormals = (curve: Vec2[], other: Vec2[]): V3[] =>
+  const curveNormals = (curve: Point[], other: Point[]): V3[] =>
     curve.map((pt, i) => {
       const a = curve[Math.max(0, i - 1)]
       const b = curve[Math.min(curve.length - 1, i + 1)]
@@ -141,7 +124,7 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
       const len = Math.hypot(nx, nz) || 1
       nx /= len
       nz /= len
-      const away: Vec2 = [pt[0] - other[i][0], pt[1] - other[i][1]]
+      const away: Point = [pt[0] - other[i][0], pt[1] - other[i][1]]
       const sign = nx * away[0] + nz * away[1] >= 0 ? 1 : -1
       return [nx * sign, 0, nz * sign]
     })
@@ -150,7 +133,7 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
   const backN = curveNormals(back, face)
   const up: V3 = [0, 1, 0]
   const down: V3 = [0, -1, 0]
-  const at = (pt: Vec2, y: number): V3 => [pt[0], y, pt[1]]
+  const at = (pt: Point, y: number): V3 => [pt[0], y, pt[1]]
 
   for (let i = 0; i < count - 1; i++) {
     const [f0, f1, b0, b1] = [face[i], face[i + 1], back[i], back[i + 1]]

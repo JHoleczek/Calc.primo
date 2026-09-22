@@ -90,33 +90,28 @@ function FrontMesh({ geometry, materialId, colorHex }: FrontSceneProps) {
   }, [color])
   useEffect(() => () => edgeMaterial.dispose(), [edgeMaterial])
 
-  // Front ustawiony środkiem na osi Y, na podłodze. Wklęsły obracamy o 180°,
-  // żeby lico (strona wewnętrzna łuku) było zwrócone do oglądającego.
-  const cx = (data.min[0] + data.max[0]) / 2
-  const cz = (data.min[2] + data.max[2]) / 2
-
+  // Geometria jest już wyśrodkowana i obrócona licem do oglądającego.
   return (
-    <group rotation={[0, geometry.convex ? 0 : Math.PI, 0]}>
-      <group position={[-cx, 0, -cz]}>
-        <mesh geometry={bufferGeometry} material={material} castShadow receiveShadow />
-        <lineSegments geometry={edgeGeometry} material={edgeMaterial} />
-      </group>
+    <group>
+      <mesh geometry={bufferGeometry} material={material} castShadow receiveShadow />
+      <lineSegments geometry={edgeGeometry} material={edgeMaterial} />
     </group>
   )
 }
 
-/** Ustawia kamerę tak, by cały front mieścił się w kadrze; tylko gdy zmienią się wymiary. */
+/** Ustawia kamerę tak, by cały front mieścił się w kadrze; przy zmianie wymiarów frontu lub okna. */
 function CameraRig({ size }: { size: [number, number, number] }) {
-  const { camera } = useThree()
+  const { camera, size: canvas } = useThree()
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
   const [w, h, d] = size
 
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera
-    const radius = Math.hypot(w, h, d) / 2
-    const fit = radius / Math.sin(THREE.MathUtils.degToRad(FOV / 2))
-    const aspectFit = cam.aspect < 1 ? fit / Math.max(cam.aspect, 0.55) : fit
-    const dist = aspectFit * 0.8
+    // Odległość, przy której mieszczą się osobno wysokość i szerokość (z zapasem na obrót kamery).
+    const tanV = Math.tan(THREE.MathUtils.degToRad(FOV / 2))
+    const tanH = tanV * cam.aspect
+    const span = Math.hypot(w, d)
+    const dist = Math.max(h / 2 / tanV, span / 2 / tanH) * 1.25 + span / 2
     const dir = new THREE.Vector3(0.55, 0.32, 1).normalize()
     const target = new THREE.Vector3(0, h / 2, 0)
     cam.position.copy(target).addScaledVector(dir, dist)
@@ -125,7 +120,7 @@ function CameraRig({ size }: { size: [number, number, number] }) {
     cam.updateProjectionMatrix()
     controls.current?.target.copy(target)
     controls.current?.update()
-  }, [camera, w, h, d])
+  }, [camera, w, h, d, canvas.width, canvas.height])
 
   return (
     <OrbitControls
