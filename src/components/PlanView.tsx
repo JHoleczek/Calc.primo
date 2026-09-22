@@ -71,8 +71,9 @@ export function PlanView({ config }: Props) {
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
 
   const g = material.thicknessMm
-  const R = config.radiusMm
-  const Ro = R + g
+  // R z konfiguracji to promień lica zewnętrznego; powierzchnia wewnętrzna ma R − g.
+  const Ro = config.radiusMm
+  const R = Ro - g
   const convex = frontType.direction === 'convex'
   const theta = (frontType.angleDeg * Math.PI) / 180
   // Kąty w układzie SVG (oś Y w dół): start u góry, łuk zgodnie z ruchem wskazówek zegara.
@@ -182,8 +183,8 @@ export function PlanView({ config }: Props) {
 
   // Promień rysujemy poza osią symetrii, żeby nie nachodził na opis kąta.
   const aR = aS + theta * 0.62
-  const rEnd = polar(R, aR)
-  const rLabel = add(polar(R * 0.55, aR), polar(1, aR - Math.PI / 2), unit * 3)
+  const rEnd = polar(Ro, aR)
+  const rLabel = add(polar(Ro * 0.55, aR), polar(1, aR - Math.PI / 2), unit * 3)
   const angR = Math.min(R * 0.3, unit * 10)
   const angS = polar(angR, aS)
   const angE = polar(angR, aE)
@@ -195,7 +196,7 @@ export function PlanView({ config }: Props) {
       className="viz__svg plan"
       viewBox={`${vMinX} ${vMinY} ${vW} ${vH}`}
       role="img"
-      aria-label={`Rzut z góry: ${frontType.name}, R ${R} mm, grubość ${g} mm, zakończenie ${ending.name}, gabaryt ${fmt(boxW)} × ${fmt(boxH)} mm`}
+      aria-label={`Rzut z góry: ${frontType.name}, R ${Ro} mm, grubość ${g} mm, zakończenie ${ending.name}, gabaryt ${fmt(boxW)} × ${fmt(boxH)} mm`}
     >
       <path d={gridPath(false)} className="plan__grid" strokeWidth={unit * 0.12} />
       <path d={gridPath(true)} className="plan__grid plan__grid--major" strokeWidth={unit * 0.22} />
@@ -213,7 +214,7 @@ export function PlanView({ config }: Props) {
       </text>
       <path className="plan__center" d={`M ${-unit * 1.5} 0 H ${unit * 1.5} M 0 ${-unit * 1.5} V ${unit * 1.5}`} strokeWidth={unit * 0.3} />
       <text className="plan__label" x={rLabel[0]} y={rLabel[1]} fontSize={unit * 3.2}>
-        R {R}
+        R {Ro}
       </text>
 
       {/* Front */}

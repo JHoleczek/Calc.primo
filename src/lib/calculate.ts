@@ -12,9 +12,6 @@ import {
   type MaterialId,
 } from '../config/catalog'
 
-/** Po której powierzchni liczymy rozwinięcie. */
-export type MeasureSide = 'outer' | 'inner'
-
 export interface Configuration {
   frontTypeId: string
   radiusMm: number
@@ -24,7 +21,6 @@ export interface Configuration {
   flutingId: string
   materialId: MaterialId
   color: string
-  measureSide: MeasureSide
 }
 
 export const DEFAULT_CONFIGURATION: Configuration = {
@@ -36,20 +32,6 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   flutingId: NO_FLUTING_ID,
   materialId: MATERIALS[0].id,
   color: '',
-  measureSide: 'outer',
-}
-
-export interface SideMeasure {
-  /** Promień danej powierzchni [mm]. */
-  radiusMm: number
-  /** Długość samego łuku [mm]. */
-  arcMm: number
-  /** Rozwinięcie: łuk + przedłużenia [mm]. */
-  developedMm: number
-  /** Metry bieżące (rozwinięcie w m). */
-  linearM: number
-  /** Powierzchnia rozwinięta [m²]. */
-  areaM2: number
 }
 
 export type NoteLevel = 'info' | 'addon' | 'warning'
@@ -59,27 +41,22 @@ export interface Note {
   text: string
 }
 
+/** Wynik liczony po licu zewnętrznym (R to promień powierzchni zewnętrznej). */
 export interface Result {
+  /** Promień zewnętrzny R [mm]. */
+  radiusMm: number
+  /** Długość łuku po zewnętrznej [mm]. */
+  arcMm: number
   /** Suma przedłużeń prostych [mm]. */
   extensionsTotalMm: number
-  outer: SideMeasure
-  inner: SideMeasure
-  /** Strona wybrana do rozliczenia. */
-  billed: SideMeasure
+  /** Rozwinięcie: łuk + przedłużenia [mm]. */
+  developedMm: number
+  /** Metry bieżące (rozwinięcie w m). */
+  linearM: number
+  /** Powierzchnia rozwinięta [m²]. */
+  areaM2: number
   notes: Note[]
   errors: string[]
-}
-
-function measure(radiusMm: number, angleDeg: number, extensionsTotalMm: number, heightMm: number): SideMeasure {
-  const arcMm = (angleDeg * Math.PI * radiusMm) / 180
-  const developedMm = arcMm + extensionsTotalMm
-  return {
-    radiusMm,
-    arcMm,
-    developedMm,
-    linearM: developedMm / 1000,
-    areaM2: (developedMm * heightMm) / 1_000_000,
-  }
 }
 
 export function calculate(config: Configuration): Result {
@@ -105,15 +82,10 @@ export function calculate(config: Configuration): Result {
     errors.push(`Dla materiału „${material.name}” wpisz kolor farby.`)
   }
 
-  const extensionsTotalMm = ending.extensions * (ending.extensions > 0 ? config.extensionMm : 0)
-  // R to promień wewnętrzny łuku; strona zewnętrzna jest większa o grubość frontu.
-  const inner = measure(config.radiusMm, frontType.angleDeg, extensionsTotalMm, config.heightMm)
-  const outer = measure(
-    config.radiusMm + material.thicknessMm,
-    frontType.angleDeg,
-    extensionsTotalMm,
-    config.heightMm,
-  )
+  const extensionsTotalMm = ending.extensions > 0 ? ending.extensions * config.extensionMm : 0
+  // R to promień lica zewnętrznego – po nim liczymy rozwinięcie.
+  const arcMm = (frontType.angleDeg * Math.PI * config.radiusMm) / 180
+  const developedMm = arcMm + extensionsTotalMm
 
   const notes: Note[] = []
   if (ending.extensions > 0) {
@@ -135,16 +107,13 @@ export function calculate(config: Configuration): Result {
       text: `Wysokość ponadstandardowa (> ${HEIGHT_OVERSIZE_FROM_MM} mm) – wycena indywidualna.`,
     })
   }
-  notes.push({
-    level: 'info',
-    text: `Grubość frontu ${material.thicknessMm} mm – różnica rozwinięć stron: ${(outer.arcMm - inner.arcMm).toFixed(1)} mm.`,
-  })
-
   return {
+    radiusMm: config.radiusMm,
+    arcMm,
     extensionsTotalMm,
-    outer,
-    inner,
-    billed: config.measureSide === 'outer' ? outer : inner,
+    developedMm,
+    linearM: developedMm / 1000,
+    areaM2: (developedMm * config.heightMm) / 1_000_000,
     notes,
     errors,
   }

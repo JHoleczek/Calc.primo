@@ -19,18 +19,18 @@ describe('buildFrontGeometry', () => {
     expect(g.normals.length).toBe(g.positions.length)
     expect(g.min[1]).toBeCloseTo(0)
     expect(g.max[1]).toBeCloseTo(0.72)
-    // Najdalszy punkt lica wypukłego w osi Z to R + g.
-    expect(g.max[2]).toBeCloseTo(0.319, 3)
-    // Łuk 90° symetryczny: X od -(R+g)·sin45° do +(R+g)·sin45°.
-    expect(g.max[0]).toBeCloseTo(0.319 * Math.SQRT1_2, 3)
-    expect(g.min[0]).toBeCloseTo(-0.319 * Math.SQRT1_2, 3)
+    // R to promień zewnętrzny: najdalszy punkt w osi Z leży w odległości R.
+    expect(g.max[2]).toBeCloseTo(0.3, 3)
+    // Łuk 90° symetryczny: X od -R·sin45° do +R·sin45°.
+    expect(g.max[0]).toBeCloseTo(0.3 * Math.SQRT1_2, 3)
+    expect(g.min[0]).toBeCloseTo(-0.3 * Math.SQRT1_2, 3)
   })
 
   it('dokłada przedłużenia styczne do łuku', () => {
     const g = buildFrontGeometry({ ...base, angleDeg: 180, extensionLeftMm: 200, extensionRightMm: 200 })
     // Półłuk: przedłużenia biegną w stronę -Z od końców łuku.
     expect(g.min[2]).toBeCloseTo(-0.2, 3)
-    expect(g.max[0]).toBeCloseTo(0.319, 3)
+    expect(g.max[0]).toBeCloseTo(0.3, 3)
   })
 
   it('ryflowanie nie przebija frontu', () => {
@@ -38,7 +38,7 @@ describe('buildFrontGeometry', () => {
       ...base,
       fluting: { shape: 'square', widthMm: 10, pitchMm: 20, depthMm: 50 },
     })
-    expect(g.max[2]).toBeCloseTo(0.319, 3)
+    expect(g.max[2]).toBeCloseTo(0.3, 3)
     expect(g.positions.every(Number.isFinite)).toBe(true)
   })
 })

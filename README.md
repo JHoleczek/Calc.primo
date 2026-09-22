@@ -30,8 +30,6 @@ Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 
 ## Założenia obliczeń
 
-- R to promień **wewnętrzny** łuku. Strona zewnętrzna ma promień R + grubość frontu (z materiału).
-- Rozwinięcie = kąt łuku × promień + liczba przedłużeń (N0 = 0, N1 = 1, N2 = 2) × długość przedłużenia.
-- mb = rozwinięcie w metrach; m² = rozwinięcie × H.
-- Stronę rozliczenia (zewnętrzna / wewnętrzna) wybiera się przełącznikiem w panelu wyniku.
-  Obie wartości są zawsze pokazane w tabeli.
+- R to promień **lica zewnętrznego** łuku (powierzchnia wewnętrzna ma R − grubość frontu).
+- Rozwinięcie = kąt łuku × R + liczba przedłużeń (N0 = 0, N1 = 1, N2 = 2) × długość przedłużenia.
+- mb = rozwinięcie w metrach; m² = rozwinięcie × H. Wynik liczony zawsze po zewnętrznej.

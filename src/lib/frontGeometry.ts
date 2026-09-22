@@ -4,10 +4,12 @@ import type { FlutingProfile } from '../config/catalog'
 //
 // Układ współrzędnych (metry): X w prawo, Y w górę, Z w stronę oglądającego.
 // Środek łuku leży w (0, 0, 0), łuk jest symetryczny względem osi Z, a front
-// stoi na płaszczyźnie Y = 0. R to promień wewnętrzny; lico wypukłego frontu
-// leży na promieniu R + g, wklęsłego na R. Ryflowanie to pionowe frezy w licu.
+// stoi na płaszczyźnie Y = 0. R to promień powierzchni zewnętrznej, wewnętrzna
+// ma promień R − g. Lico wypukłego frontu jest na zewnątrz, wklęsłego wewnątrz.
+// Ryflowanie to pionowe frezy w licu.
 
 export interface FrontGeometryInput {
+  /** Promień powierzchni zewnętrznej [mm]. */
   radiusMm: number
   angleDeg: number
   convex: boolean
@@ -50,7 +52,9 @@ export function flutingDepth(profile: FlutingProfile, x: number, maxDepthMm: num
 }
 
 export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData {
-  const { radiusMm: R, thicknessMm: g, heightMm: H, convex, fluting } = input
+  const { thicknessMm: g, heightMm: H, convex, fluting } = input
+  // R poniżej to promień wewnętrzny (baza stacji); zewnętrzny = R + g = input.radiusMm.
+  const R = Math.max(1, input.radiusMm - g)
   const theta = (input.angleDeg * Math.PI) / 180
   const aStart = Math.PI / 2 + theta / 2
   const aEnd = Math.PI / 2 - theta / 2

@@ -559,47 +559,45 @@ h3 {
   font-size: 14px;
 }
 
-.result__table-wrap {
-  overflow-x: auto;
+.result__basis {
+  font-size: 14px;
+  color: var(--muted);
 }
 
-.result__table {
-  width: 100%;
-  white-space: nowrap;
-  border-collapse: collapse;
+.result__breakdown {
+  margin: 0;
+  display: grid;
+  gap: 4px;
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 
-.result__table th,
-.result__table td {
-  text-align: right;
-  padding: 6px 8px;
+.result__breakdown div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--border);
 }
 
-.result__table th:first-child {
-  text-align: left;
+.result__breakdown dt {
+  color: var(--muted);
 }
 
-.result__table thead th {
-  color: var(--muted);
+.result__breakdown dd {
+  margin: 0;
   font-weight: 600;
 }
 
-.result__table tr.is-billed {
-  background: var(--accent-soft);
+.notes__empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 @media (max-width: 480px) {
   .result {
     padding: 16px 12px;
-  }
-
-  .result__table th,
-  .result__table td {
-    padding: 6px 4px;
-    font-size: 13px;
   }
 }
 

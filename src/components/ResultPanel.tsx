@@ -1,10 +1,8 @@
-import type { MeasureSide, Result } from '../lib/calculate'
-import { ChoiceGroup } from './ChoiceGroup'
+import type { Result } from '../lib/calculate'
 
 interface Props {
   result: Result
-  measureSide: MeasureSide
-  onMeasureSideChange: (side: MeasureSide) => void
+  heightMm: number
 }
 
 const fmt = (value: number, digits: number) =>
@@ -12,23 +10,15 @@ const fmt = (value: number, digits: number) =>
     ? value.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits })
     : '—'
 
-export function ResultPanel({ result, measureSide, onMeasureSideChange }: Props) {
+export function ResultPanel({ result, heightMm }: Props) {
   const invalid = result.errors.length > 0
-  const { billed, outer, inner } = result
+  const show = (value: number, digits: number) => (invalid ? '—' : fmt(value, digits))
 
   return (
     <section className="result" aria-labelledby="result-title" aria-live="polite">
       <div className="result__head">
         <h2 id="result-title">Wynik</h2>
-        <ChoiceGroup<MeasureSide>
-          name="measure-side"
-          value={measureSide}
-          onChange={onMeasureSideChange}
-          choices={[
-            { value: 'outer', label: 'Po zewnętrznej' },
-            { value: 'inner', label: 'Po wewnętrznej' },
-          ]}
-        />
+        <span className="result__basis">po licu zewnętrznym, R {result.radiusMm} mm</span>
       </div>
 
       {invalid && (
@@ -41,51 +31,48 @@ export function ResultPanel({ result, measureSide, onMeasureSideChange }: Props)
 
       <div className={`result__totals${invalid ? ' result__totals--invalid' : ''}`}>
         <div className="total">
-          <span className="total__value">{invalid ? '—' : fmt(billed.areaM2, 3)}</span>
+          <span className="total__value">{show(result.areaM2, 3)}</span>
           <span className="total__unit">m²</span>
         </div>
         <div className="total">
-          <span className="total__value">{invalid ? '—' : fmt(billed.linearM, 3)}</span>
+          <span className="total__value">{show(result.linearM, 3)}</span>
           <span className="total__unit">mb</span>
         </div>
       </div>
 
-      <div className="result__table-wrap">
-        <table className="result__table">
-          <thead>
-            <tr>
-              <th scope="col">Strona</th>
-              <th scope="col">Promień</th>
-              <th scope="col">Rozwinięcie</th>
-              <th scope="col">m²</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(
-              [
-                ['outer', 'Zewnętrzna', outer],
-                ['inner', 'Wewnętrzna', inner],
-              ] as const
-            ).map(([side, label, m]) => (
-              <tr key={side} className={side === measureSide ? 'is-billed' : undefined}>
-                <th scope="row">{label}</th>
-                <td>{fmt(m.radiusMm, 0)} mm</td>
-                <td>{fmt(m.developedMm, 1)} mm</td>
-                <td>{invalid ? '—' : fmt(m.areaM2, 3)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <dl className="result__breakdown">
+        <div>
+          <dt>Łuk (po zewnętrznej)</dt>
+          <dd>{show(result.arcMm, 1)} mm</dd>
+        </div>
+        {result.extensionsTotalMm > 0 && (
+          <div>
+            <dt>Przedłużenia</dt>
+            <dd>{show(result.extensionsTotalMm, 0)} mm</dd>
+          </div>
+        )}
+        <div>
+          <dt>Rozwinięcie</dt>
+          <dd>{show(result.developedMm, 1)} mm</dd>
+        </div>
+        <div>
+          <dt>Wysokość H</dt>
+          <dd>{show(heightMm, 0)} mm</dd>
+        </div>
+      </dl>
 
       <h3 className="result__subtitle">Dodatki i uwagi</h3>
-      <ul className="notes">
-        {result.notes.map((n) => (
-          <li key={n.text} className={`note note--${n.level}`}>
-            {n.text}
-          </li>
-        ))}
-      </ul>
+      {result.notes.length > 0 ? (
+        <ul className="notes">
+          {result.notes.map((n) => (
+            <li key={n.text} className={`note note--${n.level}`}>
+              {n.text}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="notes__empty">Brak dodatków.</p>
+      )}
     </section>
   )
 }

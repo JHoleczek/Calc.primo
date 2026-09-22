@@ -125,7 +125,7 @@ export default function App() {
             />
           </Step>
 
-          <Step n={2} title="Promień R" hint="Promień wewnętrzny łuku, 50–600 mm co 50 mm.">
+          <Step n={2} title="Promień R" hint="Promień po zewnętrznej powierzchni łuku, 50–600 mm co 50 mm.">
             <ChoiceGroup
               name="radius"
               value={config.radiusMm}
@@ -206,11 +206,7 @@ export default function App() {
           </Step>
         </form>
 
-        <ResultPanel
-          result={result}
-          measureSide={config.measureSide}
-          onMeasureSideChange={(v) => set('measureSide', v)}
-        />
+        <ResultPanel result={result} heightMm={config.heightMm} />
       </main>
     </div>
   )

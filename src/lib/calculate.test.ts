@@ -11,19 +11,19 @@ const base: Configuration = {
 }
 
 describe('calculate', () => {
-  it('liczy łuk 90° po stronie wewnętrznej i zewnętrznej', () => {
+  it('liczy łuk 90° po licu zewnętrznym o promieniu R', () => {
     const r = calculate(base)
-    expect(r.inner.arcMm).toBeCloseTo((Math.PI * 300) / 2)
-    expect(r.outer.arcMm).toBeCloseTo((Math.PI * 319) / 2)
-    expect(r.outer.areaM2).toBeCloseTo((((Math.PI * 319) / 2) * 1000) / 1e6)
-    expect(r.billed).toBe(r.outer)
+    expect(r.arcMm).toBeCloseTo((Math.PI * 300) / 2)
+    expect(r.developedMm).toBeCloseTo((Math.PI * 300) / 2)
+    expect(r.linearM).toBeCloseTo((Math.PI * 300) / 2 / 1000)
+    expect(r.areaM2).toBeCloseTo(((Math.PI * 300) / 2) * 1000 / 1e6)
     expect(r.errors).toEqual([])
   })
 
   it('dolicza przedłużenia N2 do rozwinięcia', () => {
     const r = calculate({ ...base, endingId: 'n2', extensionMm: 150 })
     expect(r.extensionsTotalMm).toBe(300)
-    expect(r.inner.developedMm).toBeCloseTo((Math.PI * 300) / 2 + 300)
+    expect(r.developedMm).toBeCloseTo((Math.PI * 300) / 2 + 300)
     expect(r.notes.some((n) => n.text.includes('2 × 150 mm'))).toBe(true)
   })
 
@@ -31,11 +31,6 @@ describe('calculate', () => {
     const r = calculate({ ...base, endingId: 'n0', extensionMm: 5000 })
     expect(r.extensionsTotalMm).toBe(0)
     expect(r.errors).toEqual([])
-  })
-
-  it('rozlicza po stronie wewnętrznej gdy wybrano', () => {
-    const r = calculate({ ...base, measureSide: 'inner' })
-    expect(r.billed).toBe(r.inner)
   })
 
   it('wymaga koloru dla frontów lakierowanych', () => {
