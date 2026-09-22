@@ -26,7 +26,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #171411;
     --surface: #211d19;
     --surface-2: #2b2621;
@@ -45,6 +45,26 @@
 
     color-scheme: dark;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #171411;
+  --surface: #211d19;
+  --surface-2: #2b2621;
+  --text: #f1ebe3;
+  --muted: #a99e91;
+  --border: #3a332c;
+  --accent: #d9a26a;
+  --accent-contrast: #1b140d;
+  --accent-soft: #3a2c1e;
+  --viz-bg: #1d1a16;
+  --band: #9c7a55;
+  --warning-bg: #3a2f14;
+  --warning-text: #f2d18b;
+  --error-bg: #3d1d19;
+  --error-text: #f4b3aa;
+
+  color-scheme: dark;
 }
 
 *,
@@ -75,7 +95,7 @@ h3 {
 
 .layout__viz {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   height: 100vh;
   background: var(--viz-bg);
   border-right: 1px solid var(--border);
