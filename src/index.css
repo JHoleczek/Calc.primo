@@ -1,8 +1,5 @@
 :root {
   --bg: #f6f3ee;
-  --grid: #d9d0c3;
-  --grid-major: #c6b9a8;
-  --dim: #5d5348;
   --surface: #ffffff;
   --surface-2: #efeae2;
   --text: #1f1b16;
@@ -12,7 +9,6 @@
   --accent-contrast: #ffffff;
   --accent-soft: #f3e6d6;
   --viz-bg: #ebe5dc;
-  --band: #c9a57c;
   --warning-bg: #fff4d6;
   --warning-text: #7a5300;
   --error-bg: #fde8e6;
@@ -31,9 +27,6 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --bg: #171411;
-    --grid: #2c2620;
-    --grid-major: #3d352d;
-    --dim: #bcb1a4;
     --surface: #211d19;
     --surface-2: #2b2621;
     --text: #f1ebe3;
@@ -43,7 +36,6 @@
     --accent-contrast: #1b140d;
     --accent-soft: #3a2c1e;
     --viz-bg: #1d1a16;
-    --band: #9c7a55;
     --warning-bg: #3a2f14;
     --warning-text: #f2d18b;
     --error-bg: #3d1d19;
@@ -55,9 +47,6 @@
 
 :root[data-theme='dark'] {
   --bg: #171411;
-  --grid: #2c2620;
-  --grid-major: #3d352d;
-  --dim: #bcb1a4;
   --surface: #211d19;
   --surface-2: #2b2621;
   --text: #f1ebe3;
@@ -67,7 +56,6 @@
   --accent-contrast: #1b140d;
   --accent-soft: #3a2c1e;
   --viz-bg: #1d1a16;
-  --band: #9c7a55;
   --warning-bg: #3a2f14;
   --warning-text: #f2d18b;
   --error-bg: #3d1d19;
@@ -216,60 +204,92 @@ h3 {
   width: 100%;
 }
 
-.plan__grid {
-  fill: none;
-  stroke: var(--grid);
+/* Rysunek techniczny: celowo jeden wygląd (jasne linie na czarnym tle) w obu motywach. */
+.viz__stage--plan {
+  --draw-bg: #0c0c0c;
+  --draw-grid: #1b1b1b;
+  --draw-line: #f2f2f2;
+  --draw-dim: #9b9b9b;
+  --draw-text: #c9c9c9;
+  --draw-axis: #6f6f6f;
+
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--draw-bg);
+  /* Kratka tylko dekoracyjna – stały rozmiar na ekranie, niezależny od skali rysunku. */
+  background-image:
+    linear-gradient(var(--draw-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--draw-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: center;
 }
 
-.plan__grid--major {
-  stroke: var(--grid-major);
+.plan * {
+  vector-effect: non-scaling-stroke;
 }
 
-.plan__band {
-  fill: var(--band);
-  stroke: var(--dim);
+.plan__section {
+  stroke: var(--draw-line);
+  stroke-width: 1.2px;
   stroke-linejoin: round;
+}
+
+.plan__hatch {
+  stroke: var(--draw-dim);
 }
 
 .plan__face {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--draw-line);
+  stroke-width: 2px;
   stroke-linecap: round;
 }
 
 .plan__seam {
-  stroke: var(--dim);
-  stroke-dasharray: 2 2;
+  stroke: var(--draw-line);
+  stroke-width: 0.8px;
+  stroke-dasharray: 2 3;
 }
 
-.plan__radius,
-.plan__center {
+.plan__axis {
   fill: none;
-  stroke: var(--muted);
+  stroke: var(--draw-axis);
+  stroke-width: 0.8px;
+  stroke-dasharray: 14 4 2 4;
 }
 
-.plan__label,
+.plan__thin {
+  fill: none;
+  stroke: var(--draw-dim);
+  stroke-width: 0.8px;
+}
+
+.plan__arrow {
+  fill: var(--draw-dim);
+}
+
+.plan__dim line {
+  stroke: var(--draw-dim);
+  stroke-width: 0.8px;
+}
+
+.plan__dim .plan__ext {
+  stroke-dasharray: 1 3;
+}
+
+.plan__text,
 .plan__dim text {
-  fill: var(--dim);
-  font-weight: 600;
+  fill: var(--draw-text);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
   text-anchor: middle;
   dominant-baseline: middle;
   font-variant-numeric: tabular-nums;
 }
 
-.plan__face-label {
-  fill: var(--accent);
-  font-weight: 700;
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-
-.plan__dim line {
-  stroke: var(--dim);
-}
-
 .plan__caption {
-  fill: var(--muted);
+  fill: var(--draw-axis);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
 }
 
 .viz__meta {

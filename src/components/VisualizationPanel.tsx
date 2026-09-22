@@ -85,7 +85,7 @@ export function VisualizationPanel({ config }: Props) {
         {view === '3d' && <span className="viz__hint">Przeciągnij, aby obrócić · kółko / szczypanie = zoom</span>}
       </div>
 
-      <div className="viz__stage" role="tabpanel" aria-labelledby={`viz-tab-${view}`}>
+      <div className={`viz__stage${view === 'plan' ? ' viz__stage--plan' : ''}`} role="tabpanel" aria-labelledby={`viz-tab-${view}`}>
         {view === '3d' ? (
           <Suspense fallback={<p className="viz__loading">Ładowanie modelu 3D…</p>}>
             <FrontScene
