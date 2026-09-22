@@ -1,8 +1,8 @@
 # Kalkulator frontów giętych (Primo Meble)
 
 Kalkulator powierzchni (m²) i metrów bieżących (mb) frontów giętych z informacją o dodatkach.
-Ekran jest podzielony na pół: po lewej (desktop) / u góry (mobile) jest miejsce na wizualizację,
-na razie poglądowy rzut z góry w SVG. Resztę ekranu zajmuje konfiguracja.
+Ekran jest podzielony na pół: po lewej (desktop) / u góry (mobile) jest wizualizacja
+(model 3D oraz rzut z góry), resztę ekranu zajmuje konfiguracja.
 
 ## Uruchomienie
 
@@ -19,7 +19,14 @@ npm run build    # build produkcyjny do dist/
   15 ryflowań, materiały i progi. **Wartości są placeholderami** do uzupełnienia na podstawie
   https://katalog.primomeble.pl/#katalog.
 - `src/lib/calculate.ts` liczy rozwinięcie, mb, m², dodatki i walidację.
-- `src/components/VisualizationPlaceholder.tsx` to tymczasowy rzut z góry, docelowo do zastąpienia wizualizacją 3D.
+- `src/lib/frontGeometry.ts` buduje siatkę frontu z parametrów: łuk, grubość, przedłużenia
+  i ryflowanie wyfrezowane w licu (profile w `FLUTINGS[].profile`).
+- `src/lib/paintColor.ts` zamienia wpisany kolor (RAL, NCS, hex, nazwa) na przybliżony kolor ekranowy.
+- `src/components/viz3d/` to scena three.js (React Three Fiber): materiały, proceduralne tekstury
+  drewna, kamera z obracaniem i zoomem. Ładowana leniwie jako osobny plik.
+- `src/components/PlanView.tsx` to rzut z góry w SVG (zakładka „Rzut z góry”).
+
+Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 
 ## Założenia obliczeń
 

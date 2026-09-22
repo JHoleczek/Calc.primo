@@ -1,4 +1,5 @@
 import {
+  DEFAULT_HEIGHT_MM,
   ENDINGS,
   EXTENSION_RANGE,
   FLUTINGS,
@@ -29,7 +30,7 @@ export interface Configuration {
 export const DEFAULT_CONFIGURATION: Configuration = {
   frontTypeId: FRONT_TYPES[0].id,
   radiusMm: 300,
-  heightMm: 720,
+  heightMm: DEFAULT_HEIGHT_MM,
   endingId: 'n0',
   extensionMm: EXTENSION_RANGE.default,
   flutingId: NO_FLUTING_ID,

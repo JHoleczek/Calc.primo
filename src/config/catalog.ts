@@ -54,6 +54,9 @@ export const RADIUS_OPTIONS: number[] = Array.from({ length: 12 }, (_, i) => 50 
 /** Wysokość H [mm]. */
 export const HEIGHT_RANGE = { min: 100, max: 3600, step: 1 }
 
+/** Domyślna wysokość H [mm]. */
+export const DEFAULT_HEIGHT_MM = 720
+
 /** Powyżej tej wysokości front traktujemy jako ponadstandardowy. */
 export const HEIGHT_OVERSIZE_FROM_MM = 2800
 
@@ -76,10 +79,29 @@ export const ENDINGS: Ending[] = [
 /** Długość pojedynczego przedłużenia prostego [mm]. */
 export const EXTENSION_RANGE = { min: 10, max: 1000, step: 1, default: 100 }
 
+/**
+ * Kształt frezu w przekroju (patrząc z góry):
+ * - round: rowek półokrągły, square: rowek prostokątny, v: rowek trójkątny,
+ * - rib: wypukłe lamele (cała podziałka to zaokrąglone żebro).
+ */
+export type FlutingShape = 'round' | 'square' | 'v' | 'rib'
+
+export interface FlutingProfile {
+  shape: FlutingShape
+  /** Szerokość rowka [mm] (dla 'rib' ignorowana – żebro zajmuje całą podziałkę). */
+  widthMm: number
+  /** Rozstaw osi rowków [mm]. */
+  pitchMm: number
+  /** Głębokość frezu [mm]. */
+  depthMm: number
+}
+
 export interface Fluting {
   id: string
   name: string
   description: string
+  /** Profil do wizualizacji; brak = lico gładkie lub wzór bez podglądu. */
+  profile?: FlutingProfile
 }
 
 export const NO_FLUTING_ID = 'brak'
@@ -87,20 +109,20 @@ export const NO_FLUTING_ID = 'brak'
 /** 15 wzorów ryflowania + opcja „brak”. */
 export const FLUTINGS: Fluting[] = [
   { id: NO_FLUTING_ID, name: 'Bez ryflowania', description: 'Gładkie lico' },
-  { id: 'RF-01', name: 'RF-01', description: 'Półokrągłe 10 mm' },
-  { id: 'RF-02', name: 'RF-02', description: 'Półokrągłe 15 mm' },
-  { id: 'RF-03', name: 'RF-03', description: 'Półokrągłe 20 mm' },
-  { id: 'RF-04', name: 'RF-04', description: 'Półokrągłe 30 mm' },
-  { id: 'RF-05', name: 'RF-05', description: 'Prostokątne 10 mm' },
-  { id: 'RF-06', name: 'RF-06', description: 'Prostokątne 15 mm' },
-  { id: 'RF-07', name: 'RF-07', description: 'Prostokątne 20 mm' },
-  { id: 'RF-08', name: 'RF-08', description: 'Trójkątne (V) 10 mm' },
-  { id: 'RF-09', name: 'RF-09', description: 'Trójkątne (V) 15 mm' },
-  { id: 'RF-10', name: 'RF-10', description: 'Trójkątne (V) 20 mm' },
-  { id: 'RF-11', name: 'RF-11', description: 'Wypukłe (lamela) 15 mm' },
-  { id: 'RF-12', name: 'RF-12', description: 'Wypukłe (lamela) 25 mm' },
-  { id: 'RF-13', name: 'RF-13', description: 'Frezy rzadkie, rozstaw 50 mm' },
-  { id: 'RF-14', name: 'RF-14', description: 'Frezy mieszane' },
+  { id: 'RF-01', name: 'RF-01', description: 'Półokrągłe 10 mm', profile: { shape: 'round', widthMm: 10, pitchMm: 20, depthMm: 5 } },
+  { id: 'RF-02', name: 'RF-02', description: 'Półokrągłe 15 mm', profile: { shape: 'round', widthMm: 15, pitchMm: 25, depthMm: 6 } },
+  { id: 'RF-03', name: 'RF-03', description: 'Półokrągłe 20 mm', profile: { shape: 'round', widthMm: 20, pitchMm: 30, depthMm: 7 } },
+  { id: 'RF-04', name: 'RF-04', description: 'Półokrągłe 30 mm', profile: { shape: 'round', widthMm: 30, pitchMm: 40, depthMm: 7 } },
+  { id: 'RF-05', name: 'RF-05', description: 'Prostokątne 10 mm', profile: { shape: 'square', widthMm: 10, pitchMm: 20, depthMm: 4 } },
+  { id: 'RF-06', name: 'RF-06', description: 'Prostokątne 15 mm', profile: { shape: 'square', widthMm: 15, pitchMm: 25, depthMm: 4 } },
+  { id: 'RF-07', name: 'RF-07', description: 'Prostokątne 20 mm', profile: { shape: 'square', widthMm: 20, pitchMm: 30, depthMm: 5 } },
+  { id: 'RF-08', name: 'RF-08', description: 'Trójkątne (V) 10 mm', profile: { shape: 'v', widthMm: 10, pitchMm: 15, depthMm: 4 } },
+  { id: 'RF-09', name: 'RF-09', description: 'Trójkątne (V) 15 mm', profile: { shape: 'v', widthMm: 15, pitchMm: 20, depthMm: 5 } },
+  { id: 'RF-10', name: 'RF-10', description: 'Trójkątne (V) 20 mm', profile: { shape: 'v', widthMm: 20, pitchMm: 25, depthMm: 6 } },
+  { id: 'RF-11', name: 'RF-11', description: 'Wypukłe (lamela) 15 mm', profile: { shape: 'rib', widthMm: 15, pitchMm: 15, depthMm: 3 } },
+  { id: 'RF-12', name: 'RF-12', description: 'Wypukłe (lamela) 25 mm', profile: { shape: 'rib', widthMm: 25, pitchMm: 25, depthMm: 4 } },
+  { id: 'RF-13', name: 'RF-13', description: 'Frezy rzadkie, rozstaw 50 mm', profile: { shape: 'round', widthMm: 8, pitchMm: 50, depthMm: 4 } },
+  { id: 'RF-14', name: 'RF-14', description: 'Frezy mieszane', profile: { shape: 'square', widthMm: 6, pitchMm: 18, depthMm: 3 } },
   { id: 'RF-15', name: 'RF-15', description: 'Wzór indywidualny' },
 ]
 

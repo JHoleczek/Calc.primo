@@ -11,10 +11,10 @@ const deg = (a: number) => (a * Math.PI) / 180
 const onCircle = (r: number, a: number): Point => [r * Math.cos(deg(a)), r * Math.sin(deg(a))]
 
 /**
- * Tymczasowy, poglądowy rzut z góry (2D) w miejscu przyszłej wizualizacji.
- * Łuk jest skierowany licem w dół ekranu; przedłużenia są styczne do łuku.
+ * Poglądowy rzut z góry (2D). Łuk jest skierowany w dół ekranu;
+ * przedłużenia są styczne do łuku.
  */
-export function VisualizationPlaceholder({ config }: Props) {
+export function PlanView({ config }: Props) {
   const frontType = FRONT_TYPES.find((t) => t.id === config.frontTypeId) ?? FRONT_TYPES[0]
   const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
@@ -64,45 +64,27 @@ export function VisualizationPlaceholder({ config }: Props) {
   const radiusEnd = onCircle(r, 90)
 
   return (
-    <div className="viz">
-      <div className="viz__badge">Wizualizacja 3D – w przygotowaniu</div>
-      <svg
-        className="viz__svg"
-        viewBox={`${minX} ${minY} ${w} ${h}`}
-        role="img"
-        aria-label={`Rzut z góry: ${frontType.name}, R ${r} mm, zakończenie ${ending.name}`}
-      >
-        <line
-          x1={0}
-          y1={0}
-          x2={radiusEnd[0]}
-          y2={radiusEnd[1]}
-          className="viz__radius"
-          strokeWidth={unit * 0.4}
-          strokeDasharray={`${unit * 1.5} ${unit}`}
-        />
-        <circle cx={0} cy={0} r={unit * 0.9} className="viz__center" />
-        <text x={unit * 1.5} y={radiusEnd[1] / 2} className="viz__label" fontSize={unit * 3.4}>
-          R {r}
-        </text>
-        <path d={band.d} className="viz__band" strokeWidth={Math.max(g, unit * 1.2)} />
-        <path d={face.d} className="viz__face" strokeWidth={unit * 0.5} />
-      </svg>
-      <dl className="viz__meta">
-        <div>
-          <dt>Typ</dt>
-          <dd>{frontType.name}</dd>
-        </div>
-        <div>
-          <dt>H</dt>
-          <dd>{Number.isFinite(config.heightMm) ? `${config.heightMm} mm` : '—'}</dd>
-        </div>
-        <div>
-          <dt>Lico</dt>
-          <dd>{frontType.direction === 'convex' ? 'zewnętrzne' : 'wewnętrzne'}</dd>
-        </div>
-      </dl>
-      <p className="viz__caption">Rzut z góry, schemat poglądowy (nie w skali produkcyjnej).</p>
-    </div>
+    <svg
+      className="viz__svg"
+      viewBox={`${minX} ${minY} ${w} ${h}`}
+      role="img"
+      aria-label={`Rzut z góry: ${frontType.name}, R ${r} mm, zakończenie ${ending.name}`}
+    >
+      <line
+        x1={0}
+        y1={0}
+        x2={radiusEnd[0]}
+        y2={radiusEnd[1]}
+        className="viz__radius"
+        strokeWidth={unit * 0.4}
+        strokeDasharray={`${unit * 1.5} ${unit}`}
+      />
+      <circle cx={0} cy={0} r={unit * 0.9} className="viz__center" />
+      <text x={unit * 1.5} y={radiusEnd[1] / 2} className="viz__label" fontSize={unit * 3.4}>
+        R {r}
+      </text>
+      <path d={band.d} className="viz__band" strokeWidth={Math.max(g, unit * 1.2)} />
+      <path d={face.d} className="viz__face" strokeWidth={unit * 0.5} />
+    </svg>
   )
 }

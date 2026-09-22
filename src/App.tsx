@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
 import { ResultPanel } from './components/ResultPanel'
-import { VisualizationPlaceholder } from './components/VisualizationPlaceholder'
+import { VisualizationPanel } from './components/VisualizationPanel'
 import {
   ENDINGS,
   EXTENSION_RANGE,
@@ -101,7 +101,7 @@ export default function App() {
   return (
     <div className="layout">
       <aside className="layout__viz" aria-label="Wizualizacja">
-        <VisualizationPlaceholder config={config} />
+        <VisualizationPanel config={config} />
       </aside>
 
       <main className="layout__config">
