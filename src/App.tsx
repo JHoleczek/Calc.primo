@@ -21,7 +21,7 @@ function Step({ n, title, hint, children }: { n: number; title: string; hint?: R
   return (
     <fieldset className="step">
       <legend className="step__legend">
-        <span className="step__num">{n}</span>
+        <span className="step__num">{String(n).padStart(2, '0')}</span>
         {title}
       </legend>
       {hint && <p className="step__hint">{hint}</p>}
@@ -290,7 +290,7 @@ export default function App() {
 
       <main className="layout__config">
         <header className="page-head">
-          <p className="page-head__eyebrow">Fronty Primo · katalog 2026</p>
+          <p className="page-head__eyebrow">Fronty Primo — katalog 2026</p>
           <h1>Kalkulator frontów giętych</h1>
           <p className="page-head__specs">
             Grubość {THICKNESS_MM} mm · wysokość do {HEIGHT_RANGE.max} mm
