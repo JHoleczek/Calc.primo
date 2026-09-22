@@ -49,8 +49,9 @@ export function VisualizationPanel({ config }: Props) {
       convex: frontType.direction === 'convex',
       thicknessMm: material.thicknessMm,
       heightMm,
-      extensionLeftMm: ending.extensions === 2 ? extMm : 0,
-      extensionRightMm: ending.extensions >= 1 ? extMm : 0,
+      // N1: przedłużenie po stronie, z której front „wychodzi” (lewej), N2: po obu.
+      extensionLeftMm: ending.extensions >= 1 ? extMm : 0,
+      extensionRightMm: ending.extensions === 2 ? extMm : 0,
       fluting: fluting.profile,
     }),
     [config.radiusMm, frontType, material.thicknessMm, heightMm, ending.extensions, extMm, fluting.profile],

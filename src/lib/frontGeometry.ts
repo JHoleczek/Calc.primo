@@ -21,7 +21,8 @@ export interface FrontGeometryInput {
 export interface FrontGeometryData {
   positions: Float32Array
   normals: Float32Array
-  uvs: Float32Array
+  /** Obrys krawędzi frontu jako pary punktów (odcinki), do linii obramowania. */
+  edges: Float32Array
   min: [number, number, number]
   max: [number, number, number]
 }
@@ -98,7 +99,6 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
 
   const face: Vec2[] = []
   const back: Vec2[] = []
-  const sValues: number[] = []
   for (let i = 0; i < count; i++) {
     const s = (total * i) / (count - 1)
     const { p, n } = station(s)
@@ -107,12 +107,10 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
     const backOffset = convex ? 0 : g
     face.push([p[0] + n[0] * faceOffset, p[1] + n[1] * faceOffset])
     back.push([p[0] + n[0] * backOffset, p[1] + n[1] * backOffset])
-    sValues.push(s)
   }
 
   const positions: number[] = []
   const normals: number[] = []
-  const uvs: number[] = []
 
   type V3 = [number, number, number]
   const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -120,13 +118,12 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
   const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
   /** Czworokąt a-b-c-d; nawinięcie dobierane tak, by przód trójkątów patrzył wzdłuż normalnych. */
-  const quad = (v: V3[], n: V3[], uv: Vec2[]) => {
+  const quad = (v: V3[], n: V3[]) => {
     const orient = dot(cross(sub(v[1], v[0]), sub(v[2], v[0])), n[0])
     const order = orient >= 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]
     for (const k of order) {
       positions.push(v[k][0] * MM, v[k][1] * MM, v[k][2] * MM)
       normals.push(...n[k])
-      uvs.push(uv[k][0] * MM, uv[k][1] * MM)
     }
   }
 
@@ -152,32 +149,16 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
   const at = (pt: Vec2, y: number): V3 => [pt[0], y, pt[1]]
 
   for (let i = 0; i < count - 1; i++) {
-    const [s0, s1] = [sValues[i], sValues[i + 1]]
     const [f0, f1, b0, b1] = [face[i], face[i + 1], back[i], back[i + 1]]
-    // Lico i tył: u = współrzędna wzdłuż frontu, v = wysokość (usłojenie pionowo).
-    quad([at(f0, 0), at(f1, 0), at(f1, H), at(f0, H)], [faceN[i], faceN[i + 1], faceN[i + 1], faceN[i]], [
-      [s0, 0],
-      [s1, 0],
-      [s1, H],
-      [s0, H],
-    ])
-    quad([at(b0, 0), at(b1, 0), at(b1, H), at(b0, H)], [backN[i], backN[i + 1], backN[i + 1], backN[i]], [
-      [s0, 0],
-      [s1, 0],
-      [s1, H],
-      [s0, H],
-    ])
+    // Lico i tył.
+    quad([at(f0, 0), at(f1, 0), at(f1, H), at(f0, H)], [faceN[i], faceN[i + 1], faceN[i + 1], faceN[i]])
+    quad([at(b0, 0), at(b1, 0), at(b1, H), at(b0, H)], [backN[i], backN[i + 1], backN[i + 1], backN[i]])
     // Krawędź górna i dolna.
     for (const [y, n] of [
       [H, up],
       [0, down],
     ] as const) {
-      quad([at(f0, y), at(f1, y), at(b1, y), at(b0, y)], [n, n, n, n], [
-        [s0, 0],
-        [s1, 0],
-        [s1, g],
-        [s0, g],
-      ])
+      quad([at(f0, y), at(f1, y), at(b1, y), at(b0, y)], [n, n, n, n])
     }
   }
 
@@ -189,12 +170,22 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
     const t: V3 = [face[i][0] - face[j][0], 0, face[i][1] - face[j][1]]
     const len = Math.hypot(t[0], t[2]) || 1
     const n: V3 = [t[0] / len, 0, t[2] / len]
-    quad([at(face[i], 0), at(back[i], 0), at(back[i], H), at(face[i], H)], [n, n, n, n], [
-      [0, 0],
-      [g, 0],
-      [g, H],
-      [0, H],
-    ])
+    quad([at(face[i], 0), at(back[i], 0), at(back[i], H), at(face[i], H)], [n, n, n, n])
+  }
+
+  // Obramowanie: krzywe lica i tyłu na górze i dole oraz pionowe krawędzie na końcach.
+  const edges: number[] = []
+  const segment = (a: V3, b: V3) => edges.push(a[0] * MM, a[1] * MM, a[2] * MM, b[0] * MM, b[1] * MM, b[2] * MM)
+  for (const y of [0, H]) {
+    for (const curve of [face, back]) {
+      for (let i = 0; i < count - 1; i++) segment(at(curve[i], y), at(curve[i + 1], y))
+    }
+    segment(at(face[0], y), at(back[0], y))
+    segment(at(face[count - 1], y), at(back[count - 1], y))
+  }
+  for (const i of [0, count - 1]) {
+    segment(at(face[i], 0), at(face[i], H))
+    segment(at(back[i], 0), at(back[i], H))
   }
 
   const min: [number, number, number] = [Infinity, Infinity, Infinity]
@@ -209,7 +200,7 @@ export function buildFrontGeometry(input: FrontGeometryInput): FrontGeometryData
   return {
     positions: new Float32Array(positions),
     normals: new Float32Array(normals),
-    uvs: new Float32Array(uvs),
+    edges: new Float32Array(edges),
     min,
     max,
   }

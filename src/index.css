@@ -1,5 +1,8 @@
 :root {
   --bg: #f6f3ee;
+  --grid: #d9d0c3;
+  --grid-major: #c6b9a8;
+  --dim: #5d5348;
   --surface: #ffffff;
   --surface-2: #efeae2;
   --text: #1f1b16;
@@ -28,6 +31,9 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --bg: #171411;
+    --grid: #2c2620;
+    --grid-major: #3d352d;
+    --dim: #bcb1a4;
     --surface: #211d19;
     --surface-2: #2b2621;
     --text: #f1ebe3;
@@ -49,6 +55,9 @@
 
 :root[data-theme='dark'] {
   --bg: #171411;
+  --grid: #2c2620;
+  --grid-major: #3d352d;
+  --dim: #bcb1a4;
   --surface: #211d19;
   --surface-2: #2b2621;
   --text: #f1ebe3;
@@ -207,28 +216,60 @@ h3 {
   width: 100%;
 }
 
-.viz__band {
+.plan__grid {
   fill: none;
-  stroke: var(--band);
+  stroke: var(--grid);
+}
+
+.plan__grid--major {
+  stroke: var(--grid-major);
+}
+
+.plan__band {
+  fill: var(--band);
+  stroke: var(--dim);
   stroke-linejoin: round;
 }
 
-.viz__face {
+.plan__face {
   fill: none;
   stroke: var(--accent);
+  stroke-linecap: round;
 }
 
-.viz__radius {
+.plan__seam {
+  stroke: var(--dim);
+  stroke-dasharray: 2 2;
+}
+
+.plan__radius,
+.plan__center {
+  fill: none;
   stroke: var(--muted);
 }
 
-.viz__center {
-  fill: var(--muted);
+.plan__label,
+.plan__dim text {
+  fill: var(--dim);
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-variant-numeric: tabular-nums;
 }
 
-.viz__label {
+.plan__face-label {
+  fill: var(--accent);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.plan__dim line {
+  stroke: var(--dim);
+}
+
+.plan__caption {
   fill: var(--muted);
-  font-weight: 600;
 }
 
 .viz__meta {

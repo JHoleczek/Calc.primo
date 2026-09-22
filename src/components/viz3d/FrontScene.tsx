@@ -8,7 +8,6 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import type { MaterialId } from '../../config/catalog'
 import type { FrontGeometryInput } from '../../lib/frontGeometry'
 import { buildFrontGeometry } from '../../lib/frontGeometry'
-import { createLamellaTexture, createVeneerTexture } from './woodTextures'
 
 export interface FrontSceneProps {
   geometry: FrontGeometryInput
@@ -18,6 +17,12 @@ export interface FrontSceneProps {
 }
 
 const FOV = 32
+
+const PAINT_FALLBACK = '#e8e6e1'
+const WOOD_COLORS: Record<Exclude<MaterialId, 'lakierowane'>, string> = {
+  lamelowane: '#c49a68',
+  fornirowane: '#cfa878',
+}
 
 /** Oświetlenie otoczenia z wbudowanego „pokoju” three.js (bez plików HDR). */
 function RoomLighting() {
@@ -43,32 +48,47 @@ function FrontMesh({ geometry, materialId, colorHex }: FrontSceneProps) {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(data.positions, 3))
     g.setAttribute('normal', new THREE.BufferAttribute(data.normals, 3))
-    g.setAttribute('uv', new THREE.BufferAttribute(data.uvs, 2))
     return g
   }, [data])
   useEffect(() => () => bufferGeometry.dispose(), [bufferGeometry])
 
-  const texture = useMemo(() => {
-    if (materialId === 'lamelowane') return createLamellaTexture()
-    if (materialId === 'fornirowane') return createVeneerTexture()
-    return null
-  }, [materialId])
-  useEffect(() => () => texture?.dispose(), [texture])
+  const edgeGeometry = useMemo(() => {
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(data.edges, 3))
+    return g
+  }, [data])
+  useEffect(() => () => edgeGeometry.dispose(), [edgeGeometry])
 
-  const material = useMemo(() => {
-    if (materialId === 'lakierowane') {
-      return new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(colorHex ?? '#e8e6e1'),
-        roughness: 0.42,
-        clearcoat: 0.35,
-        clearcoatRoughness: 0.3,
-      })
-    }
-    // Drewno; wpisany kolor traktujemy jak bejcę (przyciemnienie/zabarwienie).
-    const tint = colorHex ? new THREE.Color('#ffffff').lerp(new THREE.Color(colorHex), 0.55) : new THREE.Color('#ffffff')
-    return new THREE.MeshStandardMaterial({ map: texture, color: tint, roughness: 0.62 })
-  }, [materialId, colorHex, texture])
+  // Jednolity kolor bez tekstur: lakier w kolorze farby, drewno w odcieniu
+  // bazowym (wpisany kolor traktujemy jak bejcę).
+  const color = useMemo(() => {
+    if (materialId === 'lakierowane') return new THREE.Color(colorHex ?? PAINT_FALLBACK)
+    const wood = new THREE.Color(WOOD_COLORS[materialId])
+    return colorHex ? wood.lerp(new THREE.Color(colorHex), 0.65) : wood
+  }, [materialId, colorHex])
+
+  const material = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color,
+        roughness: materialId === 'lakierowane' ? 0.45 : 0.7,
+        // Odsuwa powierzchnie, żeby linie obramowania nie migotały.
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1,
+      }),
+    [color, materialId],
+  )
   useEffect(() => () => material.dispose(), [material])
+
+  const edgeMaterial = useMemo(() => {
+    const hsl = { h: 0, s: 0, l: 0 }
+    color.getHSL(hsl)
+    // Na jasnym froncie ciemniejsza linia, na ciemnym – jaśniejsza.
+    const edge = color.clone().setHSL(hsl.h, hsl.s * 0.6, hsl.l > 0.3 ? hsl.l * 0.45 : Math.min(1, hsl.l + 0.35))
+    return new THREE.LineBasicMaterial({ color: edge })
+  }, [color])
+  useEffect(() => () => edgeMaterial.dispose(), [edgeMaterial])
 
   // Front ustawiony środkiem na osi Y, na podłodze. Wklęsły obracamy o 180°,
   // żeby lico (strona wewnętrzna łuku) było zwrócone do oglądającego.
@@ -77,7 +97,10 @@ function FrontMesh({ geometry, materialId, colorHex }: FrontSceneProps) {
 
   return (
     <group rotation={[0, geometry.convex ? 0 : Math.PI, 0]}>
-      <mesh geometry={bufferGeometry} material={material} position={[-cx, 0, -cz]} castShadow receiveShadow />
+      <group position={[-cx, 0, -cz]}>
+        <mesh geometry={bufferGeometry} material={material} castShadow receiveShadow />
+        <lineSegments geometry={edgeGeometry} material={edgeMaterial} />
+      </group>
     </group>
   )
 }
