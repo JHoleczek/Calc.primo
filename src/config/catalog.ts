@@ -11,13 +11,13 @@ export const HEIGHT_RANGE = { min: 100, max: 3200, step: 1 }
 /** Domyślna wysokość H [mm]. */
 export const DEFAULT_HEIGHT_MM = 720
 
-export type FrontTypeId = 'narozne' | 'przedluzane' | 'obustronne' | 'luk' | 'bryla'
+export type FrontTypeId = 'narozne' | 'przedluzane' | 'obustronne' | 'luk'
 
 export interface FrontType {
   id: FrontTypeId
   name: string
   description: string
-  /** Dostępne promienie R [mm] (po licu zewnętrznym); pusta lista = brak wyboru. */
+  /** Dostępne promienie R [mm] (po licu zewnętrznym). */
   radii: number[]
 }
 
@@ -47,13 +47,7 @@ export const FRONT_TYPES: FrontType[] = [
     id: 'luk',
     name: 'W łuk',
     description: 'Półokrąg 180°',
-    radii: range(200, 400, 50),
-  },
-  {
-    id: 'bryla',
-    name: 'Bryła',
-    description: 'Rzeźbiona bryła, wycena indywidualna',
-    radii: [],
+    radii: range(200, 350, 50),
   },
 ]
 
@@ -128,20 +122,22 @@ export const FLUTINGS: Fluting[] = [
   { id: 'F13', name: 'Klin 10', profile: { shape: 'v', widthMm: 8, pitchMm: 18, depthMm: 5 } },
 ]
 
-export type MaterialId = 'lamelowane' | 'fornirowane' | 'lakierowane'
+export type MaterialId = 'laminat' | 'fornirowane' | 'lakierowane'
 
 export interface Material {
   id: MaterialId
   name: string
+  /** Tylko lico gładkie (bez ryflowania). */
+  smoothOnly: boolean
   /** Czy kolor (farba) jest wymagany. */
   colorRequired: boolean
   colorPlaceholder: string
 }
 
 export const MATERIALS: Material[] = [
-  { id: 'lamelowane', name: 'Lamelowane', colorRequired: false, colorPlaceholder: 'np. olej naturalny, bejca orzech' },
-  { id: 'fornirowane', name: 'Fornirowane', colorRequired: false, colorPlaceholder: 'np. dąb naturalny, bejca' },
-  { id: 'lakierowane', name: 'Lakierowane', colorRequired: true, colorPlaceholder: 'np. RAL 9010, NCS S 0502-Y' },
+  { id: 'laminat', name: 'Laminat', smoothOnly: true, colorRequired: false, colorPlaceholder: 'np. dekor / kolor laminatu' },
+  { id: 'fornirowane', name: 'Fornirowane', smoothOnly: false, colorRequired: false, colorPlaceholder: 'np. dąb naturalny, bejca' },
+  { id: 'lakierowane', name: 'Lakierowane', smoothOnly: false, colorRequired: true, colorPlaceholder: 'np. RAL 9010, NCS S 0502-Y' },
 ]
 
 /** Kontakt do wyceny (z katalogu). */

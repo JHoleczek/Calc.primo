@@ -19,8 +19,9 @@ export interface FrontSceneProps {
 const FOV = 32
 
 const PAINT_FALLBACK = '#e8e6e1'
+/** Kolor bazowy materiałów bez farby (laminat – neutralny dekor, fornir – drewno). */
 const WOOD_COLORS: Record<Exclude<MaterialId, 'lakierowane'>, string> = {
-  lamelowane: '#c49a68',
+  laminat: '#d9d5cd',
   fornirowane: '#cfa878',
 }
 

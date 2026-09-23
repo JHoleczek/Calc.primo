@@ -12,9 +12,13 @@ import {
   FRONT_TYPES,
   HEIGHT_RANGE,
   MATERIALS,
+  SMOOTH_FLUTING_ID,
   THICKNESS_MM,
   type FrontTypeId,
+  type MaterialId,
 } from './config/catalog'
+import { QuoteCta } from './components/QuoteCta'
+import { catalogImage, extendedImage, TYPE_IMAGES } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, type Configuration } from './lib/calculate'
 
 function Step({ n, title, hint, children }: { n: number; title: string; hint?: ReactNode; children: ReactNode }) {
@@ -102,11 +106,17 @@ export default function App() {
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
   const t = config.typeId
-  const shaped = t !== 'bryla'
 
   // Zmiana typu: promień dociągamy do listy katalogowej danego typu.
   const setType = (typeId: FrontTypeId) =>
     setConfig((c) => ({ ...c, typeId, radiusMm: allowedRadius(typeId, c.radiusMm) }))
+  // Laminat tylko gładki: przy wyborze laminatu ryflowanie wraca do F00.
+  const setMaterial = (materialId: MaterialId) =>
+    setConfig((c) => ({
+      ...c,
+      materialId,
+      flutingId: MATERIALS.find((m) => m.id === materialId)?.smoothOnly ? SMOOTH_FLUTING_ID : c.flutingId,
+    }))
 
   const radii = frontType.radii
   const radiusHint =
@@ -124,13 +134,17 @@ export default function App() {
           variant="cards"
           value={t}
           onChange={setType}
-          choices={FRONT_TYPES.map((ft) => ({ value: ft.id, label: ft.name, hint: ft.description }))}
+          choices={FRONT_TYPES.map((ft) => ({
+            value: ft.id,
+            label: ft.name,
+            hint: ft.description,
+            image: catalogImage(TYPE_IMAGES[ft.id]),
+          }))}
         />
       ),
     },
   ]
-  if (shaped) {
-    steps.push(
+  steps.push(
       {
         title: 'Promień R',
         hint: radiusHint,
@@ -157,8 +171,7 @@ export default function App() {
           />
         ),
       },
-    )
-  }
+  )
   if (t === 'narozne') {
     steps.push({
       title: 'Zakończenie',
@@ -170,7 +183,12 @@ export default function App() {
           columns={3}
           value={config.endingId}
           onChange={(v) => set('endingId', v)}
-          choices={ENDINGS.map((e) => ({ value: e.id, label: e.name, hint: e.description }))}
+          choices={ENDINGS.map((e) => ({
+            value: e.id,
+            label: e.name,
+            hint: e.description,
+            image: catalogImage(e.name),
+          }))}
         />
       ),
     })
@@ -180,6 +198,7 @@ export default function App() {
       title: 'Wymiar L',
       hint: `Całkowity wymiar od lica łuku do końca przedłużenia, max ${EXTENDED_LENGTH.max} mm.`,
       body: (
+        <div className="step__with-figure">
         <NumberField
           key={`L-${config.radiusMm}`}
           id="length"
@@ -190,6 +209,13 @@ export default function App() {
           step={1}
           onChange={(v) => set('lengthMm', v)}
         />
+          {extendedImage(config.radiusMm) && (
+            <figure className="step__figure">
+              <img src={extendedImage(config.radiusMm)} alt={`Rysunek katalogowy elementu przedłużanego R${config.radiusMm}, wymiar L max 700 mm`} />
+              <figcaption>Rysunek katalogowy · R{config.radiusMm}, L max {EXTENDED_LENGTH.max}</figcaption>
+            </figure>
+          )}
+        </div>
       ),
     })
   }
@@ -218,8 +244,13 @@ export default function App() {
               value={config.sideExtension ? 'z' : 'none'}
               onChange={(v) => set('sideExtension', v === 'z')}
               choices={[
-                { value: 'none', label: 'Bez przedłużenia', hint: `Głębokość ${config.radiusMm} mm` },
-                { value: 'z', label: 'Z przedłużeniem', hint: 'Wariant -Z' },
+                {
+                  value: 'none',
+                  label: 'Bez przedłużenia',
+                  hint: `Głębokość ${config.radiusMm} mm`,
+                  image: catalogImage('EG-D-R100-W600'),
+                },
+                { value: 'z', label: 'Z przedłużeniem', hint: 'Wariant -Z', image: catalogImage('EG-D-R100-W600-Z200') },
               ]}
             />
             {config.sideExtension && (
@@ -238,20 +269,24 @@ export default function App() {
       },
     )
   }
-  if (shaped) {
-    steps.push({
-      title: 'Ryflowanie',
-      body: (
-        <ChoiceGroup
-          name="fluting"
-          variant="cards"
-          value={config.flutingId}
-          onChange={(v) => set('flutingId', v)}
-          choices={FLUTINGS.map((f) => ({ value: f.id, label: f.id, hint: f.name }))}
-        />
-      ),
-    })
-  }
+  steps.push({
+    title: 'Ryflowanie',
+    hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (F00).` : undefined,
+    body: (
+      <ChoiceGroup
+        name="fluting"
+        variant="cards"
+        value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
+        onChange={(v) => set('flutingId', v)}
+        choices={FLUTINGS.filter((f) => !material.smoothOnly || f.id === SMOOTH_FLUTING_ID).map((f) => ({
+          value: f.id,
+          label: f.id,
+          hint: f.name,
+          image: catalogImage(f.id),
+        }))}
+      />
+    ),
+  })
   steps.push(
     {
       title: 'Materiał',
@@ -259,7 +294,7 @@ export default function App() {
         <ChoiceGroup
           name="material"
           value={config.materialId}
-          onChange={(v) => set('materialId', v)}
+          onChange={setMaterial}
           choices={MATERIALS.map((m) => ({ value: m.id, label: m.name }))}
         />
       ),
@@ -306,6 +341,7 @@ export default function App() {
         </form>
 
         <ResultPanel result={result} heightMm={config.heightMm} />
+        <QuoteCta config={config} result={result} />
       </main>
     </div>
   )

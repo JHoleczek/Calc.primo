@@ -10,6 +10,8 @@ export default defineConfig({
   build: {
     // Osobny chunk z three.js (~1 MB) jest ładowany leniwie.
     chunkSizeWarningLimit: 1200,
+    // W pojedynczym pliku HTML obrazki katalogowe muszą być wstawione inline.
+    assetsInlineLimit: singleFile ? 10_000_000 : 4096,
     rollupOptions: singleFile ? { output: { inlineDynamicImports: true } } : undefined,
   },
 })

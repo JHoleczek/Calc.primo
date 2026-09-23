@@ -81,13 +81,6 @@ export function PlanView({ config }: Props) {
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const path = frontPath(config)
-  if (!path) {
-    return (
-      <p className="plan__empty">
-        {frontType.name}: kształt i wymiary ustalane indywidualnie – brak rysunku katalogowego.
-      </p>
-    )
-  }
 
   const g = THICKNESS_MM
   const samples = samplePath(path, 4, 1.5)

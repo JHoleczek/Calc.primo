@@ -40,8 +40,8 @@ export interface ShapeParams {
   zMm: number
 }
 
-/** Kształt frontu dla danej konfiguracji; null dla bryły (wycena indywidualna). */
-export function frontPath(p: ShapeParams): FrontPath | null {
+/** Kształt frontu dla danej konfiguracji. */
+export function frontPath(p: ShapeParams): FrontPath {
   const R = p.radiusMm
   switch (p.typeId) {
     case 'narozne': {
@@ -85,8 +85,6 @@ export function frontPath(p: ShapeParams): FrontPath | null {
     }
     case 'luk':
       return { startHeadingDeg: 0, segments: [{ kind: 'arc', radius: R, angleDeg: 180 }] }
-    case 'bryla':
-      return null
   }
 }
 

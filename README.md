@@ -16,8 +16,11 @@ npm run build    # build produkcyjny do dist/
 ## Struktura
 
 - `src/config/catalog.ts` – dane z „Fronty Primo — Katalog frontów giętych 2026”:
-  kategorie (narożne, przedłużane, obustronne, w łuk, bryła), promienie, zakończenia N0/N1/N2,
-  wymiary L / W / Z, ryflowanie F00–F13 z profilami, grubość 18 mm, wysokość do 3200 mm.
+  kategorie (narożne, przedłużane, obustronne, w łuk R200–350), promienie, zakończenia N0/N1/N2,
+  wymiary L / W / Z, ryflowanie F00–F13 z profilami, materiały (laminat – tylko gładki,
+  fornir, lakier), grubość 18 mm, wysokość do 3200 mm.
+- `src/assets/catalog/` + `src/config/images.ts` – rysunki techniczne z katalogu (podglądy typów,
+  zakończeń, przedłużeń, ryflowań) i zdjęcie do sekcji CTA.
 - `src/lib/frontPath.ts` – kształt frontu w rzucie jako ciąg łuków i odcinków prostych
   (po licu zewnętrznym). Z tego jednego opisu korzystają obliczenia, rzut 2D i model 3D.
 - `src/lib/calculate.ts` – kod katalogowy (np. `EG-N2-R300`), rozwinięcie, mb, m², dodatki, walidacja.
@@ -37,4 +40,3 @@ Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
   - obustronne: 2 × łuk 90° R100 + (W − 200) + opcjonalnie 2 × (Z − 100),
   - w łuk: półokrąg 180°.
 - mb = rozwinięcie w metrach; m² = rozwinięcie × H.
-- Bryła: wycena indywidualna, bez obliczeń.

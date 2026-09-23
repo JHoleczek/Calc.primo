@@ -1,4 +1,3 @@
-import { CONTACT } from '../config/catalog'
 import type { Result } from '../lib/calculate'
 
 interface Props {
@@ -19,15 +18,13 @@ export function ResultPanel({ result, heightMm }: Props) {
     <section className="result" aria-labelledby="result-title" aria-live="polite">
       <div className="result__head">
         <h2 id="result-title">Wynik</h2>
-        {!result.individual && <span className="result__basis">po licu zewnętrznym</span>}
+        <span className="result__basis">po licu zewnętrznym</span>
       </div>
 
-      {result.code && (
-        <p className="result__code">
-          <span className="result__code-main">{result.code}</span>
-          <span className="result__code-fluting">{result.flutingCode}</span>
-        </p>
-      )}
+      <p className="result__code">
+        <span className="result__code-main">{result.code}</span>
+        <span className="result__code-fluting">{result.flutingCode}</span>
+      </p>
 
       {invalid && (
         <ul className="result__errors">
@@ -37,8 +34,7 @@ export function ResultPanel({ result, heightMm }: Props) {
         </ul>
       )}
 
-      {!result.individual && (
-        <>
+      <>
           <div className="result__totals">
             <div className="total">
               <span className="total__value">{show(result.areaM2, 3)}</span>
@@ -70,8 +66,7 @@ export function ResultPanel({ result, heightMm }: Props) {
               <dd>{show(heightMm, 0)} mm</dd>
             </div>
           </dl>
-        </>
-      )}
+      </>
 
       <h3 className="result__subtitle">Dodatki i uwagi</h3>
       {result.notes.length > 0 ? (
@@ -86,13 +81,6 @@ export function ResultPanel({ result, heightMm }: Props) {
         <p className="notes__empty">Brak dodatków.</p>
       )}
 
-      <div className="result__contact">
-        <p>Zapytaj o wycenę – podaj kod z katalogu i metry bieżące:</p>
-        <p className="result__contact-links">
-          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
-          <a href={`tel:+48${CONTACT.phone.replace(/\D/g, '')}`}>{CONTACT.phone}</a>
-        </p>
-      </div>
     </section>
   )
 }

@@ -4,6 +4,8 @@ export interface Choice<T extends string | number> {
   value: T
   label: ReactNode
   hint?: ReactNode
+  /** Podgląd (rysunek katalogowy) nad etykietą – dekoracyjny, opis jest w etykiecie. */
+  image?: string
 }
 
 interface ChoiceGroupProps<T extends string | number> {
@@ -42,6 +44,7 @@ export function ChoiceGroup<T extends string | number>({
               checked={checked}
               onChange={() => onChange(choice.value)}
             />
+            {choice.image && <img className="choice__img" src={choice.image} alt="" loading="lazy" />}
             <span className="choice__label">{choice.label}</span>
             {choice.hint && <span className="choice__hint">{choice.hint}</span>}
           </label>

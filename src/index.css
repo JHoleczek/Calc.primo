@@ -355,14 +355,6 @@ a:hover {
   font-family: 'Helvetica Neue', Arial, sans-serif;
 }
 
-.plan__empty {
-  margin: auto;
-  padding: 24px;
-  max-width: 36ch;
-  text-align: center;
-  color: var(--draw-text);
-}
-
 .plan__dashed {
   fill: none;
   stroke: var(--draw-dim);
@@ -806,35 +798,6 @@ a:hover {
   color: var(--muted);
 }
 
-.result__contact {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.result__contact p {
-  margin: 0;
-  color: var(--muted);
-}
-
-.result__contact-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 28px;
-}
-
-.result__contact-links a {
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 500;
-  user-select: all;
-}
-
-.result__contact-links a:hover {
-  color: var(--gold);
-}
-
 @media (max-width: 480px) {
   .result {
     padding: 20px 16px;
@@ -854,4 +817,195 @@ a:hover {
 /* Wynik w pasku pod wizualizacją – zawsze widoczny, wyróżniony wagą. */
 .viz__meta .viz__meta-result dd {
   font-weight: 700;
+}
+
+/* ---------- Podglądy z katalogu (rysunki techniczne) ---------- */
+
+/* Rysunki mają jasnoszare tło i ciemne linie: w jasnym motywie wtapiamy tło (multiply),
+   w ciemnym odwracamy je na jasne linie na ciemnym tle – jak rzut techniczny. */
+.choice__img,
+.step__figure img {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .choice__img,
+  :root:not([data-theme='light']) .step__figure img {
+    filter: invert(1) hue-rotate(180deg) contrast(1.1);
+    mix-blend-mode: screen;
+  }
+}
+
+:root[data-theme='dark'] .choice__img,
+:root[data-theme='dark'] .step__figure img {
+  filter: invert(1) hue-rotate(180deg) contrast(1.1);
+  mix-blend-mode: screen;
+}
+
+.choice__img {
+  height: 96px;
+  margin-bottom: 10px;
+}
+
+.choice-group[role='radiogroup'] .choice:has(.choice__img) {
+  justify-content: flex-start;
+}
+
+/* Ryflowania: przekrój profilu jest szeroki i niski. */
+.choice-group:has(input[name='fluting']) .choice__img {
+  height: 56px;
+}
+
+.step__with-figure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 24px;
+  align-items: start;
+}
+
+.step__figure {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step__figure img {
+  height: 200px;
+}
+
+.step__figure figcaption {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 520px) {
+  .step__with-figure {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- CTA: zapytaj o wycenę (układ jak w katalogu) ---------- */
+
+.cta {
+  container-type: inline-size;
+  border: 1px solid var(--control);
+  background: var(--panel);
+}
+
+.cta__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+}
+
+/* W wąskiej kolumnie zdjęcie jest banerem nad treścią. */
+@container (max-width: 680px) {
+  .cta__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cta__image {
+    min-height: 220px;
+  }
+}
+
+.cta__image {
+  position: relative;
+  min-height: 280px;
+}
+
+.cta__image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cta__content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  padding: 36px 32px;
+}
+
+.cta__title {
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+}
+
+.cta__desc {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 40ch;
+}
+
+.cta__summary {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.cta__summary span {
+  padding: 4px 10px;
+  border: 1px solid var(--control);
+}
+
+.cta__contact {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cta__contact-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.cta__contact-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.cta__button {
+  display: inline-block;
+  padding: 12px 20px;
+  border: 1px solid var(--text);
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: border-color 0.15s, color 0.15s;
+  user-select: all;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.cta__button:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+@media (max-width: 640px) {
+  .cta__content {
+    padding: 24px 20px;
+  }
+
+  .cta__button {
+    font-size: 14px;
+  }
 }

@@ -15,7 +15,7 @@ const shape: ShapeParams = {
 
 describe('frontPath', () => {
   it('narożnik N1 ma przedłużenie na końcu łuku (w dół)', () => {
-    const w = walkPath(frontPath({ ...shape, endingId: 'n1' })!)
+    const w = walkPath(frontPath({ ...shape, endingId: 'n1' }))
     expect(w.map((s) => s.segment.kind)).toEqual(['arc', 'line'])
     expect(w[1].headingStart).toBe(90)
     expect(w[1].end[0]).toBeCloseTo(300)
@@ -23,18 +23,19 @@ describe('frontPath', () => {
   })
 
   it('obustronne W600 ma gabaryt 600 × R', () => {
-    const w = walkPath(frontPath({ ...shape, typeId: 'obustronne', radiusMm: 100 })!)
+    const w = walkPath(frontPath({ ...shape, typeId: 'obustronne', radiusMm: 100 }))
     const xs = w.flatMap((s) => [s.start[0], s.end[0]])
     expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(600)
   })
 
-  it('bryła nie ma kształtu', () => {
-    expect(frontPath({ ...shape, typeId: 'bryla' })).toBeNull()
+  it('w łuk to półokrąg o gabarycie 2R', () => {
+    const w = walkPath(frontPath({ ...shape, typeId: 'luk', radiusMm: 350 }))
+    expect(w[0].end[1] - w[0].start[1]).toBeCloseTo(700)
   })
 })
 
 describe('buildFrontGeometry', () => {
-  const path = frontPath(shape)!
+  const path = frontPath(shape)
 
   it('buduje łuk 90° o promieniu zewnętrznym R, licem do oglądającego', () => {
     const g = buildFrontGeometry({ path, thicknessMm: 18, heightMm: 720 })

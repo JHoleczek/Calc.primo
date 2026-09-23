@@ -41,15 +41,15 @@ describe('calculate', () => {
     expect(r.developedMm).toBeCloseTo(Math.PI * 300)
   })
 
-  it('bryła: wycena indywidualna bez kodu i obliczeń', () => {
-    const r = calculate({ ...base, typeId: 'bryla' })
-    expect(r.individual).toBe(true)
-    expect(r.code).toBeNull()
-    expect(r.developedMm).toBe(0)
+  it('laminat tylko gładki: ryflowanie wraca do F00', () => {
+    const r = calculate({ ...base, materialId: 'laminat', flutingId: 'F03' })
+    expect(r.flutingCode).toBe('F00')
+    expect(calculate({ ...base, materialId: 'fornirowane', flutingId: 'F03' }).flutingCode).toBe('F03')
   })
 
   it('dociąga promień do listy katalogowej typu', () => {
     expect(allowedRadius('luk', 50)).toBe(200)
+    expect(allowedRadius('luk', 400)).toBe(350)
     expect(allowedRadius('obustronne', 450)).toBe(100)
     expect(allowedRadius('narozne', 350)).toBe(350)
   })

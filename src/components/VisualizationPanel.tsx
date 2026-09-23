@@ -32,7 +32,8 @@ export function VisualizationPanel({ config, result }: Props) {
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
-  const fluting = FLUTINGS.find((f) => f.id === config.flutingId) ?? FLUTINGS[0]
+  // Ryflowanie po regułach materiału (laminat = tylko gładki) – tak jak w wyniku.
+  const fluting = FLUTINGS.find((f) => f.id === result.flutingCode) ?? FLUTINGS[0]
   const paint = useMemo(() => resolvePaintColor(config.color), [config.color])
 
   // Niepoprawną wysokość z pola liczbowego zastępujemy najbliższą sensowną, żeby model nie znikał.
@@ -41,7 +42,7 @@ export function VisualizationPanel({ config, result }: Props) {
     : DEFAULT_HEIGHT_MM
   const { typeId, radiusMm, endingId, lengthMm, widthMm, sideExtension, zMm } = config
 
-  const geometry = useMemo<FrontGeometryInput | null>(() => {
+  const geometry = useMemo<FrontGeometryInput>(() => {
     const path = frontPath({
       typeId,
       radiusMm,
@@ -51,7 +52,7 @@ export function VisualizationPanel({ config, result }: Props) {
       sideExtension,
       zMm: Number.isFinite(zMm) ? zMm : radiusMm + 1,
     })
-    return path ? { path, thicknessMm: THICKNESS_MM, heightMm, fluting: fluting.profile } : null
+    return { path, thicknessMm: THICKNESS_MM, heightMm, fluting: fluting.profile }
   }, [typeId, radiusMm, endingId, lengthMm, widthMm, sideExtension, zMm, heightMm, fluting.profile])
 
   const colorText = config.color.trim()
@@ -83,9 +84,7 @@ export function VisualizationPanel({ config, result }: Props) {
       </div>
 
       <div className={`viz__stage${view === 'plan' ? ' viz__stage--plan' : ''}`} role="tabpanel" aria-labelledby={`viz-tab-${view}`}>
-        {!geometry ? (
-          <p className="viz__loading">{frontType.name}: wykonanie na indywidualne zamówienie – brak podglądu.</p>
-        ) : view === '3d' ? (
+        {view === '3d' ? (
           <Suspense fallback={<p className="viz__loading">Ładowanie modelu 3D…</p>}>
             <FrontScene
               geometry={geometry}
@@ -100,34 +99,26 @@ export function VisualizationPanel({ config, result }: Props) {
       </div>
 
       <dl className="viz__meta">
-        {!result.individual && (
-          <div className="viz__meta-result">
-            <dt>Wynik</dt>
-            <dd>
-              {result.errors.length > 0
-                ? '—'
-                : `${fmtNum(result.areaM2, 3)} m² · ${fmtNum(result.linearM, 3)} mb`}
-            </dd>
-          </div>
-        )}
-        {result.code && (
-          <div>
-            <dt>Kod</dt>
-            <dd>{result.code}</dd>
-          </div>
-        )}
+        <div className="viz__meta-result">
+          <dt>Wynik</dt>
+          <dd>
+            {result.errors.length > 0 ? '—' : `${fmtNum(result.areaM2, 3)} m² · ${fmtNum(result.linearM, 3)} mb`}
+          </dd>
+        </div>
+        <div>
+          <dt>Kod</dt>
+          <dd>{result.code}</dd>
+        </div>
         <div>
           <dt>Typ</dt>
           <dd>{frontType.name}</dd>
         </div>
-        {geometry && (
-          <div>
-            <dt>R / H</dt>
-            <dd>
-              {config.radiusMm} / {Number.isFinite(config.heightMm) ? config.heightMm : '—'} mm
-            </dd>
-          </div>
-        )}
+        <div>
+          <dt>R / H</dt>
+          <dd>
+            {config.radiusMm} / {Number.isFinite(config.heightMm) ? config.heightMm : '—'} mm
+          </dd>
+        </div>
         {fluting.id !== SMOOTH_FLUTING_ID && (
           <div>
             <dt>Ryflowanie</dt>

@@ -66,12 +66,10 @@ export interface Note {
 
 /** Wynik liczony po licu zewnętrznym (R to promień powierzchni zewnętrznej). */
 export interface Result {
-  /** Kod elementu z katalogu, np. „EG-N2-R300”; null dla bryły. */
-  code: string | null
+  /** Kod elementu z katalogu, np. „EG-N2-R300”. */
+  code: string
   /** Kod ryflowania, np. „F03”. */
   flutingCode: string
-  /** Bryła – wycena indywidualna, bez obliczeń. */
-  individual: boolean
   /** Łuki po zewnętrznej [mm]. */
   arcMm: number
   /** Odcinki proste [mm]. */
@@ -88,7 +86,7 @@ export interface Result {
 
 const pad3 = (n: number) => String(Math.round(n)).padStart(3, '0')
 
-function catalogCode(c: Configuration): string | null {
+function catalogCode(c: Configuration): string {
   switch (c.typeId) {
     case 'narozne':
       return `EG-${c.endingId.toUpperCase()}-R${pad3(c.radiusMm)}`
@@ -98,18 +96,17 @@ function catalogCode(c: Configuration): string | null {
       return `EG-D-R${c.radiusMm}-W${c.widthMm}${c.sideExtension ? `-Z${Math.round(c.zMm)}` : ''}`
     case 'luk':
       return `EG-P-R${c.radiusMm}`
-    case 'bryla':
-      return null
   }
 }
 
 export function calculate(config: Configuration): Result {
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
-  const fluting = FLUTINGS.find((f) => f.id === config.flutingId) ?? FLUTINGS[0]
-  const individual = config.typeId === 'bryla'
+  // Laminat występuje tylko jako gładki – ryflowanie ignorujemy.
+  const flutingId = material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId
+  const fluting = FLUTINGS.find((f) => f.id === flutingId) ?? FLUTINGS[0]
 
   const errors: string[] = []
-  if (!individual && !(config.heightMm >= HEIGHT_RANGE.min && config.heightMm <= HEIGHT_RANGE.max)) {
+  if (!(config.heightMm >= HEIGHT_RANGE.min && config.heightMm <= HEIGHT_RANGE.max)) {
     errors.push(`Wysokość H musi mieścić się w zakresie ${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} mm.`)
   }
   if (config.typeId === 'przedluzane') {
@@ -129,19 +126,13 @@ export function calculate(config: Configuration): Result {
   const path = frontPath(config)
   let arcMm = 0
   let straightMm = 0
-  for (const s of path?.segments ?? []) {
+  for (const s of path.segments) {
     if (s.kind === 'arc') arcMm += segmentLength(s)
     else straightMm += s.length
   }
-  const developedMm = path ? pathLength(path) : 0
+  const developedMm = pathLength(path)
 
   const notes: Note[] = []
-  if (individual) {
-    notes.push({
-      level: 'warning',
-      text: 'Front w formie bryły wykonujemy na indywidualne zamówienie – wycena, czas realizacji i wymiary ustalane dla każdego projektu.',
-    })
-  }
   if (config.typeId === 'narozne' && config.endingId !== 'n0') {
     const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
     notes.push({
@@ -170,7 +161,6 @@ export function calculate(config: Configuration): Result {
   return {
     code: catalogCode(config),
     flutingCode: fluting.id,
-    individual,
     arcMm,
     straightMm,
     developedMm,
