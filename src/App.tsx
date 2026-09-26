@@ -175,6 +175,8 @@ export default function App() {
     }))
 
   const radii = frontType.radii
+  // Pełna skala R ze wszystkich typów – promienie spoza zakresu typu są wyszarzone.
+  const ALL_RADII = [...new Set(FRONT_TYPES.flatMap((ft) => ft.radii))].sort((a, b) => a - b)
   const radiusHint =
     radii.length === 1
       ? `Stały promień ${radii[0]} mm (po zewnętrznej powierzchni łuku).`
@@ -209,7 +211,12 @@ export default function App() {
             name="radius"
             value={config.radiusMm}
             onChange={(v) => set('radiusMm', v)}
-            choices={radii.map((r) => ({ value: r, label: r }))}
+            choices={ALL_RADII.map((r) => ({
+              value: r,
+              label: r,
+              disabled: !radii.includes(r),
+              disabledReason: `Niedostępne dla typu „${frontType.name}”`,
+            }))}
           />
         ),
       },
@@ -334,11 +341,14 @@ export default function App() {
         variant="cards"
         value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
         onChange={(v) => set('flutingId', v)}
-        choices={FLUTINGS.filter((f) => !material.smoothOnly || f.id === SMOOTH_FLUTING_ID).map((f) => ({
+        choices={FLUTINGS.map((f) => ({
           value: f.id,
           label: f.id,
           hint: f.name,
           image: catalogImage(f.id),
+          // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
+          disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
+          disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
         }))}
       />
     ),
@@ -351,7 +361,13 @@ export default function App() {
           name="material"
           value={config.materialId}
           onChange={setMaterial}
-          choices={MATERIALS.map((m) => ({ value: m.id, label: m.name }))}
+          variant="cards"
+          columns={3}
+          choices={MATERIALS.map((m) => ({
+            value: m.id,
+            label: m.name,
+            hint: m.smoothOnly ? `Tylko gładki (${SMOOTH_FLUTING_ID})` : 'Wszystkie ryflowania',
+          }))}
         />
       ),
     },
