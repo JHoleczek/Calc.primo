@@ -92,8 +92,8 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, h
                     <div className="cart-item__row">
                       <QtyStepper id={item.id} qty={item.qty} label={result.code} onQty={(q) => onQty(item.id, q)} />
                       <p className="cart-item__sum">
-                        {fmt(l.linearM)} mb · {fmt(l.areaM2)} m²
-                        {item.qty > 1 && <span className="cart-item__per"> ({fmt(result.linearM)} mb / szt.)</span>}
+                        {fmt(l.areaM2)} m²
+                        {item.qty > 1 && <span className="cart-item__per"> ({fmt(result.areaM2)} m² / szt.)</span>}
                       </p>
                     </div>
                     <div className="cart-item__actions">
@@ -122,10 +122,6 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, h
             <div>
               <dt>Sztuk</dt>
               <dd>{totals.pieces}</dd>
-            </div>
-            <div>
-              <dt>Metry bieżące</dt>
-              <dd>{fmt(totals.linearM)} mb</dd>
             </div>
             <div>
               <dt>Powierzchnia</dt>

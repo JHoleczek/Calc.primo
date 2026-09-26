@@ -34,39 +34,39 @@ export function ResultPanel({ result, heightMm }: Props) {
         </ul>
       )}
 
-      <>
-          <div className="result__totals">
-            <div className="total">
-              <span className="total__value">{show(result.areaM2, 3)}</span>
-              <span className="total__unit">m²</span>
-            </div>
-            <div className="total">
-              <span className="total__value">{show(result.linearM, 3)}</span>
-              <span className="total__unit">mb</span>
-            </div>
-          </div>
+      <div className="result__totals result__totals--single">
+        <div className="total">
+          <span className="total__value">{show(result.areaM2, 3)}</span>
+          <span className="total__unit">m²</span>
+        </div>
+        {/* Wzór rozliczenia: (łuki + przedłużenia) × H. */}
+        <p className="result__formula">
+          ({show(result.arcMm, 1)} mm
+          {result.straightMm > 0 && <> + {show(result.straightMm, 0)} mm</>}) × {show(heightMm, 0)} mm
+          <span className="result__formula-label">(łuk{result.straightMm > 0 ? ' + przedłużenia' : ''}) × H</span>
+        </p>
+      </div>
 
-          <dl className="result__breakdown">
-            <div>
-              <dt>Łuki (po zewnętrznej)</dt>
-              <dd>{show(result.arcMm, 1)} mm</dd>
-            </div>
-            {result.straightMm > 0 && (
-              <div>
-                <dt>Odcinki proste</dt>
-                <dd>{show(result.straightMm, 0)} mm</dd>
-              </div>
-            )}
-            <div>
-              <dt>Rozwinięcie</dt>
-              <dd>{show(result.developedMm, 1)} mm</dd>
-            </div>
-            <div>
-              <dt>Wysokość H</dt>
-              <dd>{show(heightMm, 0)} mm</dd>
-            </div>
-          </dl>
-      </>
+      <dl className="result__breakdown">
+        <div>
+          <dt>Łuki (po zewnętrznej)</dt>
+          <dd>{show(result.arcMm, 1)} mm</dd>
+        </div>
+        {result.straightMm > 0 && (
+          <div>
+            <dt>Przedłużenia / odcinki proste</dt>
+            <dd>{show(result.straightMm, 0)} mm</dd>
+          </div>
+        )}
+        <div>
+          <dt>Rozwinięcie razem</dt>
+          <dd>{show(result.developedMm, 1)} mm</dd>
+        </div>
+        <div>
+          <dt>Wysokość H</dt>
+          <dd>{show(heightMm, 0)} mm</dd>
+        </div>
+      </dl>
 
       <h3 className="result__subtitle">Dodatki i uwagi</h3>
       {result.notes.length > 0 ? (

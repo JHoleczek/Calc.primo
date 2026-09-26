@@ -14,7 +14,15 @@ describe('calculate', () => {
     const n2 = calculate({ ...base, typeId: 'narozne', radiusMm: 50, endingId: 'n2' })
     expect(n2.code).toBe('EG-N2-R050')
     expect(n2.developedMm).toBeCloseTo(quarter(50) + 100)
-    expect(n2.linearM).toBeCloseTo((quarter(50) + 100) / 1000)
+    expect(n2.areaM2).toBeCloseTo(((quarter(50) + 100) * 1000) / 1e6)
+  })
+
+  it('m² = (łuk + przedłużenia) × H – przykład EG-N2-R300, H 472', () => {
+    const r = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n2', heightMm: 472 })
+    expect(r.arcMm).toBeCloseTo(471.24, 1)
+    expect(r.straightMm).toBe(100)
+    expect(r.areaM2).toBeCloseTo(((quarter(300) + 100) * 472) / 1e6)
+    expect(r.areaM2.toFixed(3)).toBe('0.270')
   })
 
   it('przedłużane: łuk + prosty odcinek L − R', () => {

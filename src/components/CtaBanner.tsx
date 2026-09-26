@@ -27,7 +27,6 @@ export function CtaBanner({ lines, onOpenCart }: { lines: CartLine[]; onOpenCart
             <p className="cta__summary">
               <span>{lines.length} poz.</span>
               <span>{totals.pieces} szt.</span>
-              <span>{fmt(totals.linearM)} mb</span>
               <span>{fmt(totals.areaM2)} m²</span>
             </p>
           )}

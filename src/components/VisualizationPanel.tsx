@@ -102,7 +102,7 @@ export function VisualizationPanel({ config, result }: Props) {
         <div className="viz__meta-result">
           <dt>Wynik</dt>
           <dd>
-            {result.errors.length > 0 ? '—' : `${fmtNum(result.areaM2, 3)} m² · ${fmtNum(result.linearM, 3)} mb`}
+            {result.errors.length > 0 ? '—' : `${fmtNum(result.areaM2, 3)} m²`}
           </dd>
         </div>
         <div>

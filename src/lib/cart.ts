@@ -43,22 +43,21 @@ export function setQty(cart: CartItem[], id: string, qty: number): CartItem[] {
 export interface CartLine {
   item: CartItem
   result: ReturnType<typeof calculate>
-  /** mb i m² dla całej pozycji (sztuka × ilość). */
-  linearM: number
+  /** m² dla całej pozycji (sztuka × ilość). */
   areaM2: number
 }
 
 export function cartLines(cart: CartItem[]): CartLine[] {
   return cart.map((item) => {
     const result = calculate(item.config)
-    return { item, result, linearM: result.linearM * item.qty, areaM2: result.areaM2 * item.qty }
+    return { item, result, areaM2: result.areaM2 * item.qty }
   })
 }
 
 export function cartTotals(lines: CartLine[]) {
   return lines.reduce(
-    (t, l) => ({ pieces: t.pieces + l.item.qty, linearM: t.linearM + l.linearM, areaM2: t.areaM2 + l.areaM2 }),
-    { pieces: 0, linearM: 0, areaM2: 0 },
+    (t, l) => ({ pieces: t.pieces + l.item.qty, areaM2: t.areaM2 + l.areaM2 }),
+    { pieces: 0, areaM2: 0 },
   )
 }
 
@@ -85,17 +84,17 @@ export interface Contact {
   notes: string
 }
 
-/** Treść zapytania „do oceny”: lista frontów z kodami i metrami bieżącymi + dane kontaktowe. */
+/** Treść zapytania „do oceny”: lista frontów z kodami i m² + dane kontaktowe. */
 export function quoteText(lines: CartLine[], contact: Contact): string {
   const totals = cartTotals(lines)
   const out = ['Dzień dobry,', '', 'proszę o ocenę i wycenę poniższych frontów giętych:', '']
   lines.forEach((l, i) => {
     out.push(`${i + 1}. ${l.result.code} ${l.result.flutingCode} – ${describeConfig(l.item.config, l.result.flutingCode)}`)
     out.push(
-      `   ${l.item.qty} szt. × ${fmt(l.result.linearM)} mb = ${fmt(l.linearM)} mb (${fmt(l.areaM2)} m²)`,
+      `   ${l.item.qty} szt. × ${fmt(l.result.areaM2)} m² = ${fmt(l.areaM2)} m² (rozwinięcie ${fmt(l.result.developedMm, 1)} mm × H ${l.item.config.heightMm} mm)`,
     )
   })
-  out.push('', `Razem: ${totals.pieces} szt., ${fmt(totals.linearM)} mb, ${fmt(totals.areaM2)} m²`)
+  out.push('', `Razem: ${totals.pieces} szt., ${fmt(totals.areaM2)} m²`)
   if (contact.notes.trim()) out.push('', `Uwagi: ${contact.notes.trim()}`)
   out.push('')
   if (contact.name.trim()) out.push(contact.name.trim())

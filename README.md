@@ -1,6 +1,6 @@
 # Kalkulator frontów giętych (Primo Meble)
 
-Kalkulator powierzchni (m²) i metrów bieżących (mb) frontów giętych z informacją o dodatkach.
+Kalkulator powierzchni (m²) frontów giętych z informacją o dodatkach.
 Ekran jest podzielony na pół: po lewej (desktop) / u góry (mobile) jest wizualizacja
 (model 3D oraz rzut z góry), resztę ekranu zajmuje konfiguracja.
 
@@ -23,13 +23,13 @@ npm run build    # build produkcyjny do dist/
   zakończeń, przedłużeń, ryflowań) i zdjęcie do sekcji CTA.
 - `src/lib/frontPath.ts` – kształt frontu w rzucie jako ciąg łuków i odcinków prostych
   (po licu zewnętrznym). Z tego jednego opisu korzystają obliczenia, rzut 2D i model 3D.
-- `src/lib/calculate.ts` – kod katalogowy (np. `EG-N2-R300`), rozwinięcie, mb, m², dodatki, walidacja.
+- `src/lib/calculate.ts` – kod katalogowy (np. `EG-N2-R300`), rozwinięcie, m², dodatki, walidacja.
 - `src/lib/frontGeometry.ts` – siatka 3D z ryflowaniem wyfrezowanym w licu.
 - `src/lib/paintColor.ts` – przybliżony kolor ekranowy z RAL / NCS / hex / nazwy.
 - `src/components/viz3d/` – scena three.js (React Three Fiber), ładowana leniwie.
 - `src/components/PlanView.tsx` – rzut z góry w stylu rysunku technicznego.
 - `src/lib/cart.ts` + `src/components/Cart.tsx` – koszyk: ilość, edycja, duplikowanie, usuwanie,
-  sumy mb / m²; zapis w przeglądarce (localStorage).
+  sumy sztuk i m²; zapis w przeglądarce (localStorage).
 - `src/components/CartDrawer.tsx` – ikona koszyka w prawym górnym rogu i panel wysuwany z prawej
   (Esc / ✕ / tło zamykają, fokus zostaje w panelu).
 - `src/components/SubmitForm.tsx` – „Wyślij do oceny” w koszyku: gotowa wiadomość z całym koszykiem
@@ -49,4 +49,5 @@ Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
   - przedłużane: łuk 90° + (L − R),
   - obustronne: 2 × łuk 90° R100 + (W − 200) + opcjonalnie 2 × (Z − 100),
   - w łuk: półokrąg 180°.
-- mb = rozwinięcie w metrach; m² = rozwinięcie × H.
+- **m² = (długość łuku + ewentualne przedłużenia) × H** – jedyny wynik rozliczeniowy
+  (bez osobnych metrów bieżących); rozwinięcie w mm pokazywane pomocniczo.

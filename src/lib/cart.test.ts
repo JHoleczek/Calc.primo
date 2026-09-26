@@ -27,13 +27,12 @@ describe('koszyk', () => {
     expect(cart[0].config.radiusMm).toBe(600)
   })
 
-  it('sumuje sztuki, mb i m² z uwzględnieniem ilości', () => {
+  it('sumuje sztuki i m² z uwzględnieniem ilości', () => {
     const cart = setQty(addItem([], cfg), addItem([], cfg)[0].id, 1)
     const two = setQty(cart, cart[0].id, 2)
     const t = cartTotals(cartLines(two))
     const quarter = (Math.PI * 300) / 2
     expect(t.pieces).toBe(2)
-    expect(t.linearM).toBeCloseTo((2 * quarter) / 1000)
     expect(t.areaM2).toBeCloseTo((2 * quarter) / 1000)
   })
 

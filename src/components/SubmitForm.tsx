@@ -20,7 +20,7 @@ export function SubmitForm({ lines }: Props) {
   const invalid = lines.some((l) => l.result.errors.length > 0)
   const totals = cartTotals(lines)
   const text = quoteText(lines, contact)
-  const subject = `Fronty gięte do oceny – ${lines.length} poz., ${fmt(totals.linearM)} mb`
+  const subject = `Fronty gięte do oceny – ${lines.length} poz., ${fmt(totals.areaM2)} m²`
   const mailto = `mailto:${CONTACT.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`
   const set = (key: keyof Contact) => (e: { target: { value: string } }) => setContact((c) => ({ ...c, [key]: e.target.value }))
 

@@ -76,9 +76,7 @@ export interface Result {
   straightMm: number
   /** Rozwinięcie: łuki + odcinki proste [mm]. */
   developedMm: number
-  /** Metry bieżące (rozwinięcie w m). */
-  linearM: number
-  /** Powierzchnia rozwinięta [m²]. */
+  /** Powierzchnia rozwinięta [m²] = (łuki + odcinki proste) × H. */
   areaM2: number
   notes: Note[]
   errors: string[]
@@ -149,7 +147,7 @@ export function calculate(config: Configuration): Result {
   if (fluting.id !== SMOOTH_FLUTING_ID) {
     notes.push({ level: 'addon', text: `Ryflowanie ${fluting.id} – ${fluting.name}` })
   }
-  // Brak koloru nie wpływa na m² / mb – tylko przypominamy, że jest potrzebny do zamówienia.
+  // Brak koloru nie wpływa na m² – tylko przypominamy, że jest potrzebny do zamówienia.
   if (material.colorRequired && color === '') {
     notes.push({ level: 'warning', text: `Wpisz kolor farby – wymagany do zamówienia frontu ${material.name.toLowerCase()}go.` })
   }
@@ -164,7 +162,6 @@ export function calculate(config: Configuration): Result {
     arcMm,
     straightMm,
     developedMm,
-    linearM: developedMm / 1000,
     areaM2: (developedMm * config.heightMm) / 1_000_000,
     notes,
     errors,
