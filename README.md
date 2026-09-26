@@ -30,8 +30,11 @@ npm run build    # build produkcyjny do dist/
 - `src/components/PlanView.tsx` – rzut z góry w stylu rysunku technicznego.
 - `src/lib/cart.ts` + `src/components/Cart.tsx` – koszyk: ilość, edycja, duplikowanie, usuwanie,
   sumy mb / m²; zapis w przeglądarce (localStorage).
-- `src/components/SubmitCta.tsx` – „Wyślij do oceny”: gotowa wiadomość z całym koszykiem do biura
-  (program pocztowy) lub kopiowanie treści. Bez płatności – to zapytanie, nie zamówienie.
+- `src/components/CartDrawer.tsx` – ikona koszyka w prawym górnym rogu i panel wysuwany z prawej
+  (Esc / ✕ / tło zamykają, fokus zostaje w panelu).
+- `src/components/SubmitForm.tsx` – „Wyślij do oceny” w koszyku: gotowa wiadomość z całym koszykiem
+  do biura (program pocztowy) lub kopiowanie treści. Bez płatności – to zapytanie, nie zamówienie.
+- `src/components/CtaBanner.tsx` – baner ze zdjęciem na końcu strony, otwiera koszyk.
 
 Hosting: GitHub Pages (`.github/workflows/pages.yml`) – każdy push na gałąź domyślną testuje,
 buduje i publikuje stronę pod https://jholeczek.github.io/Calc.primo/.

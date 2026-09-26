@@ -18,7 +18,9 @@ import {
   type MaterialId,
 } from './config/catalog'
 import { Cart } from './components/Cart'
-import { SubmitCta } from './components/SubmitCta'
+import { CartButton, CartDrawer } from './components/CartDrawer'
+import { CtaBanner } from './components/CtaBanner'
+import { SubmitForm } from './components/SubmitForm'
 import { catalogImage, extendedImage, TYPE_IMAGES } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, type Configuration } from './lib/calculate'
 import {
@@ -117,10 +119,12 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>(loadCart)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [cartMessage, setCartMessage] = useState('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
   // Zmiana klucza przebudowuje pola formularza po wczytaniu frontu do edycji.
   const [formKey, setFormKey] = useState(0)
   useEffect(() => saveCart(cart), [cart])
   const lines = useMemo(() => cartLines(cart), [cart])
+  const pieces = lines.reduce((n, l) => n + l.item.qty, 0)
   const editingIndex = cart.findIndex((i) => i.id === editingId)
 
   const scrollTo = (id: string) => {
@@ -136,7 +140,7 @@ export default function App() {
     setCart((c) => updateItem(c, editingId, config))
     setCartMessage(`Zapisano zmiany w pozycji ${String(editingIndex + 1).padStart(2, '0')}.`)
     setEditingId(null)
-    scrollTo('koszyk')
+    setDrawerOpen(true)
   }
   const startEdit = (id: string) => {
     const item = cart.find((i) => i.id === id)
@@ -145,6 +149,7 @@ export default function App() {
     setEditingId(id)
     setFormKey((k) => k + 1)
     setCartMessage('')
+    setDrawerOpen(false)
     scrollTo('konfigurator')
   }
   const remove = (id: string) => {
@@ -376,12 +381,7 @@ export default function App() {
 
       <main className="layout__config">
         <header className="page-head" id="konfigurator">
-          <div className="page-head__top">
-            <p className="page-head__eyebrow">Fronty Primo — katalog 2026</p>
-            <a className="page-head__cart" href="#koszyk">
-              Koszyk ({lines.reduce((n, l) => n + l.item.qty, 0)})
-            </a>
-          </div>
+          <p className="page-head__eyebrow">Fronty Primo — katalog 2026</p>
           <h1>Kalkulator frontów giętych</h1>
           <p className="page-head__specs">
             Grubość {THICKNESS_MM} mm · wysokość do {HEIGHT_RANGE.max} mm
@@ -420,10 +420,20 @@ export default function App() {
             </button>
           )}
           <p className="add-bar__status" role="status">
-            {cartMessage}
+            {cartMessage}{' '}
+            {cartMessage && !editingId && (
+              <button type="button" className="link-btn" onClick={() => setDrawerOpen(true)}>
+                Zobacz koszyk
+              </button>
+            )}
           </p>
         </div>
 
+        <CtaBanner lines={lines} onOpenCart={() => setDrawerOpen(true)} />
+      </main>
+
+      <CartButton count={pieces} open={drawerOpen} onClick={() => setDrawerOpen(true)} />
+      <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Cart
           lines={lines}
           editingId={editingId}
@@ -431,9 +441,14 @@ export default function App() {
           onEdit={startEdit}
           onDuplicate={(id) => setCart((c) => duplicateItem(c, id))}
           onRemove={remove}
+          headerAction={
+            <button type="button" className="drawer__close" onClick={() => setDrawerOpen(false)} aria-label="Zamknij koszyk">
+              ✕
+            </button>
+          }
+          footer={<SubmitForm lines={lines} />}
         />
-        <SubmitCta lines={lines} />
-      </main>
+      </CartDrawer>
     </div>
   )
 }

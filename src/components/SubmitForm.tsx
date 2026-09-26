@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { CONTACT } from '../config/catalog'
-import { CTA_IMAGE } from '../config/images'
 import { cartTotals, quoteText, type CartLine, type Contact } from '../lib/cart'
 
 interface Props {
@@ -10,11 +9,11 @@ interface Props {
 const fmt = (v: number) => v.toLocaleString('pl-PL', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
 /**
- * Zakończenie zamówienia: zamiast „kup teraz” – „Wyślij do oceny”.
+ * Zakończenie w koszyku: zamiast „kup teraz” – „Wyślij do oceny”.
  * Nie ma tu płatności ani serwera: przycisk tworzy gotową wiadomość z całym koszykiem
  * do biura Primo (program pocztowy), a treść można też skopiować.
  */
-export function SubmitCta({ lines }: Props) {
+export function SubmitForm({ lines }: Props) {
   const [contact, setContact] = useState<Contact>({ name: '', reply: '', notes: '' })
   const [status, setStatus] = useState<'idle' | 'opened' | 'copied' | 'copy-failed'>('idle')
   const empty = lines.length === 0
@@ -35,13 +34,10 @@ export function SubmitCta({ lines }: Props) {
   }
 
   return (
-    <section className="cta" aria-labelledby="cta-title">
-      <div className="cta__layout">
-        <div className="cta__image">
-          <img src={CTA_IMAGE} alt="Realizacja Primo Meble — front gięty ryflowany" loading="lazy" />
-        </div>
         <form
-          className="cta__content"
+          className="submit"
+          id="wyslij"
+          aria-labelledby="submit-title"
           onSubmit={(e) => {
             e.preventDefault()
             if (empty || invalid) return
@@ -49,23 +45,12 @@ export function SubmitCta({ lines }: Props) {
             setStatus('opened')
           }}
         >
-          <h2 id="cta-title" className="cta__title">
+          <h3 id="submit-title" className="submit__title">
             Wyślij do oceny
-          </h2>
+          </h3>
           <p className="cta__desc">
             Prześlij koszyk do biura Primo – ocenimy wykonalność i przygotujemy wycenę. To nie jest zamówienie ani płatność.
           </p>
-
-          {!empty && (
-            <p className="cta__summary">
-              <span>
-                {lines.length} poz.
-              </span>
-              <span>{totals.pieces} szt.</span>
-              <span>{fmt(totals.linearM)} mb</span>
-              <span>{fmt(totals.areaM2)} m²</span>
-            </p>
-          )}
 
           <div className="cta__fields">
             <label className="field">
@@ -106,7 +91,5 @@ export function SubmitCta({ lines }: Props) {
             Wolisz porozmawiać? Zadzwoń: <a href={`tel:+48${CONTACT.phone.replace(/\D/g, '')}`}>{CONTACT.phone}</a>
           </p>
         </form>
-      </div>
-    </section>
   )
 }

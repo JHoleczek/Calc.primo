@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { catalogImage, TYPE_IMAGES } from '../config/images'
 import { cartTotals, describeConfig, MAX_QTY, type CartLine } from '../lib/cart'
 
@@ -9,6 +9,10 @@ interface Props {
   onEdit: (id: string) => void
   onDuplicate: (id: string) => void
   onRemove: (id: string) => void
+  /** Element w nagłówku koszyka (np. przycisk zamknięcia panelu). */
+  headerAction?: ReactNode
+  /** Treść pod sumami (np. formularz „Wyślij do oceny”). */
+  footer?: ReactNode
 }
 
 const fmt = (v: number, digits = 3) =>
@@ -50,16 +54,19 @@ function QtyStepper({ id, qty, label, onQty }: { id: string; qty: number; label:
   )
 }
 
-export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove }: Props) {
+export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, headerAction, footer }: Props) {
   const totals = cartTotals(lines)
 
   return (
     <section className="cart" id="koszyk" aria-labelledby="cart-title">
       <div className="cart__head">
-        <h2 id="cart-title">Koszyk</h2>
-        <span className="cart__count">
-          {lines.length} {positions(lines.length)} · {totals.pieces} szt.
-        </span>
+        <div className="cart__title">
+          <h2 id="cart-title">Koszyk</h2>
+          <span className="cart__count">
+            {lines.length} {positions(lines.length)} · {totals.pieces} szt.
+          </span>
+        </div>
+        {headerAction}
       </div>
 
       {lines.length === 0 ? (
@@ -127,6 +134,7 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove }:
           </dl>
         </>
       )}
+      {footer}
     </section>
   )
 }

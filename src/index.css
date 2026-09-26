@@ -1029,21 +1029,6 @@ a:hover {
 
 /* ---------- Nagłówek: licznik koszyka, tryb edycji ---------- */
 
-.page-head__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-}
-
-.page-head__cart {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--text);
-}
-
 .edit-banner {
   margin: -24px 0 0;
   padding: 12px 16px;
@@ -1373,4 +1358,170 @@ textarea.text-input {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
+}
+
+/* ---------- Ikona koszyka (prawy górny róg) ---------- */
+
+.cart-button {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  right: 16px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--control);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.cart-button:hover {
+  border-color: var(--gold);
+}
+
+.cart-button__badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--gold-fill);
+  color: var(--on-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Panel koszyka wysuwany z prawej ---------- */
+
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  visibility: hidden;
+  transition: visibility 0s linear 0.3s;
+}
+
+.drawer--open {
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+.drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.drawer--open .drawer__backdrop {
+  opacity: 1;
+}
+
+.drawer__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, calc(100vw - 40px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  border-left: 1px solid var(--control);
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px calc(env(safe-area-inset-bottom, 0px) + 32px);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.drawer--open .drawer__panel {
+  transform: none;
+}
+
+.drawer__close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--control);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.drawer__close:hover {
+  border-color: var(--gold);
+}
+
+.drawer .cart__head {
+  align-items: flex-start;
+}
+
+.cart__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 480px) {
+  .drawer__panel {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ---------- Formularz „Wyślij do oceny” w koszyku ---------- */
+
+.submit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.submit__title {
+  font-size: 22px;
+  font-weight: 300;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer__panel,
+  .drawer__backdrop {
+    transition: none;
+  }
+}
+
+/* Wąski panel koszyka: sumy w wierszach (etykieta | wartość) zamiast trzech kolumn. */
+.cart {
+  container-type: inline-size;
+}
+
+@container (max-width: 420px) {
+  .cart__totals {
+    grid-template-columns: 1fr;
+  }
+
+  .cart__totals div {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 0;
+  }
+
+  .cart__totals div + div {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
 }
