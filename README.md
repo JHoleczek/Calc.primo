@@ -28,6 +28,13 @@ npm run build    # build produkcyjny do dist/
 - `src/lib/paintColor.ts` – przybliżony kolor ekranowy z RAL / NCS / hex / nazwy.
 - `src/components/viz3d/` – scena three.js (React Three Fiber), ładowana leniwie.
 - `src/components/PlanView.tsx` – rzut z góry w stylu rysunku technicznego.
+- `src/lib/cart.ts` + `src/components/Cart.tsx` – koszyk: ilość, edycja, duplikowanie, usuwanie,
+  sumy mb / m²; zapis w przeglądarce (localStorage).
+- `src/components/SubmitCta.tsx` – „Wyślij do oceny”: gotowa wiadomość z całym koszykiem do biura
+  (program pocztowy) lub kopiowanie treści. Bez płatności – to zapytanie, nie zamówienie.
+
+Hosting: GitHub Pages (`.github/workflows/pages.yml`) – każdy push na gałąź domyślną testuje,
+buduje i publikuje stronę pod https://jholeczek.github.io/Calc.primo/.
 
 Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 

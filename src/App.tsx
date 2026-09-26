@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
 import { ResultPanel } from './components/ResultPanel'
 import { VisualizationPanel } from './components/VisualizationPanel'
@@ -17,9 +17,21 @@ import {
   type FrontTypeId,
   type MaterialId,
 } from './config/catalog'
-import { QuoteCta } from './components/QuoteCta'
+import { Cart } from './components/Cart'
+import { SubmitCta } from './components/SubmitCta'
 import { catalogImage, extendedImage, TYPE_IMAGES } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, type Configuration } from './lib/calculate'
+import {
+  addItem,
+  cartLines,
+  duplicateItem,
+  loadCart,
+  removeItem,
+  saveCart,
+  setQty,
+  updateItem,
+  type CartItem,
+} from './lib/cart'
 
 function Step({ n, title, hint, children }: { n: number; title: string; hint?: ReactNode; children: ReactNode }) {
   return (
@@ -100,6 +112,45 @@ function NumberField({
 export default function App() {
   const [config, setConfig] = useState<Configuration>(DEFAULT_CONFIGURATION)
   const result = useMemo(() => calculate(config), [config])
+
+  // Koszyk: zapisywany w przeglądarce, żeby przetrwał odświeżenie strony.
+  const [cart, setCart] = useState<CartItem[]>(loadCart)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [cartMessage, setCartMessage] = useState('')
+  // Zmiana klucza przebudowuje pola formularza po wczytaniu frontu do edycji.
+  const [formKey, setFormKey] = useState(0)
+  useEffect(() => saveCart(cart), [cart])
+  const lines = useMemo(() => cartLines(cart), [cart])
+  const editingIndex = cart.findIndex((i) => i.id === editingId)
+
+  const scrollTo = (id: string) => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  }
+  const addToCart = () => {
+    setCart((c) => addItem(c, config))
+    setCartMessage(`Dodano do koszyka: ${result.code} ${result.flutingCode}.`)
+  }
+  const saveEdit = () => {
+    if (!editingId) return
+    setCart((c) => updateItem(c, editingId, config))
+    setCartMessage(`Zapisano zmiany w pozycji ${String(editingIndex + 1).padStart(2, '0')}.`)
+    setEditingId(null)
+    scrollTo('koszyk')
+  }
+  const startEdit = (id: string) => {
+    const item = cart.find((i) => i.id === id)
+    if (!item) return
+    setConfig({ ...item.config })
+    setEditingId(id)
+    setFormKey((k) => k + 1)
+    setCartMessage('')
+    scrollTo('konfigurator')
+  }
+  const remove = (id: string) => {
+    setCart((c) => removeItem(c, id))
+    if (id === editingId) setEditingId(null)
+  }
   const set = <K extends keyof Configuration>(key: K, value: Configuration[K]) =>
     setConfig((c) => ({ ...c, [key]: value }))
 
@@ -324,15 +375,26 @@ export default function App() {
       </aside>
 
       <main className="layout__config">
-        <header className="page-head">
-          <p className="page-head__eyebrow">Fronty Primo — katalog 2026</p>
+        <header className="page-head" id="konfigurator">
+          <div className="page-head__top">
+            <p className="page-head__eyebrow">Fronty Primo — katalog 2026</p>
+            <a className="page-head__cart" href="#koszyk">
+              Koszyk ({lines.reduce((n, l) => n + l.item.qty, 0)})
+            </a>
+          </div>
           <h1>Kalkulator frontów giętych</h1>
           <p className="page-head__specs">
             Grubość {THICKNESS_MM} mm · wysokość do {HEIGHT_RANGE.max} mm
           </p>
         </header>
 
-        <form className="steps" onSubmit={(e) => e.preventDefault()}>
+        {editingId && (
+          <p className="edit-banner" role="status">
+            Edytujesz pozycję {String(editingIndex + 1).padStart(2, '0')} z koszyka – zapisz zmiany pod wynikiem.
+          </p>
+        )}
+
+        <form key={formKey} className="steps" onSubmit={(e) => e.preventDefault()}>
           {steps.map((step, i) => (
             <Step key={step.title} n={i + 1} title={step.title} hint={step.hint}>
               {step.body}
@@ -341,7 +403,36 @@ export default function App() {
         </form>
 
         <ResultPanel result={result} heightMm={config.heightMm} />
-        <QuoteCta config={config} result={result} />
+
+        <div className="add-bar">
+          {editingId ? (
+            <>
+              <button type="button" className="btn-primary" onClick={saveEdit} disabled={result.errors.length > 0}>
+                Zapisz zmiany w pozycji {String(editingIndex + 1).padStart(2, '0')}
+              </button>
+              <button type="button" className="link-btn" onClick={() => setEditingId(null)}>
+                Anuluj edycję
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn-primary" onClick={addToCart} disabled={result.errors.length > 0}>
+              Dodaj do koszyka
+            </button>
+          )}
+          <p className="add-bar__status" role="status">
+            {cartMessage}
+          </p>
+        </div>
+
+        <Cart
+          lines={lines}
+          editingId={editingId}
+          onQty={(id, q) => setCart((c) => setQty(c, id, q))}
+          onEdit={startEdit}
+          onDuplicate={(id) => setCart((c) => duplicateItem(c, id))}
+          onRemove={remove}
+        />
+        <SubmitCta lines={lines} />
       </main>
     </div>
   )
