@@ -1,3 +1,6 @@
+import type { ReactElement } from 'react'
+import { flushSync } from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import { PlanContent } from '../components/PlanDrawing'
 import type { Configuration } from './calculate'
 import { planGeometry } from './planGeometry'
@@ -23,6 +26,16 @@ const exportCss = (k: number) =>
 .plan__rule { stroke: #3a3a3a; stroke-width: 1px; }
 `.replace(/([\d.]+)px/g, (_, n: string) => `${+n * k}px`)
 
+/** Renderuje element do tekstu HTML/SVG w odłączonym węźle DOM (bez react-dom/server). */
+export function renderMarkup(element: ReactElement): string {
+  const host = document.createElement('div')
+  const root = createRoot(host)
+  flushSync(() => root.render(element))
+  const html = host.innerHTML
+  root.unmount()
+  return html
+}
+
 export interface PlanExport {
   svg: string
   width: number
@@ -33,14 +46,14 @@ export interface PlanExport {
  * Samodzielny plik SVG z całym rysunkiem (bez względu na bieżący zoom),
  * czarnym tłem, dekoracyjną kratką i tabliczką z opisem frontu.
  */
-export async function exportPlanSvg(
+export function exportPlanSvg(
   config: Configuration,
   title: string,
   subtitle: string,
   /** Skala pliku (np. 2 dla PNG) – ten sam układ, grubsze linie i większe wymiary w pikselach. */
   scale = 1,
-): Promise<PlanExport> {
-  const { renderToStaticMarkup } = await import('react-dom/server')
+  render: (element: ReactElement) => string = renderMarkup,
+): PlanExport {
   const geo = planGeometry(config)
   const { x, y, w, h } = geo.view
   const px = w / EXPORT_WIDTH
@@ -49,7 +62,7 @@ export async function exportPlanSvg(
   const height = Math.round(((h + band) / px) * scale)
   const grid = px * 24
 
-  const markup = renderToStaticMarkup(
+  const markup = render(
     <svg
       xmlns="http://www.w3.org/2000/svg"
       className="plan"

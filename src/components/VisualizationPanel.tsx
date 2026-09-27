@@ -85,7 +85,7 @@ export function VisualizationPanel({ config, result }: Props) {
         'wymiary w mm',
         'Primo Meble',
       ].join('  ·  ')
-      const file = await exportPlanSvg(config, title, subtitle, format === 'png' ? 2 : 1)
+      const file = exportPlanSvg(config, title, subtitle, format === 'png' ? 2 : 1)
       const blob = format === 'svg' ? new Blob([file.svg], { type: 'image/svg+xml' }) : await svgToPng(file)
       saveBlob(blob, `${result.code}-${result.flutingCode}-rzut.${format}`)
     } catch {
