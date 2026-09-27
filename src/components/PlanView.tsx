@@ -1,70 +1,33 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { FRONT_TYPES, THICKNESS_MM } from '../config/catalog'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { FRONT_TYPES } from '../config/catalog'
 import type { Configuration } from '../lib/calculate'
-import { frontPath, outerNormal, samplePath, walkPath } from '../lib/frontPath'
+import { fmtMm as fmt, planGeometry, type ViewBox } from '../lib/planGeometry'
+import { PlanContent } from './PlanDrawing'
+
+const MIN_ZOOM = 1
+const MAX_ZOOM = 16
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+
+/** Stan nawigacji: powiększenie i przesunięcie środka widoku względem środka całego rysunku. */
+interface Nav {
+  key: string
+  zoom: number
+  dx: number
+  dy: number
+}
 
 interface Props {
   config: Configuration
-}
-
-type Point = [number, number]
-
-const add = (a: Point, b: Point, k = 1): Point => [a[0] + b[0] * k, a[1] + b[1] * k]
-const fmt = (mm: number) => Math.round(mm).toLocaleString('pl-PL')
-
-interface DimProps {
-  p1: Point
-  p2: Point
-  /** Jednostkowy kierunek odsunięcia linii wymiarowej od mierzonych punktów. */
-  dir: Point
-  offset: number
-  label: string
-  /** Jednostki rysunku na 1 piksel ekranu – napisy i znaczniki mają stały rozmiar na ekranie. */
-  px: number
-}
-
-/**
- * Wymiar w stylu rysunku technicznego: kropkowane linie pomocnicze od obiektu,
- * cienka linia wymiarowa z krótkimi znacznikami i opis nad linią.
- * Pionowe opisy czytane od dołu do góry.
- */
-function Dimension({ p1, p2, dir, offset, label, px }: DimProps) {
-  const q1 = add(p1, dir, offset)
-  const q2 = add(p2, dir, offset)
-  const gap = px * 3
-  const over = px * 6
-  const along: Point = [q2[0] - q1[0], q2[1] - q1[1]]
-  const len = Math.hypot(along[0], along[1]) || 1
-  const u: Point = [along[0] / len, along[1] / len]
-  const tick: Point = [dir[0] * px * 4, dir[1] * px * 4]
-  let angle = (Math.atan2(along[1], along[0]) * 180) / Math.PI
-  if (angle >= 90) angle -= 180
-  if (angle < -90) angle += 180
-  const mid = add([(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2], dir, px * 9)
-  // Linia wymiarowa wystaje odrobinę poza linie pomocnicze, jak na rysunku referencyjnym.
-  const e1 = add(q1, u, -px * 4)
-  const e2 = add(q2, u, px * 4)
-
-  return (
-    <g className="plan__dim">
-      <line className="plan__ext" x1={p1[0] + dir[0] * gap} y1={p1[1] + dir[1] * gap} x2={q1[0] + dir[0] * over} y2={q1[1] + dir[1] * over} />
-      <line className="plan__ext" x1={p2[0] + dir[0] * gap} y1={p2[1] + dir[1] * gap} x2={q2[0] + dir[0] * over} y2={q2[1] + dir[1] * over} />
-      <line x1={e1[0]} y1={e1[1]} x2={e2[0]} y2={e2[1]} />
-      {[q1, q2].map((q, i) => (
-        <line key={i} x1={q[0] - tick[0]} y1={q[1] - tick[1]} x2={q[0] + tick[0]} y2={q[1] + tick[1]} />
-      ))}
-      <text x={mid[0]} y={mid[1]} transform={`rotate(${angle} ${mid[0]} ${mid[1]})`} fontSize={px * 11}>
-        {label}
-      </text>
-    </g>
-  )
+  /** Zoom, przesuwanie i przycisk „Wyzeruj widok” (wyłączone np. w awaryjnym podglądzie 3D). */
+  interactive?: boolean
 }
 
 /**
  * Rzut z góry w skali, w stylu rysunku technicznego (jasne linie na czarnym tle).
  * Kształt pochodzi z frontPath (ten sam opis co obliczenia i model 3D).
+ * Kółko / szczypanie = zoom wokół kursora, przeciąganie = przesuwanie.
  */
-export function PlanView({ config }: Props) {
+export function PlanView({ config, interactive = false }: Props) {
   const hatchId = `hatch-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   const svgRef = useRef<SVGSVGElement>(null)
   const [screen, setScreen] = useState<{ w: number; h: number } | null>(null)
@@ -80,163 +43,181 @@ export function PlanView({ config }: Props) {
   }, [])
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
-  const path = frontPath(config)
+  const geo = planGeometry(config)
+  const base = geo.view
+  // Zmiana kształtu (inny gabaryt) wraca do pełnego widoku.
+  const key = `${base.x}|${base.y}|${base.w}|${base.h}`
+  const [navState, setNavState] = useState<Nav>({ key, zoom: 1, dx: 0, dy: 0 })
+  const nav = navState.key === key ? navState : { key, zoom: 1, dx: 0, dy: 0 }
 
-  const g = THICKNESS_MM
-  const samples = samplePath(path, 4, 1.5)
-  const outer = samples.map((q) => q.p)
-  const inner = samples.map(({ p, n }): Point => [p[0] - n[0] * g, p[1] - n[1] * g])
-  const walked = walkPath(path)
-  const toD = (pts: Point[]) => pts.map((q, i) => `${i ? 'L' : 'M'} ${q[0]} ${q[1]}`).join(' ')
-  const outline = `${toD(outer)} ${toD([...inner].reverse()).replace(/^M/, 'L')} Z`
-
-  // Gabaryt obrysu frontu.
-  const xs = [...outer, ...inner].map((q) => q[0])
-  const ys = [...outer, ...inner].map((q) => q[1])
-  const box = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
-  const boxW = box.maxX - box.minX
-  const boxH = box.maxY - box.minY
-
-  const extent = Math.max(boxW, boxH)
-  const unit = extent / 100
-  const off = unit * 7
-
-  // Widok: gabaryt + środki łuków + miejsce na dwa rzędy wymiarów z każdej strony.
-  const centers = walked.flatMap((w) => (w.center ? [w.center] : []))
-  const pad = off * 3.2
-  const allX = [box.minX, box.maxX, ...centers.map((c) => c[0])]
-  const allY = [box.minY, box.maxY, ...centers.map((c) => c[1])]
-  const vMinX = Math.min(...allX) - pad
-  const vMinY = Math.min(...allY) - pad
-  const vW = Math.max(...allX) - Math.min(...allX) + pad * 2
-  const vH = Math.max(...allY) - Math.min(...allY) + pad * 2
+  const vw = base.w / nav.zoom
+  const vh = base.h / nav.zoom
+  const cx = base.x + base.w / 2 + nav.dx
+  const cy = base.y + base.h / 2 + nav.dy
   // Jednostki rysunku na piksel – napisy i znaczniki mają stały rozmiar na ekranie.
-  const px = screen ? Math.max(vW / screen.w, vH / screen.h) : unit / 4
+  const px = screen ? Math.max(vw / screen.w, vh / screen.h) : geo.unit / 4
 
-  const dims: ReactNode[] = []
-  let lineUp = false
-  let lineRight = false
-  walked.forEach((w, i) => {
-    if (w.segment.kind !== 'line') return
-    const n = outerNormal(w.headingStart)
-    if (n[1] < -0.7) lineUp = true
-    if (n[0] > 0.7) lineRight = true
-    dims.push(
-      <Dimension key={`l${i}`} p1={w.start} p2={w.end} dir={n} offset={off} label={fmt(w.segment.length)} px={px} />,
-    )
-  })
-  // Gabaryt: szerokość nad rysunkiem, głębokość po prawej.
-  dims.push(
-    <Dimension
-      key="w"
-      p1={[box.minX, box.minY]}
-      p2={[box.maxX, box.minY]}
-      dir={[0, -1]}
-      offset={lineUp ? off * 2.2 : off}
-      label={fmt(boxW)}
-      px={px}
-    />,
-    <Dimension
-      key="h"
-      p1={[box.maxX, box.minY]}
-      p2={[box.maxX, box.maxY]}
-      dir={[1, 0]}
-      offset={lineRight ? off * 2.2 : off}
-      label={fmt(boxH)}
-      px={px}
-    />,
-  )
-  // Grubość na końcu frontu.
-  const last = walked[walked.length - 1]
-  const endDir: Point = [Math.cos((last.headingEnd * Math.PI) / 180), Math.sin((last.headingEnd * Math.PI) / 180)]
-  dims.push(
-    <Dimension
-      key="g"
-      p1={outer[outer.length - 1]}
-      p2={inner[inner.length - 1]}
-      dir={endDir}
-      offset={off * 0.9}
-      label={`${g}`}
-      px={px}
-    />,
-  )
-
-  // Łuki: kreskowane promienie do końców łuku i linia R z grotem przy licu.
-  const arcs = walked.flatMap((w, i) => {
-    if (w.segment.kind !== 'arc' || !w.center) return []
-    const c = w.center
-    const r = w.segment.radius
-    const ri = r - g
-    const nS = outerNormal(w.headingStart)
-    const nE = outerNormal(w.headingEnd)
-    const aDeg = w.headingStart + Math.min(w.segment.angleDeg / 2, 45)
-    const rDir = outerNormal(aDeg)
-    const rEnd: Point = [c[0] + rDir[0] * r, c[1] + rDir[1] * r]
-    const arrowLen = px * 11
-    const base: Point = [rEnd[0] - rDir[0] * arrowLen, rEnd[1] - rDir[1] * arrowLen]
-    const perp: Point = [-rDir[1], rDir[0]]
-    const arrow = [rEnd, [base[0] + perp[0] * px * 3.5, base[1] + perp[1] * px * 3.5], [base[0] - perp[0] * px * 3.5, base[1] - perp[1] * px * 3.5]]
-    const label: Point = [c[0] + rDir[0] * r * 0.5 - perp[0] * px * 9, c[1] + rDir[1] * r * 0.5 - perp[1] * px * 9]
-    let angle = (Math.atan2(rDir[1], rDir[0]) * 180) / Math.PI
-    if (angle >= 90) angle -= 180
-    if (angle < -90) angle += 180
-    return [
-      <g key={`a${i}`}>
-        <path
-          className="plan__dashed"
-          d={`M ${c[0] + nS[0] * ri} ${c[1] + nS[1] * ri} L ${c[0]} ${c[1]} L ${c[0] + nE[0] * ri} ${c[1] + nE[1] * ri}`}
-        />
-        <line className="plan__thin" x1={c[0]} y1={c[1]} x2={base[0]} y2={base[1]} />
-        <polygon className="plan__arrow" points={arrow.map((q) => q.join(',')).join(' ')} />
-        <text className="plan__text" x={label[0]} y={label[1]} transform={`rotate(${angle} ${label[0]} ${label[1]})`} fontSize={px * 11}>
-          R{r}
-        </text>
-      </g>,
-    ]
+  // Aktualne wartości dla obsługi zdarzeń (nasłuchy nie są odtwarzane przy każdym renderze).
+  const live = useRef({ base, key, px })
+  useEffect(() => {
+    live.current = { base, key, px }
   })
 
-  // Granice łuk / odcinek prosty.
-  const seams = walked.slice(0, -1).map((w, i) => {
-    const n = outerNormal(w.headingEnd)
-    return (
-      <line
-        key={`s${i}`}
-        className="plan__seam"
-        x1={w.end[0]}
-        y1={w.end[1]}
-        x2={w.end[0] - n[0] * g}
-        y2={w.end[1] - n[1] * g}
-      />
-    )
-  })
+  /** Zoom o czynnik `k` wokół punktu ekranu (względem środka SVG); bez punktu – wokół środka widoku. */
+  const zoomBy = useCallback((k: number, at?: { x: number; y: number }) => {
+    setNavState((prev) => {
+      const { base: b, key: kk, px: p } = live.current
+      const cur = prev.key === kk ? prev : { key: kk, zoom: 1, dx: 0, dy: 0 }
+      const zoom = clamp(cur.zoom * k, MIN_ZOOM, MAX_ZOOM)
+      const real = zoom / cur.zoom
+      const ox = at ? at.x * p : 0
+      const oy = at ? at.y * p : 0
+      // Punkt pod kursorem zostaje w miejscu: nowy środek = punkt − przesunięcie / real.
+      const dx = cur.dx + ox - ox / real
+      const dy = cur.dy + oy - oy / real
+      return limit({ key: kk, zoom, dx, dy }, b)
+    })
+  }, [])
 
-  return (
+  const panBy = useCallback((sx: number, sy: number) => {
+    setNavState((prev) => {
+      const { base: b, key: kk, px: p } = live.current
+      const cur = prev.key === kk ? prev : { key: kk, zoom: 1, dx: 0, dy: 0 }
+      return limit({ ...cur, dx: cur.dx - sx * p, dy: cur.dy - sy * p }, b)
+    })
+  }, [])
+
+  const reset = () => setNavState({ key, zoom: 1, dx: 0, dy: 0 })
+
+  // Kółko myszy / gest na touchpadzie – nasłuch nie-pasywny, żeby nie przewijać strony.
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el || !interactive) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const r = el.getBoundingClientRect()
+      const k = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015))
+      zoomBy(k, { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [interactive, zoomBy])
+
+  // Przeciąganie (mysz, pióro, palec) i szczypanie dwoma palcami.
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+  }
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const map = pointers.current
+    const prev = map.get(e.pointerId)
+    if (!prev) return
+    const others = [...map.entries()].filter(([id]) => id !== e.pointerId).map(([, p]) => p)
+    const next = { x: e.clientX, y: e.clientY }
+    if (others.length === 0) {
+      panBy(next.x - prev.x, next.y - prev.y)
+    } else {
+      const o = others[0]
+      const d0 = Math.hypot(prev.x - o.x, prev.y - o.y)
+      const d1 = Math.hypot(next.x - o.x, next.y - o.y)
+      const r = e.currentTarget.getBoundingClientRect()
+      // Przesunięcie środka gestu + zoom wokół niego.
+      panBy((next.x - prev.x) / 2, (next.y - prev.y) / 2)
+      if (d0 > 0) {
+        zoomBy(d1 / d0, {
+          x: (next.x + o.x) / 2 - r.left - r.width / 2,
+          y: (next.y + o.y) / 2 - r.top - r.height / 2,
+        })
+      }
+    }
+    map.set(e.pointerId, next)
+  }
+  const onPointerEnd = (e: React.PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(e.pointerId)
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    const step = 40
+    const actions: Record<string, () => void> = {
+      '+': () => zoomBy(1.25),
+      '=': () => zoomBy(1.25),
+      '-': () => zoomBy(0.8),
+      '0': reset,
+      ArrowLeft: () => panBy(step, 0),
+      ArrowRight: () => panBy(-step, 0),
+      ArrowUp: () => panBy(0, step),
+      ArrowDown: () => panBy(0, -step),
+    }
+    const action = actions[e.key]
+    if (action) {
+      e.preventDefault()
+      action()
+    }
+  }
+
+  const zoomed = nav.zoom !== 1 || nav.dx !== 0 || nav.dy !== 0
+  const label = `Rzut z góry: ${frontType.name}, R ${config.radiusMm} mm, grubość ${geo.g} mm, gabaryt ${fmt(geo.boxW)} × ${fmt(geo.boxH)} mm`
+
+  const svg = (
     <svg
       ref={svgRef}
-      className="viz__svg plan"
-      viewBox={`${vMinX} ${vMinY} ${vW} ${vH}`}
+      className={`viz__svg plan${interactive ? ' plan--interactive' : ''}`}
+      viewBox={`${cx - vw / 2} ${cy - vh / 2} ${vw} ${vh}`}
       role="img"
-      aria-label={`Rzut z góry: ${frontType.name}, R ${config.radiusMm} mm, grubość ${g} mm, gabaryt ${fmt(boxW)} × ${fmt(boxH)} mm`}
+      aria-label={label}
+      {...(interactive && {
+        tabIndex: 0,
+        'aria-keyshortcuts': '+ - 0 ArrowLeft ArrowRight ArrowUp ArrowDown',
+        onPointerDown,
+        onPointerMove,
+        onPointerUp: onPointerEnd,
+        onPointerCancel: onPointerEnd,
+        onKeyDown,
+        onDoubleClick: reset,
+      })}
     >
-      <defs>
-        {/* Kreskowanie przekroju (jak przekrój gałki na rysunku referencyjnym). */}
-        <pattern id={hatchId} width={px * 6} height={px * 6} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1={0} y1={0} x2={0} y2={px * 6} className="plan__hatch" strokeWidth={px} />
-        </pattern>
-      </defs>
-
-      {arcs}
-
-      {/* Front: przekrój z kreskowaniem, lico pogrubione */}
-      <path d={outline} className="plan__section" fill={`url(#${hatchId})`} />
-      {seams}
-      <path d={toD(outer)} className="plan__face" />
-
-      {dims}
-
-      <text className="plan__caption" x={vMinX + px * 10} y={vMinY + vH - px * 10} fontSize={px * 10}>
-        mm
-      </text>
+      <PlanContent geo={geo} px={px} hatchId={hatchId} />
+      {!zoomed && (
+        <text className="plan__caption" x={base.x + px * 10} y={base.y + base.h - px * 10} fontSize={px * 10}>
+          mm
+        </text>
+      )}
     </svg>
   )
+
+  if (!interactive) return svg
+
+  return (
+    <div className="plan-nav">
+      {svg}
+      <p className="plan-nav__hint">Kółko / szczypanie = zoom · przeciągnij = przesuń</p>
+      <div className="plan-nav__tools" role="group" aria-label="Powiększenie rysunku">
+        <button type="button" className="plan-nav__btn" onClick={() => zoomBy(0.8)} disabled={nav.zoom <= MIN_ZOOM} aria-label="Oddal" title="Oddal (−)">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" /></svg>
+        </button>
+        <output className="plan-nav__zoom" aria-live="polite" aria-label="Powiększenie">
+          {Math.round(nav.zoom * 100)}%
+        </output>
+        <button type="button" className="plan-nav__btn" onClick={() => zoomBy(1.25)} disabled={nav.zoom >= MAX_ZOOM} aria-label="Przybliż" title="Przybliż (+)">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10" /></svg>
+        </button>
+        <button type="button" className="plan-nav__btn plan-nav__btn--text" onClick={reset} disabled={!zoomed} aria-label="Wyzeruj widok" title="Wyzeruj widok (0 lub podwójne kliknięcie)">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6.5A5 5 0 1 1 3 9.5M3.5 2.5v4h4" /></svg>
+          <span className="plan-nav__label">Wyzeruj widok</span>
+        </button>
+      </div>
+    </div>
+  )
 }
+
+/** Nie pozwala „zgubić” rysunku – środek widoku zostaje w obrębie pełnego rysunku. */
+function limit(nav: Nav, base: ViewBox): Nav {
+  const mx = (base.w / 2) * (1 - 1 / nav.zoom) + base.w * 0.25
+  const my = (base.h / 2) * (1 - 1 / nav.zoom) + base.h * 0.25
+  const dx = nav.zoom === 1 ? 0 : clamp(nav.dx, -mx, mx)
+  const dy = nav.zoom === 1 ? 0 : clamp(nav.dy, -my, my)
+  return { ...nav, dx, dy }
+}
+

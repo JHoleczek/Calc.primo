@@ -1595,3 +1595,185 @@ textarea.text-input {
     padding-top: 0;
   }
 }
+
+/* ---------- Rysunek techniczny: zoom, przesuwanie, pobieranie ---------- */
+
+.plan-nav {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.plan--interactive {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.plan--interactive:active {
+  cursor: grabbing;
+}
+
+.plan--interactive:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -1px;
+}
+
+.plan-nav__tools {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #5a5a5a;
+  background: rgb(12 12 12 / 0.88);
+}
+
+.plan-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: #f2f2f2;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.plan-nav__btn + .plan-nav__btn,
+.plan-nav__zoom + .plan-nav__btn {
+  border-left: 1px solid #5a5a5a;
+}
+
+.plan-nav__btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.plan-nav__btn:hover:not(:disabled) {
+  background: #262626;
+}
+
+.plan-nav__btn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.plan-nav__btn:disabled {
+  color: #8f8f8f;
+  cursor: default;
+}
+
+.plan-nav__zoom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  border-left: 1px solid #5a5a5a;
+  color: #c9c9c9;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-nav__hint {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  margin: 0;
+  font-size: 12px;
+  color: #a3a3a3;
+  pointer-events: none;
+}
+
+.viz__download {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz__download-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.viz__download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--control);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.viz__download-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.viz__download-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+
+.viz__download-btn:disabled {
+  color: var(--muted);
+  cursor: progress;
+}
+
+.viz__download-error {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--error);
+}
+
+@media (max-width: 900px) {
+  .plan-nav__hint {
+    display: none;
+  }
+
+  .plan-nav__tools {
+    right: 6px;
+    bottom: 6px;
+  }
+
+  .plan-nav__btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 8px;
+  }
+
+  .plan-nav__zoom {
+    min-width: 44px;
+  }
+
+  /* Na telefonie sama ikona – nazwa zostaje w aria-label. */
+  .plan-nav__label {
+    display: none;
+  }
+
+  .viz__download-label {
+    display: none;
+  }
+}

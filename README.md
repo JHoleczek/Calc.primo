@@ -27,7 +27,11 @@ npm run build    # build produkcyjny do dist/
 - `src/lib/frontGeometry.ts` – siatka 3D z ryflowaniem wyfrezowanym w licu.
 - `src/lib/paintColor.ts` – przybliżony kolor ekranowy z RAL / NCS / hex / nazwy.
 - `src/components/viz3d/` – scena three.js (React Three Fiber), ładowana leniwie.
-- `src/components/PlanView.tsx` – rzut z góry w stylu rysunku technicznego.
+- `src/components/PlanView.tsx` + `PlanDrawing.tsx` + `src/lib/planGeometry.ts` – rzut z góry w stylu
+  rysunku technicznego: zoom (kółko, szczypanie, +/−), przesuwanie (przeciąganie, strzałki),
+  „Wyzeruj widok” (też klawisz 0 / podwójne kliknięcie).
+- `src/lib/planExport.tsx` – pobieranie rysunku jako SVG lub PNG (cały rysunek z tabliczką: kod,
+  typ, R, H, grubość), niezależnie od bieżącego powiększenia.
 - `src/lib/cart.ts` + `src/components/Cart.tsx` – koszyk: ilość, edycja, duplikowanie, usuwanie,
   sumy sztuk i m²; zapis w przeglądarce (localStorage).
 - `src/components/CartDrawer.tsx` – ikona koszyka w prawym górnym rogu i panel wysuwany z prawej

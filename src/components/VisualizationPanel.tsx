@@ -12,12 +12,25 @@ import type { Configuration, Result } from '../lib/calculate'
 import type { FrontGeometryInput } from '../lib/frontGeometry'
 import { frontPath } from '../lib/frontPath'
 import { resolvePaintColor } from '../lib/paintColor'
+import { exportPlanSvg, svgToPng } from '../lib/planExport'
 import { PlanView } from './PlanView'
 
 // three.js jest duży – ładujemy go osobno, żeby formularz był gotowy od razu.
 const FrontScene = lazy(() => import('./viz3d/FrontScene'))
 
 type View = '3d' | 'plan'
+type DownloadFormat = 'svg' | 'png'
+
+function saveBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.append(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
 
 const fmtNum = (v: number, digits: number) =>
   Number.isFinite(v) ? v.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—'
@@ -57,6 +70,31 @@ export function VisualizationPanel({ config, result }: Props) {
 
   const colorText = config.color.trim()
 
+  const [busy, setBusy] = useState<DownloadFormat | null>(null)
+  const [downloadError, setDownloadError] = useState('')
+  const download = async (format: DownloadFormat) => {
+    setBusy(format)
+    setDownloadError('')
+    try {
+      const title = `${result.code} ${result.flutingCode}`
+      const subtitle = [
+        frontType.name,
+        `R ${config.radiusMm} mm`,
+        `H ${heightMm} mm`,
+        `grubość ${THICKNESS_MM} mm`,
+        'wymiary w mm',
+        'Primo Meble',
+      ].join('  ·  ')
+      const file = await exportPlanSvg(config, title, subtitle, format === 'png' ? 2 : 1)
+      const blob = format === 'svg' ? new Blob([file.svg], { type: 'image/svg+xml' }) : await svgToPng(file)
+      saveBlob(blob, `${result.code}-${result.flutingCode}-rzut.${format}`)
+    } catch {
+      setDownloadError('Nie udało się pobrać rysunku.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <div className="viz">
       <div className="viz__bar">
@@ -81,6 +119,33 @@ export function VisualizationPanel({ config, result }: Props) {
           ))}
         </div>
         {view === '3d' && <span className="viz__hint">Przeciągnij, aby obrócić · kółko / szczypanie = zoom</span>}
+        {view === 'plan' && (
+          <div className="viz__download" role="group" aria-label="Pobierz rysunek techniczny">
+            <span className="viz__download-label" aria-hidden="true">
+              Pobierz rysunek
+            </span>
+            {(['svg', 'png'] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                className="viz__download-btn"
+                onClick={() => void download(f)}
+                disabled={busy !== null}
+                aria-label={`Pobierz rysunek techniczny jako ${f.toUpperCase()}`}
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10" />
+                </svg>
+                {f.toUpperCase()}
+              </button>
+            ))}
+            {downloadError && (
+              <span className="viz__download-error" role="alert">
+                {downloadError}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className={`viz__stage${view === 'plan' ? ' viz__stage--plan' : ''}`} role="tabpanel" aria-labelledby={`viz-tab-${view}`}>
@@ -94,7 +159,7 @@ export function VisualizationPanel({ config, result }: Props) {
             />
           </Suspense>
         ) : (
-          <PlanView config={config} />
+          <PlanView config={config} interactive />
         )}
       </div>
 
