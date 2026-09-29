@@ -15,18 +15,16 @@ import {
   type FrontTypeId,
   type MaterialId,
 } from '../config/catalog'
-import { frontPath, pathLength, segmentLength } from './frontPath'
+import { cornerEnding, extensionMm, frontPath, pathLength, segmentLength } from './frontPath'
 
 export interface Configuration {
   typeId: FrontTypeId
   /** Promień R po licu zewnętrznym [mm]. */
   radiusMm: number
   heightMm: number
-  /** Narożne: zakończenie N0 / N1 / N2. */
-  endingId: EndingId
-  /** Narożne N2: przedłużenie lewe [mm]. */
+  /** Narożne: przedłużenie lewe [mm]; 0 = brak. Zakończenie N0/N1/N2 wynika z przedłużeń. */
   extLeftMm: number
-  /** Narożne N1/N2: przedłużenie prawe [mm]. */
+  /** Narożne: przedłużenie prawe [mm]; 0 = brak. */
   extRightMm: number
   /** Przedłużane: całkowity wymiar L [mm]. */
   lengthMm: number
@@ -47,7 +45,6 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   typeId: 'narozne',
   radiusMm: 300,
   heightMm: DEFAULT_HEIGHT_MM,
-  endingId: 'n2',
   extLeftMm: CORNER_EXTENSION.default,
   extRightMm: CORNER_EXTENSION.default,
   lengthMm: EXTENDED_LENGTH.default,
@@ -60,15 +57,22 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   body: false,
 }
 
-/** Uzupełnia konfigurację zapisaną przez starszą wersję (np. koszyk w przeglądarce). */
-export function normalizeConfiguration(config: Partial<Configuration>): Configuration {
-  return { ...DEFAULT_CONFIGURATION, ...config }
+/**
+ * Uzupełnia konfigurację zapisaną przez starszą wersję (np. koszyk w przeglądarce).
+ * Dawne „zakończenie N0/N1/N2” bez długości zamieniamy na przedłużenia 50 mm.
+ */
+export function normalizeConfiguration(config: Partial<Configuration> & { endingId?: EndingId }): Configuration {
+  const { endingId, ...rest } = config
+  const legacy: Partial<Configuration> =
+    endingId && rest.extLeftMm === undefined && rest.extRightMm === undefined
+      ? { extLeftMm: endingId === 'n2' ? CORNER_EXTENSION.max : 0, extRightMm: endingId === 'n0' ? 0 : CORNER_EXTENSION.max }
+      : {}
+  return { ...DEFAULT_CONFIGURATION, ...rest, ...legacy }
 }
 
-/** Liczba przedłużeń narożnika: N0 – 0, N1 – 1 (prawe), N2 – 2 (lewe i prawe). */
-export function cornerExtensions(config: Pick<Configuration, 'typeId' | 'endingId'>): 0 | 1 | 2 {
-  if (config.typeId !== 'narozne') return 0
-  return (ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]).extensions
+/** Zakończenie narożnika (N0/N1/N2) z wpisanych przedłużeń; inne typy – N0. */
+export function endingOf(config: Pick<Configuration, 'typeId' | 'extLeftMm' | 'extRightMm'>): EndingId {
+  return config.typeId === 'narozne' ? cornerEnding(config) : 'n0'
 }
 
 /** Wysokość wymagająca laminatu gładkiego i dopłaty. */
@@ -108,12 +112,14 @@ export interface Result {
 
 const mmText = (mm: number) => (Number.isFinite(mm) ? `${Math.round(mm)} mm` : '—')
 
-/** Opis przedłużeń narożnika, np. „lewe 50 mm, prawe 80 mm”; pusty dla N0 i innych typów. */
+/** Opis przedłużeń narożnika, np. „przedłużenie lewe 30 mm, prawe 50 mm”; pusty dla N0 i innych typów. */
 export function extensionText(config: Configuration): string {
-  const exts = cornerExtensions(config)
-  if (exts === 0) return ''
-  if (exts === 1) return `przedłużenie prawe ${mmText(config.extRightMm)}`
-  return `przedłużenie lewe ${mmText(config.extLeftMm)}, prawe ${mmText(config.extRightMm)}`
+  if (config.typeId !== 'narozne') return ''
+  const parts = [
+    ...(extensionMm(config.extLeftMm) > 0 ? [`lewe ${mmText(config.extLeftMm)}`] : []),
+    ...(extensionMm(config.extRightMm) > 0 ? [`prawe ${mmText(config.extRightMm)}`] : []),
+  ]
+  return parts.length ? `przedłużenie ${parts.join(', ')}` : ''
 }
 
 const pad3 = (n: number) => String(Math.round(n)).padStart(3, '0')
@@ -121,7 +127,7 @@ const pad3 = (n: number) => String(Math.round(n)).padStart(3, '0')
 function catalogCode(c: Configuration): string {
   switch (c.typeId) {
     case 'narozne':
-      return `EG-${c.endingId.toUpperCase()}-R${pad3(c.radiusMm)}`
+      return `EG-${endingOf(c).toUpperCase()}-R${pad3(c.radiusMm)}`
     case 'przedluzane':
       return `EG-N1-R${pad3(c.radiusMm)}-L${Math.round(c.lengthMm)}`
     case 'obustronne':
@@ -141,14 +147,12 @@ export function calculate(config: Configuration): Result {
   if (!(config.heightMm >= HEIGHT_RANGE.min && config.heightMm <= HEIGHT_RANGE.max)) {
     errors.push(`Wysokość H musi mieścić się w zakresie ${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} mm.`)
   }
-  const exts = cornerExtensions(config)
-  const extChecks: [string, number][] = [
-    ...(exts === 2 ? ([['lewe', config.extLeftMm]] as [string, number][]) : []),
-    ...(exts >= 1 ? ([['prawe', config.extRightMm]] as [string, number][]) : []),
-  ]
-  for (const [side, mm] of extChecks) {
-    if (!(mm >= CORNER_EXTENSION.min && mm <= CORNER_EXTENSION.max)) {
-      errors.push(`Przedłużenie ${side} musi mieścić się w zakresie ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm.`)
+  if (config.typeId === 'narozne') {
+    for (const [side, raw] of [['lewe', config.extLeftMm], ['prawe', config.extRightMm]] as const) {
+      const mm = extensionMm(raw)
+      if (mm > 0 && !(mm >= CORNER_EXTENSION.min && mm <= CORNER_EXTENSION.max)) {
+        errors.push(`Przedłużenie ${side}: wpisz 0 (brak) albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm.`)
+      }
     }
   }
   if (isTall(config.heightMm) && config.heightMm <= HEIGHT_RANGE.max && !material.smoothOnly) {
@@ -178,8 +182,9 @@ export function calculate(config: Configuration): Result {
   const developedMm = pathLength(path)
 
   const notes: Note[] = []
-  if (exts > 0) {
-    const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
+  const endingId = endingOf(config)
+  if (endingId !== 'n0') {
+    const ending = ENDINGS.find((e) => e.id === endingId) ?? ENDINGS[0]
     notes.push({
       level: 'addon',
       text: `Zakończenie ${ending.name}: ${extensionText(config)}`,

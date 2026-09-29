@@ -68,8 +68,11 @@ export const ENDINGS: Ending[] = [
   { id: 'n2', name: 'N2', extensions: 2, description: 'Przedłużenie obustronne' },
 ]
 
-/** Przedłużenia narożnika N1/N2 [mm] – wpisywane przez klienta (lewe / prawe), domyślnie 50 mm. */
-export const CORNER_EXTENSION = { min: 10, max: 700, default: 50 }
+/**
+ * Przedłużenia narożnika [mm] – lewe i prawe wpisywane przez klienta.
+ * 0 = brak; zakończenie wynika z liczby przedłużeń: 0 → N0, jedno → N1, oba → N2.
+ */
+export const CORNER_EXTENSION = { min: 10, max: 50, default: 0 }
 
 /** Powyżej tej wysokości H [mm] front wykonujemy tylko z laminatu gładkiego (i z dopłatą). */
 export const TALL_HEIGHT_MM = 2780

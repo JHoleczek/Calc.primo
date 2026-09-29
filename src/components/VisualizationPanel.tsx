@@ -50,13 +50,12 @@ export function VisualizationPanel({ config, result }: Props) {
   const heightMm = Number.isFinite(config.heightMm)
     ? Math.min(HEIGHT_RANGE.max, Math.max(HEIGHT_RANGE.min, config.heightMm))
     : DEFAULT_HEIGHT_MM
-  const { typeId, radiusMm, endingId, extLeftMm, extRightMm, lengthMm, widthMm, sideExtension, zMm } = config
+  const { typeId, radiusMm, extLeftMm, extRightMm, lengthMm, widthMm, sideExtension, zMm } = config
 
   const geometry = useMemo<FrontGeometryInput>(() => {
     const path = frontPath({
       typeId,
       radiusMm,
-      endingId,
       extLeftMm,
       extRightMm,
       lengthMm: Number.isFinite(lengthMm) ? lengthMm : radiusMm + 1,
@@ -65,7 +64,7 @@ export function VisualizationPanel({ config, result }: Props) {
       zMm: Number.isFinite(zMm) ? zMm : radiusMm + 1,
     })
     return { path, thicknessMm: THICKNESS_MM, heightMm, fluting: fluting.profile }
-  }, [typeId, radiusMm, endingId, extLeftMm, extRightMm, lengthMm, widthMm, sideExtension, zMm, heightMm, fluting.profile])
+  }, [typeId, radiusMm, extLeftMm, extRightMm, lengthMm, widthMm, sideExtension, zMm, heightMm, fluting.profile])
 
   const colorText = config.color.trim()
 

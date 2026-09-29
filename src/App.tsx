@@ -6,7 +6,6 @@ import {
   CORNER_EXTENSION,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
-  ENDINGS,
   EXTENDED_LENGTH,
   FLUTINGS,
   FRONT_TYPES,
@@ -23,7 +22,9 @@ import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CtaBanner } from './components/CtaBanner'
 import { SubmitForm } from './components/SubmitForm'
 import { catalogImage, extendedImage, TYPE_IMAGES } from './config/images'
-import { allowedRadius, calculate, cornerExtensions, DEFAULT_CONFIGURATION, isTall, type Configuration } from './lib/calculate'
+import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
+import { extensionMm } from './lib/frontPath'
+import { EndingIcon } from './components/EndingIcon'
 import {
   addItem,
   cartLines,
@@ -58,6 +59,7 @@ function NumberField({
   max,
   step,
   disabled,
+  snap,
   onChange,
 }: {
   id: string
@@ -67,6 +69,8 @@ function NumberField({
   max: number
   step: number
   disabled?: boolean
+  /** Dociąganie wartości suwaka (np. 1–9 mm → 0 albo 10). */
+  snap?: (value: number) => number
   onChange: (value: number) => void
 }) {
   const [text, setText] = useState(String(value))
@@ -102,7 +106,7 @@ function NumberField({
         step={step}
         value={Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min}
         disabled={disabled}
-        onChange={(e) => sync(Number(e.target.value))}
+        onChange={(e) => sync(snap ? snap(Number(e.target.value)) : Number(e.target.value))}
       />
       <div className="number-field__range">
         <span>{min}</span>
@@ -183,7 +187,6 @@ export default function App() {
         : { ...c, heightMm },
     )
   const tall = isTall(config.heightMm)
-  const exts = cornerExtensions(config)
 
   const radii = frontType.radii
   // Pełna skala R ze wszystkich typów – promienie spoza zakresu typu są wyszarzone.
@@ -250,55 +253,33 @@ export default function App() {
       },
   )
   if (t === 'narozne') {
+    // Zakończenie wynika z przedłużeń: oba 0 → N0, jedno → N1, oba → N2.
+    const snapExt = (v: number) => (v < CORNER_EXTENSION.min / 2 ? 0 : Math.max(CORNER_EXTENSION.min, v))
+    const extField = (key: 'extLeftMm' | 'extRightMm', label: string, caption: string) => (
+      <div>
+        <span className="ext-fields__label">{caption}</span>
+        <NumberField
+          id={key === 'extLeftMm' ? 'ext-left' : 'ext-right'}
+          label={label}
+          value={config[key]}
+          min={0}
+          max={CORNER_EXTENSION.max}
+          step={1}
+          snap={snapExt}
+          onChange={(v) => set(key, v)}
+        />
+      </div>
+    )
     steps.push({
-      title: 'Zakończenie',
-      hint: 'Proste przedłużenia frontu, np. do montażu zawiasów – długość wpisz pod rysunkami.',
+      title: 'Przedłużenia',
+      hint: `Domyślnie bez przedłużeń (0). Wpisz ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm w jedno pole – zakończenie N1, w oba – N2.`,
       body: (
         <>
-          <ChoiceGroup
-            name="ending"
-            variant="cards"
-            columns={3}
-            value={config.endingId}
-            onChange={(v) => set('endingId', v)}
-            choices={ENDINGS.map((e) => ({
-              value: e.id,
-              label: e.name,
-              hint: e.description,
-              image: catalogImage(e.name),
-            }))}
-          />
-          {/* N0 – brak pól, N1 – jedno (prawe), N2 – lewe i prawe. */}
-          {exts > 0 && (
-            <div className="ext-fields">
-              {exts === 2 && (
-                <div>
-                  <span className="ext-fields__label">Przedłużenie lewe (początek frontu)</span>
-                  <NumberField
-                    id="ext-left"
-                    label="Przedłużenie lewe"
-                    value={config.extLeftMm}
-                    min={CORNER_EXTENSION.min}
-                    max={CORNER_EXTENSION.max}
-                    step={1}
-                    onChange={(v) => set('extLeftMm', v)}
-                  />
-                </div>
-              )}
-              <div>
-                <span className="ext-fields__label">Przedłużenie prawe (koniec łuku)</span>
-                <NumberField
-                  id="ext-right"
-                  label="Przedłużenie prawe"
-                  value={config.extRightMm}
-                  min={CORNER_EXTENSION.min}
-                  max={CORNER_EXTENSION.max}
-                  step={1}
-                  onChange={(v) => set('extRightMm', v)}
-                />
-              </div>
-            </div>
-          )}
+          <EndingIcon endingId={endingOf(config)} leftMm={extensionMm(config.extLeftMm)} rightMm={extensionMm(config.extRightMm)} />
+          <div className="ext-fields">
+            {extField('extLeftMm', 'Przedłużenie lewe', 'Przedłużenie lewe (początek frontu)')}
+            {extField('extRightMm', 'Przedłużenie prawe', 'Przedłużenie prawe (koniec łuku)')}
+          </div>
         </>
       ),
     })

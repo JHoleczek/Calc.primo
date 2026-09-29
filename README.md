@@ -57,8 +57,8 @@ Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 
 - R to promień **lica zewnętrznego** (powierzchnia wewnętrzna ma R − 18 mm).
 - Rozwinięcie = suma łuków po zewnętrznej + odcinki proste:
-  - narożne: łuk 90° + przedłużenia wpisane przez klienta (N0 – brak, N1 – prawe, na końcu łuku;
-    N2 – lewe i prawe; 10–700 mm, domyślnie 50),
+  - narożne: łuk 90° + przedłużenia lewe / prawe wpisane przez klienta (domyślnie 0 i 0; 10–50 mm).
+    Zakończenie wynika z wpisanych wartości: brak → N0, jedno → N1, oba → N2 (ikona zmienia się sama),
   - przedłużane: łuk 90° + (L − R),
   - obustronne: 2 × łuk 90° R100 + (W − 200) + opcjonalnie 2 × (Z − 100),
   - w łuk: półokrąg 180°.

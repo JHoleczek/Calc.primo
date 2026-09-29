@@ -6,19 +6,19 @@ const quarter = (r: number) => (Math.PI * r) / 2
 
 describe('calculate', () => {
   it('narożne N0/N1/N2: łuk 90° po zewnętrznej + przedłużenia 50 mm', () => {
-    const n0 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n0' })
+    const n0 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, extLeftMm: 0, extRightMm: 0 })
     expect(n0.code).toBe('EG-N0-R300')
     expect(n0.developedMm).toBeCloseTo(quarter(300))
     expect(n0.areaM2).toBeCloseTo(quarter(300) / 1000)
 
-    const n2 = calculate({ ...base, typeId: 'narozne', radiusMm: 50, endingId: 'n2' })
+    const n2 = calculate({ ...base, typeId: 'narozne', radiusMm: 50, extLeftMm: 50, extRightMm: 50 })
     expect(n2.code).toBe('EG-N2-R050')
     expect(n2.developedMm).toBeCloseTo(quarter(50) + 100)
     expect(n2.areaM2).toBeCloseTo(((quarter(50) + 100) * 1000) / 1e6)
   })
 
   it('m² = (łuk + przedłużenia) × H – przykład EG-N2-R300, H 472', () => {
-    const r = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n2', heightMm: 472 })
+    const r = calculate({ ...base, typeId: 'narozne', radiusMm: 300, extLeftMm: 50, extRightMm: 50, heightMm: 472 })
     expect(r.arcMm).toBeCloseTo(471.24, 1)
     expect(r.straightMm).toBe(100)
     expect(r.areaM2).toBeCloseTo(((quarter(300) + 100) * 472) / 1e6)
@@ -72,17 +72,27 @@ describe('calculate', () => {
     expect(calculate({ ...base, heightMm: 3300 }).errors).toHaveLength(1)
   })
 
-  it('N1/N2: długości przedłużeń wpisane przez klienta (lewe / prawe)', () => {
-    const n2 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n2', extLeftMm: 80, extRightMm: 120 })
-    expect(n2.straightMm).toBe(200)
-    expect(n2.notes.some((n) => n.text.includes('lewe 80 mm, prawe 120 mm'))).toBe(true)
-    const n1 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n1', extLeftMm: 999, extRightMm: 70 })
-    expect(n1.straightMm).toBe(70)
-    expect(n1.errors).toEqual([])
-    const n0 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n0', extLeftMm: NaN, extRightMm: NaN })
+  it('zakończenie wynika z przedłużeń: 0 i 0 → N0, jedno → N1, oba → N2; zakres 10–50 mm', () => {
+    const narozne = { ...base, typeId: 'narozne' as const, radiusMm: 300 }
+    expect(calculate(DEFAULT_CONFIGURATION).code).toBe('EG-N0-R300')
+    const n0 = calculate({ ...narozne, extLeftMm: NaN, extRightMm: 0 })
+    expect(n0.code).toBe('EG-N0-R300')
     expect(n0.straightMm).toBe(0)
     expect(n0.errors).toEqual([])
-    expect(calculate({ ...base, typeId: 'narozne', endingId: 'n2', extLeftMm: 5 }).errors[0]).toContain('lewe')
+
+    const left = calculate({ ...narozne, extLeftMm: 30, extRightMm: 0 })
+    expect(left.code).toBe('EG-N1-R300')
+    expect(left.straightMm).toBe(30)
+    expect(left.notes.some((n) => n.text.includes('przedłużenie lewe 30 mm'))).toBe(true)
+    expect(calculate({ ...narozne, extLeftMm: 0, extRightMm: 45 }).code).toBe('EG-N1-R300')
+
+    const n2 = calculate({ ...narozne, extLeftMm: 10, extRightMm: 50 })
+    expect(n2.code).toBe('EG-N2-R300')
+    expect(n2.straightMm).toBe(60)
+    expect(n2.notes.some((n) => n.text.includes('lewe 10 mm, prawe 50 mm'))).toBe(true)
+
+    expect(calculate({ ...narozne, extLeftMm: 5 }).errors[0]).toContain('lewe')
+    expect(calculate({ ...narozne, extRightMm: 60 }).errors[0]).toContain('prawe')
   })
 
   it('H > 2780: tylko laminat gładki', () => {

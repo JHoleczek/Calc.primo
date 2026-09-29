@@ -9,7 +9,6 @@ import {
   CORNER_EXTENSION,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
-  ENDINGS,
   EXTENDED_LENGTH,
   type EndingId,
   type FrontTypeId,
@@ -29,10 +28,9 @@ export interface FrontPath {
 export interface ShapeParams {
   typeId: FrontTypeId
   radiusMm: number
-  endingId: EndingId
-  /** Narożne N2: przedłużenie lewe (na początku, poziome na rzucie) [mm]. */
+  /** Narożne: przedłużenie lewe (na początku, poziome na rzucie) [mm]; 0 = brak. */
   extLeftMm: number
-  /** Narożne N1/N2: przedłużenie prawe (na końcu łuku, pionowe na rzucie) [mm]. */
+  /** Narożne: przedłużenie prawe (na końcu łuku, pionowe na rzucie) [mm]; 0 = brak. */
   extRightMm: number
   /** Przedłużane: całkowity wymiar L [mm]. */
   lengthMm: number
@@ -44,23 +42,29 @@ export interface ShapeParams {
   zMm: number
 }
 
+/** Długość przedłużenia; puste pole lub 0 = brak przedłużenia. */
+export const extensionMm = (mm: number) => (Number.isFinite(mm) && mm > 0 ? mm : 0)
+
+/** Zakończenie narożnika wynika z wpisanych przedłużeń: brak → N0, jedno → N1, oba → N2. */
+export function cornerEnding(p: Pick<ShapeParams, 'extLeftMm' | 'extRightMm'>): EndingId {
+  const n = (extensionMm(p.extLeftMm) > 0 ? 1 : 0) + (extensionMm(p.extRightMm) > 0 ? 1 : 0)
+  return n === 2 ? 'n2' : n === 1 ? 'n1' : 'n0'
+}
+
 /** Kształt frontu dla danej konfiguracji. */
 export function frontPath(p: ShapeParams): FrontPath {
   const R = p.radiusMm
   switch (p.typeId) {
     case 'narozne': {
-      const ext = (ENDINGS.find((e) => e.id === p.endingId) ?? ENDINGS[0]).extensions
-      const line = (mm: number): Segment => ({
-        kind: 'line',
-        length: Number.isFinite(mm) && mm > 0 ? Math.min(CORNER_EXTENSION.max, mm) : CORNER_EXTENSION.default,
-      })
-      // N1: przedłużenie prawe (koniec łuku, dół), N2: lewe i prawe.
+      const left = Math.min(CORNER_EXTENSION.max, extensionMm(p.extLeftMm))
+      const right = Math.min(CORNER_EXTENSION.max, extensionMm(p.extRightMm))
+      // Lewe: przed łukiem (poziomo), prawe: za łukiem (w dół).
       return {
         startHeadingDeg: 0,
         segments: [
-          ...(ext === 2 ? [line(p.extLeftMm)] : []),
+          ...(left > 0 ? [{ kind: 'line', length: left } as Segment] : []),
           { kind: 'arc', radius: R, angleDeg: 90 },
-          ...(ext >= 1 ? [line(p.extRightMm)] : []),
+          ...(right > 0 ? [{ kind: 'line', length: right } as Segment] : []),
         ],
       }
     }

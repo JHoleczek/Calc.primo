@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { calculate, DEFAULT_CONFIGURATION, type Configuration } from './calculate'
 import { priceLine } from './pricing'
 
-const lak: Configuration = { ...DEFAULT_CONFIGURATION, typeId: 'narozne', endingId: 'n0', radiusMm: 300, heightMm: 1000, materialId: 'lakierowane', color: 'RAL 9010' }
+const lak: Configuration = { ...DEFAULT_CONFIGURATION, typeId: 'narozne', radiusMm: 300, heightMm: 1000, materialId: 'lakierowane', color: 'RAL 9010' }
 const area = (Math.PI * 300) / 2 / 1000
 const price = (c: Configuration, qty = 1) => priceLine(c, calculate(c), qty)
 

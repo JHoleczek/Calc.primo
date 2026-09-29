@@ -14,7 +14,7 @@ import {
   updateItem,
 } from './cart'
 
-const cfg = { ...DEFAULT_CONFIGURATION, typeId: 'narozne' as const, radiusMm: 300, endingId: 'n0' as const, heightMm: 1000 }
+const cfg = { ...DEFAULT_CONFIGURATION, typeId: 'narozne' as const, radiusMm: 300, extLeftMm: 0, extRightMm: 0, heightMm: 1000 }
 
 describe('koszyk', () => {
   it('dodaje, zmienia ilość, duplikuje, edytuje i usuwa', () => {
@@ -95,9 +95,13 @@ describe('koszyk', () => {
     const old = { ...cfg } as Record<string, unknown>
     delete old.body
     delete old.extLeftMm
+    delete old.extRightMm
+    old.endingId = 'n1'
     store.set('primo-koszyk-v1', JSON.stringify([{ id: 'a', qty: 1, config: old }]))
     const [item] = loadCart()
     expect(item.config.body).toBe(false)
-    expect(item.config.extLeftMm).toBe(50)
+    expect(item.config.extLeftMm).toBe(0)
+    expect(item.config.extRightMm).toBe(50)
+    expect(item.config).not.toHaveProperty('endingId')
   })
 })

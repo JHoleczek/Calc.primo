@@ -6,9 +6,8 @@ import { resolvePaintColor } from './paintColor'
 const shape: ShapeParams = {
   typeId: 'narozne',
   radiusMm: 300,
-  endingId: 'n0',
-  extLeftMm: 50,
-  extRightMm: 50,
+  extLeftMm: 0,
+  extRightMm: 0,
   lengthMm: 700,
   widthMm: 600,
   sideExtension: false,
@@ -17,7 +16,7 @@ const shape: ShapeParams = {
 
 describe('frontPath', () => {
   it('narożnik N1 ma przedłużenie na końcu łuku (w dół)', () => {
-    const w = walkPath(frontPath({ ...shape, endingId: 'n1' }))
+    const w = walkPath(frontPath({ ...shape, extLeftMm: 0, extRightMm: 50 }))
     expect(w.map((s) => s.segment.kind)).toEqual(['arc', 'line'])
     expect(w[1].headingStart).toBe(90)
     expect(w[1].end[0]).toBeCloseTo(300)

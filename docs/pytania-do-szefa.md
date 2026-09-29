@@ -11,8 +11,7 @@ H > 2780 mm +30%, bryła +25%. Poniższe braki są w wycenie oznaczone „DO UST
    czy dodajemy (+55%)?
 5. **Bryła** – co dokładnie znaczy „front + środek”? Czy potrzebujemy od klienta dodatkowych wymiarów
    (głębokość, półki, plecy)? Czy +25% liczymy od m² frontu?
-6. **Przedłużenia N1/N2** – jaki zakres długości dopuszczamy (teraz 10–700 mm)? Czy przy N1 klient
-   ma wybierać stronę (lewe / prawe)? Czy dłuższe przedłużenia mają dopłatę poza m²?
+6. **Przedłużenia N1/N2** – czy przedłużenia (10–50 mm) mają dopłatę poza samym m²?
 7. **Kolor lakieru** – czy RAL / NCS / połysk / mat zmienia cenę?
 8. **Minimum** – czy jest minimalna powierzchnia lub kwota zamówienia, transport, termin realizacji
    do wpisania w odpowiedzi do klienta?

@@ -1830,3 +1830,60 @@ textarea.text-input {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* Ikona zakończenia (N0/N1/N2) – zmienia się wraz z wpisanymi przedłużeniami. */
+.ending-icon {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ending-icon svg {
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+}
+
+.ending-icon__arc {
+  fill: var(--muted);
+  fill-opacity: 0.45;
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.ending-icon__ext {
+  fill: var(--gold);
+  fill-opacity: 0.35;
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.ending-icon__ghost {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.ending-icon__dim {
+  fill: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ending-icon figcaption {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ending-icon figcaption strong {
+  color: var(--text);
+  font-weight: 600;
+}
