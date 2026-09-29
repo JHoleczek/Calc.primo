@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 export interface Choice<T extends string | number> {
   value: T
@@ -6,6 +6,8 @@ export interface Choice<T extends string | number> {
   hint?: ReactNode
   /** Podgląd (rysunek katalogowy) nad etykietą – dekoracyjny, opis jest w etykiecie. */
   image?: string
+  /** Ikona (np. izometryczna bryła) nad etykietą – dekoracyjna. */
+  icon?: ReactNode
   /** Opcja niedostępna przy obecnych wyborach – widoczna, ale wyszarzona i nieklikalna. */
   disabled?: boolean
   /** Krótka przyczyna niedostępności (pokazywana zamiast podpowiedzi). */
@@ -17,7 +19,8 @@ interface ChoiceGroupProps<T extends string | number> {
   value: T
   choices: Choice<T>[]
   onChange: (value: T) => void
-  variant?: 'chips' | 'cards'
+  /** chips – w linii, grid – siatka równych pól (np. promienie), cards – karty z podglądem. */
+  variant?: 'chips' | 'grid' | 'cards'
   columns?: number
 }
 
@@ -34,7 +37,8 @@ export function ChoiceGroup<T extends string | number>({
     <div
       className={`choice-group choice-group--${variant}`}
       role="radiogroup"
-      style={columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
+      // Liczba kolumn jako zmienna CSS – arkusz może ją zmniejszyć na wąskim ekranie.
+      style={columns ? ({ '--cols': columns } as CSSProperties) : undefined}
     >
       {choices.map((choice) => {
         const id = `${name}-${choice.value}`
@@ -54,6 +58,7 @@ export function ChoiceGroup<T extends string | number>({
               disabled={choice.disabled}
               onChange={() => onChange(choice.value)}
             />
+            {choice.icon && <span className="choice__icon">{choice.icon}</span>}
             {choice.image && <img className="choice__img" src={choice.image} alt="" loading="lazy" />}
             <span className="choice__label">{choice.label}</span>
             {choice.hint && <span className="choice__hint">{choice.hint}</span>}

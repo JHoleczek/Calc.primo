@@ -6,6 +6,7 @@ import {
   CORNER_EXTENSION,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
+  ENDINGS,
   EXTENDED_LENGTH,
   FLUTINGS,
   FRONT_TYPES,
@@ -21,10 +22,11 @@ import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CtaBanner } from './components/CtaBanner'
 import { SubmitForm } from './components/SubmitForm'
-import { catalogImage, extendedImage, TYPE_IMAGES } from './config/images'
+import { catalogImage } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
-import { EndingIcon } from './components/EndingIcon'
+import { FrontIcon } from './components/FrontIcon'
+import { endingIcon, heightIcon, lengthIcon, sideIcon, typeIcon, widthIcon, type IconSpec } from './lib/iconParts'
 import {
   addItem,
   cartLines,
@@ -37,29 +39,43 @@ import {
   type CartItem,
 } from './lib/cart'
 
-function Step({ n, title, hint, children }: { n: number; title: string; hint?: ReactNode; children: ReactNode }) {
+/** Sekcja konfiguratora: tytuł wersalikami + podtytuł (design system). */
+function Section({ title, subtitle, hint, children }: { title: string; subtitle?: string; hint?: ReactNode; children: ReactNode }) {
   return (
-    <fieldset className="step">
-      <legend className="step__legend">
-        <span className="step__num">{String(n).padStart(2, '0')}</span>
-        {title}
-      </legend>
-      {hint && <p className="step__hint">{hint}</p>}
+    <fieldset className="section">
+      <legend className="section__title">{title}</legend>
+      {subtitle && <p className="section__sub">{subtitle}</p>}
+      {hint && <p className="section__hint">{hint}</p>}
       {children}
     </fieldset>
   )
 }
 
-/** Pole liczbowe z suwakiem; trzyma surowy tekst, żeby dało się swobodnie wpisywać. */
-function NumberField({
+/** Karta wymiaru: ikona, tytuł, podtytuł i pola. */
+function DimCard({ icon, title, subtitle, children }: { icon: ReactNode; title: string; subtitle: string; children: ReactNode }) {
+  return (
+    <div className="dim-card">
+      <div className="dim-card__icon">{icon}</div>
+      <p className="dim-card__title">{title}</p>
+      <p className="dim-card__sub">{subtitle}</p>
+      <div className="dim-card__fields">{children}</div>
+    </div>
+  )
+}
+
+/**
+ * Pole w milimetrach (bez suwaka): trzyma surowy tekst, żeby dało się swobodnie wpisywać.
+ * `zeroIsEmpty` – 0 oznacza „brak” (pole puste z podpowiedzią „0”); wypełnione pole ma złote podkreślenie.
+ */
+function MmInput({
   id,
   label,
   value,
   min,
   max,
-  step,
+  caption,
+  zeroIsEmpty,
   disabled,
-  snap,
   onChange,
 }: {
   id: string
@@ -67,51 +83,45 @@ function NumberField({
   value: number
   min: number
   max: number
-  step: number
+  caption?: ReactNode
+  zeroIsEmpty?: boolean
   disabled?: boolean
-  /** Dociąganie wartości suwaka (np. 1–9 mm → 0 albo 10). */
-  snap?: (value: number) => number
   onChange: (value: number) => void
 }) {
-  const [text, setText] = useState(String(value))
-  const sync = (v: number) => {
-    setText(String(v))
-    onChange(v)
-  }
+  const shown = (v: number) => (!Number.isFinite(v) || (zeroIsEmpty && v === 0) ? '' : String(v))
+  const [text, setText] = useState(shown(value))
+  const filled = text.trim() !== '' && !(zeroIsEmpty && Number(text) === 0)
+  const invalid = filled && !(Number(text) >= min && Number(text) <= max)
   return (
-    <div className="number-field">
-      <div className="number-field__input">
+    <div className="mm-field">
+      <label className={`mm-input${filled ? ' mm-input--filled' : ''}${invalid ? ' mm-input--invalid' : ''}`} htmlFor={id}>
+        <span className="sr-only">{label}</span>
         <input
           id={id}
-          aria-label={label}
           type="number"
           inputMode="numeric"
-          min={min}
+          min={zeroIsEmpty ? 0 : min}
           max={max}
-          step={step}
+          step={1}
+          placeholder="0"
           value={text}
           disabled={disabled}
+          aria-invalid={invalid || undefined}
+          aria-describedby={caption ? `${id}-caption` : undefined}
           onChange={(e) => {
             setText(e.target.value)
-            onChange(e.target.value === '' ? NaN : Number(e.target.value))
+            onChange(e.target.value === '' ? (zeroIsEmpty ? 0 : NaN) : Number(e.target.value))
           }}
         />
-        <span className="number-field__unit">mm</span>
-      </div>
-      <input
-        type="range"
-        aria-label={`${label} – suwak`}
-        min={min}
-        max={max}
-        step={step}
-        value={Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min}
-        disabled={disabled}
-        onChange={(e) => sync(snap ? snap(Number(e.target.value)) : Number(e.target.value))}
-      />
-      <div className="number-field__range">
-        <span>{min}</span>
-        <span>{max}</span>
-      </div>
+        <span className="mm-input__unit" aria-hidden="true">
+          mm
+        </span>
+      </label>
+      {caption && (
+        <span className="mm-field__caption" id={`${id}-caption`}>
+          {caption}
+        </span>
+      )}
     </div>
   )
 }
@@ -196,194 +206,173 @@ export default function App() {
       ? `Stały promień ${radii[0]} mm (po zewnętrznej powierzchni łuku).`
       : `Promień po zewnętrznej powierzchni łuku, ${radii[0]}–${radii[radii.length - 1]} mm co 50 mm.`
 
-  // Kroki numerowane kolejno; część dotyczy tylko wybranych typów.
-  const steps: { title: string; hint?: ReactNode; body: ReactNode }[] = [
+  const leftMm = extensionMm(config.extLeftMm)
+  const rightMm = extensionMm(config.extRightMm)
+  const icon = (spec: IconSpec) => <FrontIcon parts={spec.parts} start={spec.start} inside={spec.inside} />
+
+  // Karty wymiarów – zależne od typu.
+  const dimCards: ReactNode[] = [
+    <DimCard key="h" icon={icon(heightIcon())} title="Wysokość" subtitle="Określ wysokość H">
+      <MmInput
+        id="height"
+        label="Wysokość H"
+        value={config.heightMm}
+        min={HEIGHT_RANGE.min}
+        max={HEIGHT_RANGE.max}
+        caption={`${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} mm`}
+        onChange={setHeight}
+      />
+    </DimCard>,
+  ]
+  if (t === 'narozne') {
+    // Zakończenie wynika z przedłużeń: oba 0 → N0, jedno → N1, oba → N2.
+    const ending = ENDINGS.find((e) => e.id === endingOf(config)) ?? ENDINGS[0]
+    dimCards.push(
+      <DimCard
+        key="ext"
+        icon={icon(endingIcon(leftMm > 0, rightMm > 0))}
+        title="Zakończenie"
+        subtitle={`Dodaj przedłużenie · ${ending.name}`}
+      >
+        <MmInput
+          id="ext-left"
+          label="Przedłużenie lewe"
+          value={config.extLeftMm}
+          min={CORNER_EXTENSION.min}
+          max={CORNER_EXTENSION.max}
+          zeroIsEmpty
+          caption="lewe"
+          onChange={(v) => set('extLeftMm', v)}
+        />
+        <MmInput
+          id="ext-right"
+          label="Przedłużenie prawe"
+          value={config.extRightMm}
+          min={CORNER_EXTENSION.min}
+          max={CORNER_EXTENSION.max}
+          zeroIsEmpty
+          caption="prawe"
+          onChange={(v) => set('extRightMm', v)}
+        />
+      </DimCard>,
+    )
+  }
+  if (t === 'przedluzane') {
+    const min = config.radiusMm + EXTENDED_LENGTH.minAboveRadius
+    dimCards.push(
+      <DimCard key="L" icon={icon(lengthIcon())} title="Wymiar L" subtitle="Od lica łuku do końca">
+        <MmInput
+          key={`L-${config.radiusMm}`}
+          id="length"
+          label="Wymiar L"
+          value={config.lengthMm}
+          min={min}
+          max={EXTENDED_LENGTH.max}
+          caption={`${min}–${EXTENDED_LENGTH.max} mm`}
+          onChange={(v) => set('lengthMm', v)}
+        />
+      </DimCard>,
+    )
+  }
+  if (t === 'obustronne') {
+    const zMin = config.radiusMm + DOUBLE_Z.minAboveRadius
+    dimCards.push(
+      <DimCard key="W" icon={icon(widthIcon())} title="Szerokość" subtitle="Wybierz szerokość W">
+        <ChoiceGroup
+          name="width"
+          variant="grid"
+          columns={3}
+          value={config.widthMm}
+          onChange={(v) => set('widthMm', v)}
+          choices={DOUBLE_WIDTHS.map((w) => ({ value: w, label: w }))}
+        />
+      </DimCard>,
+      <DimCard key="Z" icon={icon(sideIcon(config.sideExtension))} title="Boki" subtitle="Dodaj przedłużenie boków Z">
+        <MmInput
+          id="z"
+          label="Wymiar Z – przedłużenie boków"
+          value={config.sideExtension ? config.zMm : 0}
+          min={zMin}
+          max={DOUBLE_Z.max}
+          zeroIsEmpty
+          caption={`brak albo ${zMin}–${DOUBLE_Z.max} mm`}
+          onChange={(v) => setConfig((c) => ({ ...c, sideExtension: v > 0, zMm: v > 0 ? v : c.zMm }))}
+        />
+      </DimCard>,
+    )
+  }
+
+  const sections: { title: string; subtitle: string; hint?: ReactNode; body: ReactNode }[] = [
     {
       title: 'Typ frontu giętego',
+      subtitle: 'Wybierz kształt',
       body: (
         <ChoiceGroup
           name="front-type"
           variant="cards"
+          columns={4}
           value={t}
           onChange={setType}
           choices={FRONT_TYPES.map((ft) => ({
             value: ft.id,
             label: ft.name,
-            hint: ft.description,
-            image: catalogImage(TYPE_IMAGES[ft.id]),
+            hint: ft.short,
+            icon: icon(typeIcon(ft.id)),
           }))}
         />
       ),
     },
-  ]
-  steps.push(
-      {
-        title: 'Promień R',
-        hint: radiusHint,
-        body: (
-          <ChoiceGroup
-            name="radius"
-            value={config.radiusMm}
-            onChange={(v) => set('radiusMm', v)}
-            choices={ALL_RADII.map((r) => ({
-              value: r,
-              label: r,
-              disabled: !radii.includes(r),
-              disabledReason: `Niedostępne dla typu „${frontType.name}”`,
-            }))}
-          />
-        ),
-      },
-      {
-        title: 'Wysokość H',
-        hint: tall
-          ? `Powyżej ${TALL_HEIGHT_MM} mm front wykonujemy tylko z laminatu gładkiego.`
-          : `Powyżej ${TALL_HEIGHT_MM} mm dostępny jest tylko laminat gładki.`,
-        body: (
-          <NumberField
-            id="height"
-            label="Wysokość H"
-            value={config.heightMm}
-            min={HEIGHT_RANGE.min}
-            max={HEIGHT_RANGE.max}
-            step={HEIGHT_RANGE.step}
-            onChange={setHeight}
-          />
-        ),
-      },
-  )
-  if (t === 'narozne') {
-    // Zakończenie wynika z przedłużeń: oba 0 → N0, jedno → N1, oba → N2.
-    const snapExt = (v: number) => (v < CORNER_EXTENSION.min / 2 ? 0 : Math.max(CORNER_EXTENSION.min, v))
-    const extField = (key: 'extLeftMm' | 'extRightMm', label: string, caption: string) => (
-      <div>
-        <span className="ext-fields__label">{caption}</span>
-        <NumberField
-          id={key === 'extLeftMm' ? 'ext-left' : 'ext-right'}
-          label={label}
-          value={config[key]}
-          min={0}
-          max={CORNER_EXTENSION.max}
-          step={1}
-          snap={snapExt}
-          onChange={(v) => set(key, v)}
-        />
-      </div>
-    )
-    steps.push({
-      title: 'Przedłużenia',
-      hint: `Domyślnie bez przedłużeń (0). Wpisz ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm w jedno pole – zakończenie N1, w oba – N2.`,
+    {
+      title: 'Promień',
+      subtitle: 'Wybierz promień gięcia R',
+      hint: radiusHint,
       body: (
-        <>
-          <EndingIcon endingId={endingOf(config)} leftMm={extensionMm(config.extLeftMm)} rightMm={extensionMm(config.extRightMm)} />
-          <div className="ext-fields">
-            {extField('extLeftMm', 'Przedłużenie lewe', 'Przedłużenie lewe (początek frontu)')}
-            {extField('extRightMm', 'Przedłużenie prawe', 'Przedłużenie prawe (koniec łuku)')}
-          </div>
-        </>
-      ),
-    })
-  }
-  if (t === 'przedluzane') {
-    steps.push({
-      title: 'Wymiar L',
-      hint: `Całkowity wymiar od lica łuku do końca przedłużenia, max ${EXTENDED_LENGTH.max} mm.`,
-      body: (
-        <div className="step__with-figure">
-        <NumberField
-          key={`L-${config.radiusMm}`}
-          id="length"
-          label="Wymiar L"
-          value={config.lengthMm}
-          min={config.radiusMm + EXTENDED_LENGTH.minAboveRadius}
-          max={EXTENDED_LENGTH.max}
-          step={1}
-          onChange={(v) => set('lengthMm', v)}
+        <ChoiceGroup
+          name="radius"
+          variant="grid"
+          columns={3}
+          value={config.radiusMm}
+          onChange={(v) => set('radiusMm', v)}
+          choices={ALL_RADII.map((r) => ({
+            value: r,
+            label: r,
+            disabled: !radii.includes(r),
+            disabledReason: `Niedostępne dla typu „${frontType.name}”`,
+          }))}
         />
-          {extendedImage(config.radiusMm) && (
-            <figure className="step__figure">
-              <img src={extendedImage(config.radiusMm)} alt={`Rysunek katalogowy elementu przedłużanego R${config.radiusMm}, wymiar L max 700 mm`} />
-              <figcaption>Rysunek katalogowy · R{config.radiusMm}, L max {EXTENDED_LENGTH.max}</figcaption>
-            </figure>
-          )}
-        </div>
       ),
-    })
-  }
-  if (t === 'obustronne') {
-    steps.push(
-      {
-        title: 'Szerokość W',
-        body: (
-          <ChoiceGroup
-            name="width"
-            value={config.widthMm}
-            onChange={(v) => set('widthMm', v)}
-            choices={DOUBLE_WIDTHS.map((w) => ({ value: w, label: w }))}
-          />
-        ),
-      },
-      {
-        title: 'Przedłużenie boków',
-        hint: `Wymiar Z – całkowita głębokość z przedłużeniem, max ${DOUBLE_Z.max} mm.`,
-        body: (
-          <div className="step__stack">
-            <ChoiceGroup
-              name="side-extension"
-              variant="cards"
-              columns={2}
-              value={config.sideExtension ? 'z' : 'none'}
-              onChange={(v) => set('sideExtension', v === 'z')}
-              choices={[
-                {
-                  value: 'none',
-                  label: 'Bez przedłużenia',
-                  hint: `Głębokość ${config.radiusMm} mm`,
-                  image: catalogImage('EG-D-R100-W600'),
-                },
-                { value: 'z', label: 'Z przedłużeniem', hint: 'Wariant -Z', image: catalogImage('EG-D-R100-W600-Z200') },
-              ]}
-            />
-            {config.sideExtension && (
-              <NumberField
-                id="z"
-                label="Wymiar Z"
-                value={config.zMm}
-                min={config.radiusMm + DOUBLE_Z.minAboveRadius}
-                max={DOUBLE_Z.max}
-                step={1}
-                onChange={(v) => set('zMm', v)}
-              />
-            )}
-          </div>
-        ),
-      },
-    )
-  }
-  steps.push({
-    title: 'Ryflowanie',
-    hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (F00).` : undefined,
-    body: (
-      <ChoiceGroup
-        name="fluting"
-        variant="cards"
-        value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
-        onChange={(v) => set('flutingId', v)}
-        choices={FLUTINGS.map((f) => ({
-          value: f.id,
-          label: f.id,
-          hint: f.name,
-          image: catalogImage(f.id),
-          // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
-          disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
-          disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
-        }))}
-      />
-    ),
-  })
-  steps.push(
+    },
+    {
+      title: 'Wymiary',
+      subtitle: 'Określ wysokość i przedłużenia',
+      hint: tall ? `Powyżej ${TALL_HEIGHT_MM} mm front wykonujemy tylko z laminatu gładkiego.` : undefined,
+      body: <div className="dim-cards">{dimCards}</div>,
+    },
+    {
+      title: 'Ryflowanie',
+      subtitle: 'Wybierz wzór frezowania lica',
+      hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (F00).` : undefined,
+      body: (
+        <ChoiceGroup
+          name="fluting"
+          variant="cards"
+          value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
+          onChange={(v) => set('flutingId', v)}
+          choices={FLUTINGS.map((f) => ({
+            value: f.id,
+            label: f.id,
+            hint: f.name,
+            image: catalogImage(f.id),
+            // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
+            disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
+            disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
+          }))}
+        />
+      ),
+    },
     {
       title: 'Materiał',
+      subtitle: 'Wybierz wykończenie',
       body: (
         <ChoiceGroup
           name="material"
@@ -403,10 +392,10 @@ export default function App() {
     },
     {
       title: 'Kolor',
-      hint: material.colorRequired ? 'Wymagany dla frontów lakierowanych.' : 'Opcjonalnie.',
+      subtitle: material.colorRequired ? 'Wpisz kolor farby – wymagany' : 'Wpisz kolor – opcjonalnie',
       body: (
         <input
-          className="text-input"
+          className={`text-input${config.color.trim() ? ' text-input--filled' : ''}`}
           type="text"
           id="color"
           aria-label="Kolor farby"
@@ -419,7 +408,7 @@ export default function App() {
     },
     {
       title: 'Bryła',
-      hint: 'Sam front albo bryła – front wraz ze środkiem.',
+      subtitle: 'Sam front czy front ze środkiem',
       body: (
         <ChoiceGroup
           name="body"
@@ -434,7 +423,7 @@ export default function App() {
         />
       ),
     },
-  )
+  ]
 
   return (
     <div className="layout">
@@ -457,11 +446,11 @@ export default function App() {
           </p>
         )}
 
-        <form key={formKey} className="steps" onSubmit={(e) => e.preventDefault()}>
-          {steps.map((step, i) => (
-            <Step key={step.title} n={i + 1} title={step.title} hint={step.hint}>
-              {step.body}
-            </Step>
+        <form key={formKey} className="sections" onSubmit={(e) => e.preventDefault()}>
+          {sections.map((section) => (
+            <Section key={section.title} title={section.title} subtitle={section.subtitle} hint={section.hint}>
+              {section.body}
+            </Section>
           ))}
         </form>
 

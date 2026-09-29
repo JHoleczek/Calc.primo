@@ -17,6 +17,8 @@ export interface FrontType {
   id: FrontTypeId
   name: string
   description: string
+  /** Krótki podpis na karcie typu. */
+  short: string
   /** Dostępne promienie R [mm] (po licu zewnętrznym). */
   radii: number[]
 }
@@ -28,24 +30,28 @@ export const FRONT_TYPES: FrontType[] = [
   {
     id: 'narozne',
     name: 'Narożne',
+    short: 'Łuk 90°',
     description: 'Łuk 90°, zakończenia N0 / N1 / N2',
     radii: range(50, 600, 50),
   },
   {
     id: 'przedluzane',
     name: 'Przedłużane',
+    short: 'Łuk z przedłużeniem',
     description: 'Łuk 90° z prostym przedłużeniem, wymiar L max 700',
     radii: range(50, 600, 50),
   },
   {
     id: 'obustronne',
     name: 'Obustronne',
+    short: '2 łuki',
     description: 'Dwa łuki R100, szerokość W 600 / 700 / 800',
     radii: [100],
   },
   {
     id: 'luk',
     name: 'W łuk',
+    short: 'Półokrąg 180°',
     description: 'Półokrąg 180°',
     radii: range(200, 350, 50),
   },

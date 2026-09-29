@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { catalogImage, TYPE_IMAGES } from '../config/images'
+import { typeIcon } from '../lib/iconParts'
+import { FrontIcon } from './FrontIcon'
 import { cartTotals, describeConfig, MAX_QTY, type CartLine } from '../lib/cart'
 
 interface Props {
@@ -77,7 +78,9 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, h
               const invalid = result.errors.length > 0
               return (
                 <li key={item.id} className={`cart-item${editing ? ' cart-item--editing' : ''}`}>
-                  <img className="cart-item__img" src={catalogImage(TYPE_IMAGES[item.config.typeId])} alt="" />
+                  <span className="cart-item__img">
+                    <FrontIcon {...typeIcon(item.config.typeId)} />
+                  </span>
                   <div className="cart-item__body">
                     <p className="cart-item__code">
                       <span className="cart-item__index">{String(i + 1).padStart(2, '0')}</span>

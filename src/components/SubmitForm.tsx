@@ -100,7 +100,7 @@ export function SubmitForm({ lines, onClear }: Props) {
       <span className="field__label">{label}</span>
       <input
         id={`quote-${key}`}
-        className={`text-input${shown[key] ? ' text-input--error' : ''}`}
+        className={`text-input${contact[key].trim() ? ' text-input--filled' : ''}${shown[key] ? ' text-input--error' : ''}`}
         value={contact[key]}
         onChange={set(key)}
         aria-invalid={!!shown[key]}
@@ -137,7 +137,7 @@ export function SubmitForm({ lines, onClear }: Props) {
         {field('company', 'Firma (opcjonalnie)', { type: 'text', autoComplete: 'organization' })}
         <label className="field">
           <span className="field__label">Uwagi (opcjonalnie)</span>
-          <textarea id="quote-notes" className="text-input" rows={3} value={contact.notes} onChange={set('notes')} />
+          <textarea id="quote-notes" className={`text-input${contact.notes.trim() ? ' text-input--filled' : ''}`} rows={3} value={contact.notes} onChange={set('notes')} />
         </label>
         <input
           className="submit__trap"
