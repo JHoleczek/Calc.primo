@@ -502,7 +502,7 @@ a:hover {
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .choice:hover {
