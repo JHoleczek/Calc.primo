@@ -22,11 +22,9 @@ import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CtaBanner } from './components/CtaBanner'
 import { SubmitForm } from './components/SubmitForm'
-import { catalogImage } from './config/images'
+import { catalogImage, endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
-import { FrontIcon } from './components/FrontIcon'
-import { endingIcon, heightIcon, lengthIcon, sideIcon, typeIcon, widthIcon, type IconSpec } from './lib/iconParts'
 import {
   addItem,
   cartLines,
@@ -208,11 +206,11 @@ export default function App() {
 
   const leftMm = extensionMm(config.extLeftMm)
   const rightMm = extensionMm(config.extRightMm)
-  const icon = (spec: IconSpec) => <FrontIcon parts={spec.parts} start={spec.start} inside={spec.inside} />
+  const icon = (src: string) => <img className="icon-img" src={src} alt="" />
 
   // Karty wymiarów – zależne od typu.
   const dimCards: ReactNode[] = [
-    <DimCard key="h" icon={icon(heightIcon())} title="Wysokość" subtitle="Określ wysokość H">
+    <DimCard key="h" icon={icon(HEIGHT_ICON)} title="Wysokość" subtitle="Określ wysokość H">
       <MmInput
         id="height"
         label="Wysokość H"
@@ -230,7 +228,7 @@ export default function App() {
     dimCards.push(
       <DimCard
         key="ext"
-        icon={icon(endingIcon(leftMm > 0, rightMm > 0))}
+        icon={icon(endingIconFor(leftMm > 0, rightMm > 0))}
         title="Zakończenie"
         subtitle={`Dodaj przedłużenie · ${ending.name}`}
       >
@@ -260,7 +258,7 @@ export default function App() {
   if (t === 'przedluzane') {
     const min = config.radiusMm + EXTENDED_LENGTH.minAboveRadius
     dimCards.push(
-      <DimCard key="L" icon={icon(lengthIcon())} title="Wymiar L" subtitle="Od lica łuku do końca">
+      <DimCard key="L" icon={icon(TYPE_ICONS.przedluzane)} title="Wymiar L" subtitle="Od lica łuku do końca">
         <MmInput
           key={`L-${config.radiusMm}`}
           id="length"
@@ -277,7 +275,7 @@ export default function App() {
   if (t === 'obustronne') {
     const zMin = config.radiusMm + DOUBLE_Z.minAboveRadius
     dimCards.push(
-      <DimCard key="W" icon={icon(widthIcon())} title="Szerokość" subtitle="Wybierz szerokość W">
+      <DimCard key="W" icon={icon(TYPE_ICONS.obustronne)} title="Szerokość" subtitle="Wybierz szerokość W">
         <ChoiceGroup
           name="width"
           variant="grid"
@@ -287,7 +285,7 @@ export default function App() {
           choices={DOUBLE_WIDTHS.map((w) => ({ value: w, label: w }))}
         />
       </DimCard>,
-      <DimCard key="Z" icon={icon(sideIcon(config.sideExtension))} title="Boki" subtitle="Dodaj przedłużenie boków Z">
+      <DimCard key="Z" icon={icon(TYPE_ICONS.obustronne)} title="Boki" subtitle="Dodaj przedłużenie boków Z">
         <MmInput
           id="z"
           label="Wymiar Z – przedłużenie boków"
@@ -317,7 +315,7 @@ export default function App() {
             value: ft.id,
             label: ft.name,
             hint: ft.short,
-            icon: icon(typeIcon(ft.id)),
+            icon: icon(TYPE_ICONS[ft.id]),
           }))}
         />
       ),

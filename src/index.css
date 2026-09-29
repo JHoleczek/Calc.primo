@@ -4,7 +4,7 @@
    – typografia Avenir (zastępczo Figtree): nagłówki sekcji wersalikami + podtytuł,
    – złoto #EDC880 tylko jako wyróżnienie: zaznaczenie, podkreślenie wypełnionego pola,
      wyróżnione elementy ikon,
-   – ikony: izometryczne bryły frontów (szary gradient, jasny kontur).
+   – ikony: grafiki z design systemu (src/assets/icons).
    Kontrast: tekst ≥ 4,5:1 (także szary podtytuł #A9A8A0 na kartach), fokus zawsze widoczny.
    ========================================================================== */
 
@@ -27,16 +27,6 @@
   --focus: #edc880;
   --warning: #f2cf7a;
   --error: #ff9d8f;
-
-  /* Ikony izometryczne. */
-  --icon-wall-a: #2a2a2a;
-  --icon-wall-b: #4d4c4c;
-  --icon-top: #5d5c5b;
-  --icon-gold-a: #b29762;
-  --icon-gold-b: #2b2418;
-  --icon-gold-top: #ebd196;
-  --icon-line: #838383;
-  --icon-ghost: #bdbdbd;
 
   --font: 'Avenir Next', Avenir, Figtree, 'Helvetica Neue', Arial, sans-serif;
   --gap: 4px;
@@ -564,16 +554,14 @@ a:hover {
 }
 
 .choice__icon {
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
   height: 118px;
   margin-bottom: 14px;
 }
 
-.choice__icon .front-icon {
-  width: 100%;
+.choice__icon .icon-img {
   max-width: 150px;
-  height: 100%;
 }
 
 /* Siatka równych pól (promienie, szerokości): wybrane – złote tło. */
@@ -636,28 +624,14 @@ a:hover {
   mix-blend-mode: screen;
 }
 
-/* ---------- Ikony izometryczne ---------- */
+/* ---------- Ikony z design systemu ---------- */
 
-.front-icon {
+.icon-img {
   display: block;
-  overflow: visible;
-}
-
-.front-icon__line {
-  fill: none;
-  stroke: var(--icon-line);
-  stroke-width: 1;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-
-.front-icon__ghost {
-  fill: none;
-  stroke: var(--icon-ghost);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  vector-effect: non-scaling-stroke;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
 }
 
 /* ---------- Karty wymiarów (wysokość, przedłużenia, L, W, Z) ---------- */
@@ -676,16 +650,14 @@ a:hover {
 }
 
 .dim-card__icon {
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
   height: 130px;
   margin-bottom: 18px;
 }
 
-.dim-card__icon .front-icon {
-  width: 100%;
-  max-width: 170px;
-  height: 100%;
+.dim-card__icon .icon-img {
+  max-width: 180px;
 }
 
 .dim-card__title {
@@ -1241,15 +1213,10 @@ textarea.text-input {
 }
 
 .cart-item__img {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 88px;
   height: 88px;
-}
-
-.cart-item__img .front-icon {
-  width: 100%;
-  height: 100%;
+  object-fit: contain;
 }
 
 .cart-item__body {

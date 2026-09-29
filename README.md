@@ -5,9 +5,8 @@ Ekran jest podzielony na pół: po lewej (desktop) / u góry (mobile) jest wizua
 (model 3D oraz rzut z góry), resztę ekranu zajmuje konfiguracja.
 
 Wygląd: design system „Primo Calc” (ciemne ciepłe tło, płaskie karty, nagłówki sekcji wersalikami,
-złoto #EDC880 tylko do wyróżnień, font Avenir / zastępczo Figtree). Ikony typów i wymiarów to
-izometryczne bryły generowane z geometrii frontu (`src/lib/isoIcon.ts`, `src/lib/iconParts.ts`,
-`src/components/FrontIcon.tsx`) – złote i przerywane fragmenty zmieniają się razem z konfiguracją.
+złoto #EDC880 tylko do wyróżnień, font Avenir / zastępczo Figtree). Ikony typów, wysokości i zakończenia
+to grafiki z design systemu (`src/assets/icons`); ikona zakończenia ma warianty N0 / N1 lewe / N1 prawe / N2.
 
 ## Uruchomienie
 
