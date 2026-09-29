@@ -32,9 +32,6 @@ function saveBlob(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-const fmtNum = (v: number, digits: number) =>
-  Number.isFinite(v) ? v.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—'
-
 interface Props {
   config: Configuration
   result: Result
@@ -53,20 +50,22 @@ export function VisualizationPanel({ config, result }: Props) {
   const heightMm = Number.isFinite(config.heightMm)
     ? Math.min(HEIGHT_RANGE.max, Math.max(HEIGHT_RANGE.min, config.heightMm))
     : DEFAULT_HEIGHT_MM
-  const { typeId, radiusMm, endingId, lengthMm, widthMm, sideExtension, zMm } = config
+  const { typeId, radiusMm, endingId, extLeftMm, extRightMm, lengthMm, widthMm, sideExtension, zMm } = config
 
   const geometry = useMemo<FrontGeometryInput>(() => {
     const path = frontPath({
       typeId,
       radiusMm,
       endingId,
+      extLeftMm,
+      extRightMm,
       lengthMm: Number.isFinite(lengthMm) ? lengthMm : radiusMm + 1,
       widthMm,
       sideExtension,
       zMm: Number.isFinite(zMm) ? zMm : radiusMm + 1,
     })
     return { path, thicknessMm: THICKNESS_MM, heightMm, fluting: fluting.profile }
-  }, [typeId, radiusMm, endingId, lengthMm, widthMm, sideExtension, zMm, heightMm, fluting.profile])
+  }, [typeId, radiusMm, endingId, extLeftMm, extRightMm, lengthMm, widthMm, sideExtension, zMm, heightMm, fluting.profile])
 
   const colorText = config.color.trim()
 
@@ -164,12 +163,6 @@ export function VisualizationPanel({ config, result }: Props) {
       </div>
 
       <dl className="viz__meta">
-        <div className="viz__meta-result">
-          <dt>Wynik</dt>
-          <dd>
-            {result.errors.length > 0 ? '—' : `${fmtNum(result.areaM2, 3)} m²`}
-          </dd>
-        </div>
         <div>
           <dt>Kod</dt>
           <dd>{result.code}</dd>

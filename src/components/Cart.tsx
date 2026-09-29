@@ -11,12 +11,9 @@ interface Props {
   onRemove: (id: string) => void
   /** Element w nagłówku koszyka (np. przycisk zamknięcia panelu). */
   headerAction?: ReactNode
-  /** Treść pod sumami (np. formularz „Wyślij do oceny”). */
+  /** Treść pod sumami (np. „Zapytaj o wycenę”). */
   footer?: ReactNode
 }
-
-const fmt = (v: number, digits = 3) =>
-  Number.isFinite(v) ? v.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—'
 
 /** Polska odmiana: 1 pozycja, 2–4 pozycje, 5+ pozycji (z wyjątkiem 12–14). */
 const positions = (n: number) =>
@@ -91,10 +88,7 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, h
                     {invalid && <p className="cart-item__error">{result.errors[0]}</p>}
                     <div className="cart-item__row">
                       <QtyStepper id={item.id} qty={item.qty} label={result.code} onQty={(q) => onQty(item.id, q)} />
-                      <p className="cart-item__sum">
-                        {fmt(l.areaM2)} m²
-                        {item.qty > 1 && <span className="cart-item__per"> ({fmt(result.areaM2)} m² / szt.)</span>}
-                      </p>
+                      <p className="cart-item__sum">{item.qty} szt.</p>
                     </div>
                     <div className="cart-item__actions">
                       <button type="button" className="link-btn" onClick={() => onEdit(item.id)} aria-label={`Edytuj pozycję ${i + 1}`}>
@@ -120,12 +114,12 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, h
 
           <dl className="cart__totals">
             <div>
-              <dt>Sztuk</dt>
-              <dd>{totals.pieces}</dd>
+              <dt>Pozycji</dt>
+              <dd>{lines.length}</dd>
             </div>
             <div>
-              <dt>Powierzchnia</dt>
-              <dd>{fmt(totals.areaM2)} m²</dd>
+              <dt>Sztuk</dt>
+              <dd>{totals.pieces}</dd>
             </div>
           </dl>
         </>

@@ -1,5 +1,6 @@
-import { FLUTINGS, FRONT_TYPES, MATERIALS } from '../config/catalog'
-import { calculate, type Configuration } from './calculate'
+import { CONTACT, FLUTINGS, FRONT_TYPES, MATERIALS } from '../config/catalog'
+import { calculate, extensionText, normalizeConfiguration, type Configuration } from './calculate'
+import { priceLine, type LinePrice } from './pricing'
 
 // Koszyk frontów do oceny: czyste funkcje (łatwe do testowania) + zapis w przeglądarce.
 
@@ -43,63 +44,149 @@ export function setQty(cart: CartItem[], id: string, qty: number): CartItem[] {
 export interface CartLine {
   item: CartItem
   result: ReturnType<typeof calculate>
-  /** m² dla całej pozycji (sztuka × ilość). */
+  /** m² dla całej pozycji (sztuka × ilość) – tylko do wiadomości dla biura. */
   areaM2: number
+  price: LinePrice
 }
 
 export function cartLines(cart: CartItem[]): CartLine[] {
   return cart.map((item) => {
     const result = calculate(item.config)
-    return { item, result, areaM2: result.areaM2 * item.qty }
+    return { item, result, areaM2: result.areaM2 * item.qty, price: priceLine(item.config, result, item.qty) }
   })
 }
 
 export function cartTotals(lines: CartLine[]) {
   return lines.reduce(
-    (t, l) => ({ pieces: t.pieces + l.item.qty, areaM2: t.areaM2 + l.areaM2 }),
-    { pieces: 0, areaM2: 0 },
+    (t, l) => ({
+      pieces: t.pieces + l.item.qty,
+      areaM2: t.areaM2 + l.areaM2,
+      price: t.price + (l.price.total ?? 0),
+      unpriced: t.unpriced + (l.price.total === null ? 1 : 0),
+    }),
+    { pieces: 0, areaM2: 0, price: 0, unpriced: 0 },
   )
 }
 
 const fmt = (v: number, digits = 3) =>
   v.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+const zl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} zł`
 
-/** Jednolinijkowy opis frontu (bez ilości), np. „Narożne · F03 Fala 18 · Fornirowane, dąb · H 720 mm”. */
+/**
+ * Jednolinijkowy opis frontu (bez ilości), np.
+ * „Narożne · F03 Fala 18 · Fornirowane, dąb · H 720 mm · przedłużenie lewe 50 mm, prawe 80 mm · bryła”.
+ */
 export function describeConfig(config: Configuration, flutingCode: string): string {
   const type = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
   const fluting = FLUTINGS.find((f) => f.id === flutingCode) ?? FLUTINGS[0]
   const color = config.color.trim()
+  const ext = extensionText(config)
   return [
     type.name,
     `${fluting.id} ${fluting.name}`,
     `${material.name}${color ? `, ${color}` : ''}`,
     `H ${config.heightMm} mm`,
+    ...(ext ? [ext] : []),
+    ...(config.body ? ['bryła (front + środek)'] : []),
   ].join(' · ')
 }
 
 export interface Contact {
-  name: string
-  reply: string
+  phone: string
+  email: string
+  company: string
   notes: string
 }
 
-/** Treść zapytania „do oceny”: lista frontów z kodami i m² + dane kontaktowe. */
-export function quoteText(lines: CartLine[], contact: Contact): string {
+export const EMPTY_CONTACT: Contact = { phone: '', email: '', company: '', notes: '' }
+
+const PHONE_RE = /^\+?[\d\s()-]{9,}$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+/** Błędy danych kontaktowych (telefon i e-mail wymagane, firma opcjonalna). */
+export function contactErrors(c: Contact): Partial<Record<keyof Contact, string>> {
+  const errors: Partial<Record<keyof Contact, string>> = {}
+  const digits = c.phone.replace(/\D/g, '')
+  if (!c.phone.trim()) errors.phone = 'Podaj numer telefonu.'
+  else if (!PHONE_RE.test(c.phone.trim()) || digits.length < 9 || digits.length > 15)
+    errors.phone = 'Podaj poprawny numer telefonu (min. 9 cyfr).'
+  if (!c.email.trim()) errors.email = 'Podaj adres e-mail.'
+  else if (!EMAIL_RE.test(c.email.trim())) errors.email = 'Podaj poprawny adres e-mail, np. jan@firma.pl.'
+  return errors
+}
+
+function contactLines(contact: Contact): string[] {
+  return [
+    `Telefon: ${contact.phone.trim()}`,
+    `E-mail: ${contact.email.trim()}`,
+    ...(contact.company.trim() ? [`Firma: ${contact.company.trim()}`] : []),
+    ...(contact.notes.trim() ? [`Uwagi: ${contact.notes.trim()}`] : []),
+  ]
+}
+
+/** Zapytanie w wersji dla klienta (bez m² i cen) – np. do wysłania z własnej poczty. */
+export function inquiryText(lines: CartLine[], contact: Contact): string {
   const totals = cartTotals(lines)
-  const out = ['Dzień dobry,', '', 'proszę o ocenę i wycenę poniższych frontów giętych:', '']
+  const out = ['Dzień dobry,', '', 'proszę o wycenę poniższych frontów giętych:', '']
   lines.forEach((l, i) => {
-    out.push(`${i + 1}. ${l.result.code} ${l.result.flutingCode} – ${describeConfig(l.item.config, l.result.flutingCode)}`)
-    out.push(
-      `   ${l.item.qty} szt. × ${fmt(l.result.areaM2)} m² = ${fmt(l.areaM2)} m² (rozwinięcie ${fmt(l.result.developedMm, 1)} mm × H ${l.item.config.heightMm} mm)`,
-    )
+    out.push(`${i + 1}. ${l.result.code} ${l.result.flutingCode} – ${l.item.qty} szt.`)
+    out.push(`   ${describeConfig(l.item.config, l.result.flutingCode)}`)
   })
-  out.push('', `Razem: ${totals.pieces} szt., ${fmt(totals.areaM2)} m²`)
-  if (contact.notes.trim()) out.push('', `Uwagi: ${contact.notes.trim()}`)
-  out.push('')
-  if (contact.name.trim()) out.push(contact.name.trim())
-  if (contact.reply.trim()) out.push(`Kontakt: ${contact.reply.trim()}`)
+  out.push('', `Razem: ${totals.pieces} szt.`, '', ...contactLines(contact))
   return out.join('\n')
+}
+
+export const inquirySubject = (lines: CartLine[]) =>
+  `Zapytanie o wycenę – fronty gięte (${lines.length} poz., ${cartTotals(lines).pieces} szt.)`
+
+/**
+ * Wiadomość do biura: pełne wyliczenie (m², stawki, dopłaty, ceny)
+ * i proponowana odpowiedź do klienta, gotowa do skopiowania.
+ */
+export function officeEmail(lines: CartLine[], contact: Contact): { subject: string; text: string } {
+  const totals = cartTotals(lines)
+  const who = contact.company.trim() || contact.email.trim()
+  const subject = `Zapytanie o wycenę – ${who} – ${lines.length} poz., ${totals.pieces} szt.${
+    totals.unpriced === 0 ? `, ${zl(totals.price)}` : ''
+  }`
+
+  const out = ['NOWE ZAPYTANIE O WYCENĘ – kalkulator frontów giętych', '', 'KLIENT', ...contactLines(contact), '', 'POZYCJE']
+  lines.forEach((l, i) => {
+    const p = l.price
+    out.push('', `${i + 1}. ${l.result.code} ${l.result.flutingCode} – ${l.item.qty} szt.`)
+    out.push(`   ${describeConfig(l.item.config, l.result.flutingCode)}`)
+    out.push(
+      `   Powierzchnia: ${l.item.qty} × ${fmt(l.result.areaM2)} m² = ${fmt(l.areaM2)} m² (rozwinięcie ${fmt(l.result.developedMm, 1)} mm × H ${l.item.config.heightMm} mm)`,
+    )
+    const extras = p.surcharges.map((s) => ` + ${Math.round(s.rate * 100)}% (${s.label})`).join('')
+    if (p.total !== null && p.rate !== null && p.unitPrice !== null) {
+      out.push(`   Stawka: ${p.baseLabel} ${zl(p.baseRate ?? 0)}/m²${extras} = ${zl(Math.round(p.rate))}/m²`)
+      out.push(`   Cena: ${zl(p.unitPrice)} / szt. × ${l.item.qty} = ${zl(p.total)}`)
+    } else {
+      out.push(`   Cena: DO USTALENIA – ${p.missing}${extras ? ` (dopłaty:${extras})` : ''}`)
+    }
+  })
+  out.push('', 'PODSUMOWANIE', `Sztuk: ${totals.pieces}`, `Powierzchnia: ${fmt(totals.areaM2)} m²`)
+  out.push(
+    totals.unpriced === 0
+      ? `Wartość: ${zl(totals.price)}`
+      : `Wartość wycenionych pozycji: ${zl(totals.price)} (bez ceny: ${totals.unpriced} poz.)`,
+  )
+
+  out.push('', '────────────────────────────────', 'PROPONOWANA ODPOWIEDŹ DO KLIENTA', '────────────────────────────────', '')
+  out.push('Dzień dobry,', '', 'dziękujemy za zapytanie. Przesyłamy wycenę frontów giętych:', '')
+  lines.forEach((l, i) => {
+    const price = l.price.total !== null ? zl(l.price.total) : 'wycena indywidualna'
+    out.push(`${i + 1}. ${l.result.code} ${l.result.flutingCode}, ${l.item.qty} szt. – ${price}`)
+    out.push(`   ${describeConfig(l.item.config, l.result.flutingCode)}`)
+  })
+  out.push('')
+  if (totals.unpriced === 0) out.push(`Razem: ${zl(totals.price)}`)
+  else if (totals.price > 0) out.push(`Razem (bez pozycji wycenianych indywidualnie): ${zl(totals.price)}`)
+  if (totals.unpriced > 0) out.push('Pozycje oznaczone „wycena indywidualna” wycenimy osobno.')
+  out.push('', 'W razie pytań prosimy o kontakt.', '', 'Pozdrawiamy', 'Primo Meble', `tel. ${CONTACT.phone}`)
+  return { subject, text: out.join('\n') }
 }
 
 // --- Zapis w przeglądarce (tylko wygoda: pusty lub niedostępny storage nie psuje strony) ---
@@ -111,9 +198,11 @@ export function loadCart(): CartItem[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed: unknown = raw ? JSON.parse(raw) : []
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (x): x is CartItem => !!x && typeof x.id === 'string' && typeof x.qty === 'number' && typeof x.config === 'object',
-    )
+    return parsed
+      .filter(
+        (x): x is CartItem => !!x && typeof x.id === 'string' && typeof x.qty === 'number' && !!x.config && typeof x.config === 'object',
+      )
+      .map((x) => ({ ...x, config: normalizeConfiguration(x.config) }))
   } catch {
     return []
   }

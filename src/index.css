@@ -814,11 +814,6 @@ a:hover {
   }
 }
 
-/* Wynik w pasku pod wizualizacją – zawsze widoczny, wyróżniony wagą. */
-.viz__meta .viz__meta-result dd {
-  font-weight: 700;
-}
-
 /* ---------- Podglądy z katalogu (rysunki techniczne) ---------- */
 
 /* Rysunki mają jasnoszare tło i ciemne linie: w jasnym motywie wtapiamy tło (multiply),
@@ -1479,7 +1474,7 @@ textarea.text-input {
   }
 }
 
-/* ---------- Formularz „Wyślij do oceny” w koszyku ---------- */
+/* ---------- „Zapytaj o wycenę” w koszyku ---------- */
 
 .submit {
   display: flex;
@@ -1776,4 +1771,62 @@ textarea.text-input {
   .viz__download-label {
     display: none;
   }
+}
+
+.result__next {
+  margin: 20px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.text-input--error {
+  border-color: var(--error);
+}
+
+.field__error {
+  font-size: 13px;
+  color: var(--error);
+}
+
+.submit__required {
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Pole-pułapka na boty – poza ekranem, niedostępne dla ludzi. */
+.submit__trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.submit__error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--error);
+  font-size: 14px;
+}
+
+.submit__error p {
+  margin: 0;
+}
+
+/* Pola przedłużeń pod ilustracjami zakończeń. */
+.ext-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 24px;
+  margin-top: 20px;
+}
+
+.ext-fields__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--muted);
 }

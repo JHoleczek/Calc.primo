@@ -2,23 +2,19 @@ import type { Result } from '../lib/calculate'
 
 interface Props {
   result: Result
-  heightMm: number
 }
 
-const fmt = (value: number, digits: number) =>
-  Number.isFinite(value)
-    ? value.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits })
-    : '—'
-
-export function ResultPanel({ result, heightMm }: Props) {
+/**
+ * Podsumowanie frontu dla klienta: kod katalogowy, dodatki i uwagi.
+ * Bez m² i cen – te trafiają tylko do biura w zapytaniu o wycenę.
+ */
+export function ResultPanel({ result }: Props) {
   const invalid = result.errors.length > 0
-  const show = (value: number, digits: number) => (invalid ? '—' : fmt(value, digits))
 
   return (
     <section className="result" aria-labelledby="result-title" aria-live="polite">
       <div className="result__head">
-        <h2 id="result-title">Wynik</h2>
-        <span className="result__basis">po licu zewnętrznym</span>
+        <h2 id="result-title">Podsumowanie</h2>
       </div>
 
       <p className="result__code">
@@ -34,40 +30,6 @@ export function ResultPanel({ result, heightMm }: Props) {
         </ul>
       )}
 
-      <div className="result__totals result__totals--single">
-        <div className="total">
-          <span className="total__value">{show(result.areaM2, 3)}</span>
-          <span className="total__unit">m²</span>
-        </div>
-        {/* Wzór rozliczenia: (łuki + przedłużenia) × H. */}
-        <p className="result__formula">
-          ({show(result.arcMm, 1)} mm
-          {result.straightMm > 0 && <> + {show(result.straightMm, 0)} mm</>}) × {show(heightMm, 0)} mm
-          <span className="result__formula-label">(łuk{result.straightMm > 0 ? ' + przedłużenia' : ''}) × H</span>
-        </p>
-      </div>
-
-      <dl className="result__breakdown">
-        <div>
-          <dt>Łuki (po zewnętrznej)</dt>
-          <dd>{show(result.arcMm, 1)} mm</dd>
-        </div>
-        {result.straightMm > 0 && (
-          <div>
-            <dt>Przedłużenia / odcinki proste</dt>
-            <dd>{show(result.straightMm, 0)} mm</dd>
-          </div>
-        )}
-        <div>
-          <dt>Rozwinięcie razem</dt>
-          <dd>{show(result.developedMm, 1)} mm</dd>
-        </div>
-        <div>
-          <dt>Wysokość H</dt>
-          <dd>{show(heightMm, 0)} mm</dd>
-        </div>
-      </dl>
-
       <h3 className="result__subtitle">Dodatki i uwagi</h3>
       {result.notes.length > 0 ? (
         <ul className="notes">
@@ -81,6 +43,7 @@ export function ResultPanel({ result, heightMm }: Props) {
         <p className="notes__empty">Brak dodatków.</p>
       )}
 
+      <p className="result__next">Dodaj front do koszyka, a na końcu kliknij „Zapytaj o wycenę” – przygotujemy ofertę.</p>
     </section>
   )
 }

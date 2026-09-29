@@ -68,8 +68,11 @@ export const ENDINGS: Ending[] = [
   { id: 'n2', name: 'N2', extensions: 2, description: 'Przedłużenie obustronne' },
 ]
 
-/** Przedłużenie narożnika N1/N2 [mm] – np. do montażu zawiasów. */
-export const CORNER_EXTENSION_MM = 50
+/** Przedłużenia narożnika N1/N2 [mm] – wpisywane przez klienta (lewe / prawe), domyślnie 50 mm. */
+export const CORNER_EXTENSION = { min: 10, max: 700, default: 50 }
+
+/** Powyżej tej wysokości H [mm] front wykonujemy tylko z laminatu gładkiego (i z dopłatą). */
+export const TALL_HEIGHT_MM = 2780
 
 /** Elementy przedłużane: całkowity wymiar L (od lica łuku do końca przedłużenia) [mm]. */
 export const EXTENDED_LENGTH = { max: 700, minAboveRadius: 50, default: 700 }
@@ -142,3 +145,9 @@ export const MATERIALS: Material[] = [
 
 /** Kontakt do wyceny (z katalogu). */
 export const CONTACT = { email: 'biuro.primomeble@gmail.com', phone: '691-766-559' }
+
+/**
+ * Wysyłka zapytania z przeglądarki (strona statyczna, bez własnego serwera): FormSubmit.
+ * Pierwsze zapytanie wysyła na adres biura e-mail aktywacyjny – trzeba go raz potwierdzić.
+ */
+export const QUOTE_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT.email}`

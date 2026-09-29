@@ -7,6 +7,8 @@ const shape: ShapeParams = {
   typeId: 'narozne',
   radiusMm: 300,
   endingId: 'n0',
+  extLeftMm: 50,
+  extRightMm: 50,
   lengthMm: 700,
   widthMm: 600,
   sideExtension: false,

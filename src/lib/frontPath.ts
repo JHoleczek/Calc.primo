@@ -6,7 +6,7 @@
 // (strona zewnętrzna) leży po lewej stronie kierunku ruchu, a środek łuku po prawej.
 
 import {
-  CORNER_EXTENSION_MM,
+  CORNER_EXTENSION,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
   ENDINGS,
@@ -30,6 +30,10 @@ export interface ShapeParams {
   typeId: FrontTypeId
   radiusMm: number
   endingId: EndingId
+  /** Narożne N2: przedłużenie lewe (na początku, poziome na rzucie) [mm]. */
+  extLeftMm: number
+  /** Narożne N1/N2: przedłużenie prawe (na końcu łuku, pionowe na rzucie) [mm]. */
+  extRightMm: number
   /** Przedłużane: całkowity wymiar L [mm]. */
   lengthMm: number
   /** Obustronne: szerokość W [mm]. */
@@ -46,14 +50,17 @@ export function frontPath(p: ShapeParams): FrontPath {
   switch (p.typeId) {
     case 'narozne': {
       const ext = (ENDINGS.find((e) => e.id === p.endingId) ?? ENDINGS[0]).extensions
-      const line: Segment = { kind: 'line', length: CORNER_EXTENSION_MM }
-      // N1: przedłużenie na końcu łuku (dół), N2: na obu końcach.
+      const line = (mm: number): Segment => ({
+        kind: 'line',
+        length: Number.isFinite(mm) && mm > 0 ? Math.min(CORNER_EXTENSION.max, mm) : CORNER_EXTENSION.default,
+      })
+      // N1: przedłużenie prawe (koniec łuku, dół), N2: lewe i prawe.
       return {
         startHeadingDeg: 0,
         segments: [
-          ...(ext === 2 ? [line] : []),
+          ...(ext === 2 ? [line(p.extLeftMm)] : []),
           { kind: 'arc', radius: R, angleDeg: 90 },
-          ...(ext >= 1 ? [line] : []),
+          ...(ext >= 1 ? [line(p.extRightMm)] : []),
         ],
       }
     }

@@ -71,4 +71,23 @@ describe('calculate', () => {
     expect(withColor.notes.some((n) => n.level === 'warning')).toBe(false)
     expect(calculate({ ...base, heightMm: 3300 }).errors).toHaveLength(1)
   })
+
+  it('N1/N2: długości przedłużeń wpisane przez klienta (lewe / prawe)', () => {
+    const n2 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n2', extLeftMm: 80, extRightMm: 120 })
+    expect(n2.straightMm).toBe(200)
+    expect(n2.notes.some((n) => n.text.includes('lewe 80 mm, prawe 120 mm'))).toBe(true)
+    const n1 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n1', extLeftMm: 999, extRightMm: 70 })
+    expect(n1.straightMm).toBe(70)
+    expect(n1.errors).toEqual([])
+    const n0 = calculate({ ...base, typeId: 'narozne', radiusMm: 300, endingId: 'n0', extLeftMm: NaN, extRightMm: NaN })
+    expect(n0.straightMm).toBe(0)
+    expect(n0.errors).toEqual([])
+    expect(calculate({ ...base, typeId: 'narozne', endingId: 'n2', extLeftMm: 5 }).errors[0]).toContain('lewe')
+  })
+
+  it('H > 2780: tylko laminat gładki', () => {
+    expect(calculate({ ...base, heightMm: 2800, materialId: 'lakierowane', color: 'RAL 9010' }).errors[0]).toContain('laminat')
+    expect(calculate({ ...base, heightMm: 2800, materialId: 'laminat' }).errors).toEqual([])
+    expect(calculate({ ...base, heightMm: 2780, materialId: 'lakierowane', color: 'RAL 9010' }).errors).toEqual([])
+  })
 })

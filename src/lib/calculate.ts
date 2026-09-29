@@ -1,5 +1,5 @@
 import {
-  CORNER_EXTENSION_MM,
+  CORNER_EXTENSION,
   DEFAULT_HEIGHT_MM,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
@@ -10,6 +10,7 @@ import {
   HEIGHT_RANGE,
   MATERIALS,
   SMOOTH_FLUTING_ID,
+  TALL_HEIGHT_MM,
   type EndingId,
   type FrontTypeId,
   type MaterialId,
@@ -23,6 +24,10 @@ export interface Configuration {
   heightMm: number
   /** Narożne: zakończenie N0 / N1 / N2. */
   endingId: EndingId
+  /** Narożne N2: przedłużenie lewe [mm]. */
+  extLeftMm: number
+  /** Narożne N1/N2: przedłużenie prawe [mm]. */
+  extRightMm: number
   /** Przedłużane: całkowity wymiar L [mm]. */
   lengthMm: number
   /** Obustronne: szerokość W [mm]. */
@@ -34,6 +39,8 @@ export interface Configuration {
   flutingId: string
   materialId: MaterialId
   color: string
+  /** Bryła: front + środek (zamiast samego frontu). */
+  body: boolean
 }
 
 export const DEFAULT_CONFIGURATION: Configuration = {
@@ -41,6 +48,8 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   radiusMm: 300,
   heightMm: DEFAULT_HEIGHT_MM,
   endingId: 'n2',
+  extLeftMm: CORNER_EXTENSION.default,
+  extRightMm: CORNER_EXTENSION.default,
   lengthMm: EXTENDED_LENGTH.default,
   widthMm: DOUBLE_WIDTHS[0],
   sideExtension: false,
@@ -48,7 +57,22 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   flutingId: SMOOTH_FLUTING_ID,
   materialId: MATERIALS[0].id,
   color: '',
+  body: false,
 }
+
+/** Uzupełnia konfigurację zapisaną przez starszą wersję (np. koszyk w przeglądarce). */
+export function normalizeConfiguration(config: Partial<Configuration>): Configuration {
+  return { ...DEFAULT_CONFIGURATION, ...config }
+}
+
+/** Liczba przedłużeń narożnika: N0 – 0, N1 – 1 (prawe), N2 – 2 (lewe i prawe). */
+export function cornerExtensions(config: Pick<Configuration, 'typeId' | 'endingId'>): 0 | 1 | 2 {
+  if (config.typeId !== 'narozne') return 0
+  return (ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]).extensions
+}
+
+/** Wysokość wymagająca laminatu gładkiego i dopłaty. */
+export const isTall = (heightMm: number) => heightMm > TALL_HEIGHT_MM
 
 /** Promień dozwolony dla danego typu (najbliższy z listy katalogowej). */
 export function allowedRadius(typeId: FrontTypeId, radiusMm: number): number {
@@ -82,6 +106,16 @@ export interface Result {
   errors: string[]
 }
 
+const mmText = (mm: number) => (Number.isFinite(mm) ? `${Math.round(mm)} mm` : '—')
+
+/** Opis przedłużeń narożnika, np. „lewe 50 mm, prawe 80 mm”; pusty dla N0 i innych typów. */
+export function extensionText(config: Configuration): string {
+  const exts = cornerExtensions(config)
+  if (exts === 0) return ''
+  if (exts === 1) return `przedłużenie prawe ${mmText(config.extRightMm)}`
+  return `przedłużenie lewe ${mmText(config.extLeftMm)}, prawe ${mmText(config.extRightMm)}`
+}
+
 const pad3 = (n: number) => String(Math.round(n)).padStart(3, '0')
 
 function catalogCode(c: Configuration): string {
@@ -107,6 +141,19 @@ export function calculate(config: Configuration): Result {
   if (!(config.heightMm >= HEIGHT_RANGE.min && config.heightMm <= HEIGHT_RANGE.max)) {
     errors.push(`Wysokość H musi mieścić się w zakresie ${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} mm.`)
   }
+  const exts = cornerExtensions(config)
+  const extChecks: [string, number][] = [
+    ...(exts === 2 ? ([['lewe', config.extLeftMm]] as [string, number][]) : []),
+    ...(exts >= 1 ? ([['prawe', config.extRightMm]] as [string, number][]) : []),
+  ]
+  for (const [side, mm] of extChecks) {
+    if (!(mm >= CORNER_EXTENSION.min && mm <= CORNER_EXTENSION.max)) {
+      errors.push(`Przedłużenie ${side} musi mieścić się w zakresie ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm.`)
+    }
+  }
+  if (isTall(config.heightMm) && config.heightMm <= HEIGHT_RANGE.max && !material.smoothOnly) {
+    errors.push(`Przy wysokości H powyżej ${TALL_HEIGHT_MM} mm dostępny jest tylko laminat gładki – zmień materiał.`)
+  }
   if (config.typeId === 'przedluzane') {
     const min = config.radiusMm + EXTENDED_LENGTH.minAboveRadius
     if (!(config.lengthMm >= min && config.lengthMm <= EXTENDED_LENGTH.max)) {
@@ -131,12 +178,18 @@ export function calculate(config: Configuration): Result {
   const developedMm = pathLength(path)
 
   const notes: Note[] = []
-  if (config.typeId === 'narozne' && config.endingId !== 'n0') {
+  if (exts > 0) {
     const ending = ENDINGS.find((e) => e.id === config.endingId) ?? ENDINGS[0]
     notes.push({
       level: 'addon',
-      text: `Zakończenie ${ending.name}: ${ending.extensions} × ${CORNER_EXTENSION_MM} mm (np. do montażu zawiasów)`,
+      text: `Zakończenie ${ending.name}: ${extensionText(config)}`,
     })
+  }
+  if (config.body) {
+    notes.push({ level: 'addon', text: 'Bryła: front + środek' })
+  }
+  if (isTall(config.heightMm) && config.heightMm <= HEIGHT_RANGE.max) {
+    notes.push({ level: 'info', text: `Wysokość powyżej ${TALL_HEIGHT_MM} mm – wykonanie tylko z laminatu gładkiego.` })
   }
   if (config.typeId === 'przedluzane') {
     notes.push({ level: 'addon', text: `Przedłużenie proste: ${Math.round(config.lengthMm - config.radiusMm)} mm (L ${Math.round(config.lengthMm)})` })

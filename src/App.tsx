@@ -3,7 +3,7 @@ import { ChoiceGroup } from './components/ChoiceGroup'
 import { ResultPanel } from './components/ResultPanel'
 import { VisualizationPanel } from './components/VisualizationPanel'
 import {
-  CORNER_EXTENSION_MM,
+  CORNER_EXTENSION,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
   ENDINGS,
@@ -13,6 +13,7 @@ import {
   HEIGHT_RANGE,
   MATERIALS,
   SMOOTH_FLUTING_ID,
+  TALL_HEIGHT_MM,
   THICKNESS_MM,
   type FrontTypeId,
   type MaterialId,
@@ -22,7 +23,7 @@ import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CtaBanner } from './components/CtaBanner'
 import { SubmitForm } from './components/SubmitForm'
 import { catalogImage, extendedImage, TYPE_IMAGES } from './config/images'
-import { allowedRadius, calculate, DEFAULT_CONFIGURATION, type Configuration } from './lib/calculate'
+import { allowedRadius, calculate, cornerExtensions, DEFAULT_CONFIGURATION, isTall, type Configuration } from './lib/calculate'
 import {
   addItem,
   cartLines,
@@ -173,6 +174,16 @@ export default function App() {
       materialId,
       flutingId: MATERIALS.find((m) => m.id === materialId)?.smoothOnly ? SMOOTH_FLUTING_ID : c.flutingId,
     }))
+  // Powyżej 2780 mm tylko laminat gładki – przełączamy materiał od razu.
+  const smoothOnlyMaterial = MATERIALS.find((m) => m.smoothOnly) ?? MATERIALS[0]
+  const setHeight = (heightMm: number) =>
+    setConfig((c) =>
+      isTall(heightMm) && heightMm <= HEIGHT_RANGE.max && !MATERIALS.find((m) => m.id === c.materialId)?.smoothOnly
+        ? { ...c, heightMm, materialId: smoothOnlyMaterial.id, flutingId: SMOOTH_FLUTING_ID }
+        : { ...c, heightMm },
+    )
+  const tall = isTall(config.heightMm)
+  const exts = cornerExtensions(config)
 
   const radii = frontType.radii
   // Pełna skala R ze wszystkich typów – promienie spoza zakresu typu są wyszarzone.
@@ -222,6 +233,9 @@ export default function App() {
       },
       {
         title: 'Wysokość H',
+        hint: tall
+          ? `Powyżej ${TALL_HEIGHT_MM} mm front wykonujemy tylko z laminatu gładkiego.`
+          : `Powyżej ${TALL_HEIGHT_MM} mm dostępny jest tylko laminat gładki.`,
         body: (
           <NumberField
             id="height"
@@ -230,7 +244,7 @@ export default function App() {
             min={HEIGHT_RANGE.min}
             max={HEIGHT_RANGE.max}
             step={HEIGHT_RANGE.step}
-            onChange={(v) => set('heightMm', v)}
+            onChange={setHeight}
           />
         ),
       },
@@ -238,21 +252,54 @@ export default function App() {
   if (t === 'narozne') {
     steps.push({
       title: 'Zakończenie',
-      hint: `Przedłużenie frontu o ${CORNER_EXTENSION_MM} mm, np. do montażu zawiasów.`,
+      hint: 'Proste przedłużenia frontu, np. do montażu zawiasów – długość wpisz pod rysunkami.',
       body: (
-        <ChoiceGroup
-          name="ending"
-          variant="cards"
-          columns={3}
-          value={config.endingId}
-          onChange={(v) => set('endingId', v)}
-          choices={ENDINGS.map((e) => ({
-            value: e.id,
-            label: e.name,
-            hint: e.description,
-            image: catalogImage(e.name),
-          }))}
-        />
+        <>
+          <ChoiceGroup
+            name="ending"
+            variant="cards"
+            columns={3}
+            value={config.endingId}
+            onChange={(v) => set('endingId', v)}
+            choices={ENDINGS.map((e) => ({
+              value: e.id,
+              label: e.name,
+              hint: e.description,
+              image: catalogImage(e.name),
+            }))}
+          />
+          {/* N0 – brak pól, N1 – jedno (prawe), N2 – lewe i prawe. */}
+          {exts > 0 && (
+            <div className="ext-fields">
+              {exts === 2 && (
+                <div>
+                  <span className="ext-fields__label">Przedłużenie lewe (początek frontu)</span>
+                  <NumberField
+                    id="ext-left"
+                    label="Przedłużenie lewe"
+                    value={config.extLeftMm}
+                    min={CORNER_EXTENSION.min}
+                    max={CORNER_EXTENSION.max}
+                    step={1}
+                    onChange={(v) => set('extLeftMm', v)}
+                  />
+                </div>
+              )}
+              <div>
+                <span className="ext-fields__label">Przedłużenie prawe (koniec łuku)</span>
+                <NumberField
+                  id="ext-right"
+                  label="Przedłużenie prawe"
+                  value={config.extRightMm}
+                  min={CORNER_EXTENSION.min}
+                  max={CORNER_EXTENSION.max}
+                  step={1}
+                  onChange={(v) => set('extRightMm', v)}
+                />
+              </div>
+            </div>
+          )}
+        </>
       ),
     })
   }
@@ -367,6 +414,8 @@ export default function App() {
             value: m.id,
             label: m.name,
             hint: m.smoothOnly ? `Tylko gładki (${SMOOTH_FLUTING_ID})` : 'Wszystkie ryflowania',
+            disabled: tall && !m.smoothOnly,
+            disabledReason: `Niedostępne przy H > ${TALL_HEIGHT_MM} mm`,
           }))}
         />
       ),
@@ -384,6 +433,23 @@ export default function App() {
           value={config.color}
           required={material.colorRequired}
           onChange={(e) => set('color', e.target.value)}
+        />
+      ),
+    },
+    {
+      title: 'Bryła',
+      hint: 'Sam front albo bryła – front wraz ze środkiem.',
+      body: (
+        <ChoiceGroup
+          name="body"
+          variant="cards"
+          columns={2}
+          value={config.body ? 'body' : 'front'}
+          onChange={(v) => set('body', v === 'body')}
+          choices={[
+            { value: 'front', label: 'Sam front', hint: 'Tylko front gięty' },
+            { value: 'body', label: 'Bryła', hint: 'Front + środek' },
+          ]}
         />
       ),
     },
@@ -418,7 +484,7 @@ export default function App() {
           ))}
         </form>
 
-        <ResultPanel result={result} heightMm={config.heightMm} />
+        <ResultPanel result={result} />
 
         <div className="add-bar">
           {editingId ? (
@@ -462,7 +528,15 @@ export default function App() {
               ✕
             </button>
           }
-          footer={<SubmitForm lines={lines} />}
+          footer={
+            <SubmitForm
+              lines={lines}
+              onClear={() => {
+                setCart([])
+                setEditingId(null)
+              }}
+            />
+          }
         />
       </CartDrawer>
     </div>
