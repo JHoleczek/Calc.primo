@@ -431,10 +431,9 @@ export default function App() {
 
       <main className="layout__config">
         <header className="page-head" id="konfigurator">
-          <p className="page-head__eyebrow">Fronty Primo — katalog 2026</p>
-          <h1>Kalkulator frontów giętych</h1>
+          <h1>Primo Front</h1>
           <p className="page-head__specs">
-            Grubość {THICKNESS_MM} mm · wysokość do {HEIGHT_RANGE.max} mm
+            Kalkulator frontów giętych · grubość {THICKNESS_MM} mm · H do {HEIGHT_RANGE.max} mm
           </p>
         </header>
 

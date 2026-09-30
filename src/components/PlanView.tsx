@@ -192,7 +192,6 @@ export function PlanView({ config, interactive = false }: Props) {
   return (
     <div className="plan-nav">
       {svg}
-      <p className="plan-nav__hint">Kółko / szczypanie = zoom · przeciągnij = przesuń</p>
       <div className="plan-nav__tools" role="group" aria-label="Powiększenie rysunku">
         <button type="button" className="plan-nav__btn" onClick={() => zoomBy(0.8)} disabled={nav.zoom <= MIN_ZOOM} aria-label="Oddal" title="Oddal (−)">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" /></svg>

@@ -116,7 +116,6 @@ export function VisualizationPanel({ config, result }: Props) {
             </button>
           ))}
         </div>
-        {view === '3d' && <span className="viz__hint">Przeciągnij, aby obrócić · kółko / szczypanie = zoom</span>}
         {view === 'plan' && (
           <div className="viz__download" role="group" aria-label="Pobierz rysunek techniczny">
             <span className="viz__download-label" aria-hidden="true">
