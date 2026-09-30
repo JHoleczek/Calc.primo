@@ -166,3 +166,6 @@ export const QUOTE_RECIPIENT = '02holek@gmail.com'
  * Pierwsze zapytanie wysyła na QUOTE_RECIPIENT e-mail aktywacyjny – trzeba go raz potwierdzić.
  */
 export const QUOTE_ENDPOINT = `https://formsubmit.co/ajax/${QUOTE_RECIPIENT}`
+
+/** Ten sam serwis przez zwykły formularz (awaryjnie, gdy zapytanie w tle jest blokowane). */
+export const QUOTE_FORM_ACTION = `https://formsubmit.co/${QUOTE_RECIPIENT}`
