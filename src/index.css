@@ -1943,3 +1943,9 @@ textarea.text-input {
   font-size: 13px;
   color: var(--muted);
 }
+
+.submit__detail {
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-word;
+}

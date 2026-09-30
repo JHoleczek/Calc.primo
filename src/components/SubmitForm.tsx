@@ -21,6 +21,7 @@ export function SubmitForm({ lines, onClear }: Props) {
   const [touched, setTouched] = useState(false)
   const [honey, setHoney] = useState('')
   const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no')
+  const [errorDetail, setErrorDetail] = useState('')
   const empty = lines.length === 0
   const invalid = lines.some((l) => l.result.errors.length > 0)
   const errors = contactErrors(contact)
@@ -39,7 +40,9 @@ export function SubmitForm({ lines, onClear }: Props) {
       // Pole-pułapka na boty: wypełnione = udajemy sukces bez wysyłki.
       if (!honey) await sendQuote(lines, contact)
       setStatus('sent')
-    } catch {
+    } catch (e) {
+      // Odpowiedź serwisu wysyłki (np. prośba o aktywację) – pomaga ustalić przyczynę.
+      setErrorDetail(e instanceof Error ? e.message : String(e))
       setStatus('error')
     }
   }
@@ -165,6 +168,7 @@ export function SubmitForm({ lines, onClear }: Props) {
         {status === 'error' && (
           <div className="submit__error">
             <p>Nie udało się wysłać zapytania. Wyślij je e-mailem do {QUOTE_RECIPIENT} albo zadzwoń: {phoneLink}.</p>
+            {errorDetail && <p className="submit__detail">Odpowiedź serwera: {errorDetail}</p>}
             <div className="cta__actions">
               <a className="link-btn" href={mailto}>
                 Otwórz w programie pocztowym
