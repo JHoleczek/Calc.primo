@@ -4,8 +4,6 @@ export interface Choice<T extends string | number> {
   value: T
   label: ReactNode
   hint?: ReactNode
-  /** Podgląd (rysunek katalogowy) nad etykietą – dekoracyjny, opis jest w etykiecie. */
-  image?: string
   /** Ikona (np. izometryczna bryła) nad etykietą – dekoracyjna. */
   icon?: ReactNode
   /** Opcja niedostępna przy obecnych wyborach – widoczna, ale wyszarzona i nieklikalna. */
@@ -19,8 +17,8 @@ interface ChoiceGroupProps<T extends string | number> {
   value: T
   choices: Choice<T>[]
   onChange: (value: T) => void
-  /** chips – w linii, grid – siatka równych pól (np. promienie), cards – karty z podglądem. */
-  variant?: 'chips' | 'grid' | 'cards'
+  /** chips – w linii, grid – siatka równych pól (np. promienie), cards – karty z podglądem, tiles – niskie kafelki: tekst + podgląd obok. */
+  variant?: 'chips' | 'grid' | 'cards' | 'tiles'
   columns?: number
 }
 
@@ -59,7 +57,6 @@ export function ChoiceGroup<T extends string | number>({
               onChange={() => onChange(choice.value)}
             />
             {choice.icon && <span className="choice__icon">{choice.icon}</span>}
-            {choice.image && <img className="choice__img" src={choice.image} alt="" loading="lazy" />}
             <span className="choice__label">{choice.label}</span>
             {choice.hint && <span className="choice__hint">{choice.hint}</span>}
             {choice.disabled && choice.disabledReason && (

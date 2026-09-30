@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
+import { FlutingProfile } from './components/FlutingProfile'
 import { ResultPanel } from './components/ResultPanel'
 import { VisualizationPanel } from './components/VisualizationPanel'
 import {
@@ -22,7 +23,7 @@ import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CtaBanner } from './components/CtaBanner'
 import { SubmitForm } from './components/SubmitForm'
-import { catalogImage, endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
+import { endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
 import { configFromHash } from './lib/share'
@@ -392,14 +393,15 @@ export default function App() {
       body: (
         <ChoiceGroup
           name="fluting"
-          variant="cards"
+          variant="tiles"
+          columns={3}
           value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
           onChange={(v) => set('flutingId', v)}
           choices={FLUTINGS.map((f) => ({
             value: f.id,
             label: f.id,
             hint: f.name,
-            image: catalogImage(f.id),
+            icon: <FlutingProfile profile={f.profile} />,
             // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
             disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
             disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
