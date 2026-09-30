@@ -1,24 +1,17 @@
 import { QUOTE_ENDPOINT, WEB3FORMS_ACCESS_KEY } from '../config/catalog'
-import { officeEmail, type CartLine, type Contact } from './cart'
+import { orderEmail, type CartLine, type Contact } from './cart'
+import { planLink } from './share'
 
-/** Pola wiadomości do biura; „Odpowiedz” w poczcie trafia do klienta (replyto / _replyto). */
-export function quoteFields(lines: CartLine[], contact: Contact): Record<string, string> {
-  const { subject, text } = officeEmail(lines, contact)
-  const common = {
-    email: contact.email.trim(),
-    telefon: contact.phone.trim(),
-    firma: contact.company.trim() || '—',
-    message: text,
-  }
-  return WEB3FORMS_ACCESS_KEY
-    ? {
-        access_key: WEB3FORMS_ACCESS_KEY,
-        subject,
-        from_name: 'Kalkulator frontów giętych',
-        replyto: contact.email.trim(),
-        ...common,
-      }
-    : { _subject: subject, _replyto: contact.email.trim(), _template: 'box', ...common }
+/**
+ * Pola wiadomości: pola techniczne serwisu + wiersze zamówienia (serwis układa je w tabelę
+ * w tej samej kolejności). „Odpowiedz” w poczcie trafia do klienta.
+ */
+export function quoteFields(lines: CartLine[], contact: Contact, base = window.location.href): Record<string, string> {
+  const { subject, rows } = orderEmail(lines, contact, (config) => planLink(config, base))
+  const meta: Record<string, string> = WEB3FORMS_ACCESS_KEY
+    ? { access_key: WEB3FORMS_ACCESS_KEY, subject, from_name: 'Kalkulator frontów giętych', replyto: contact.email.trim() }
+    : { _subject: subject, _replyto: contact.email.trim(), _template: 'table' }
+  return { ...meta, ...Object.fromEntries(rows) }
 }
 
 /**

@@ -1,4 +1,4 @@
-import { CONTACT, FLUTINGS, FRONT_TYPES, MATERIALS } from '../config/catalog'
+import { FLUTINGS, FRONT_TYPES, MATERIALS } from '../config/catalog'
 import { calculate, extensionText, normalizeConfiguration, type Configuration } from './calculate'
 import { priceLine, type LinePrice } from './pricing'
 
@@ -68,8 +68,6 @@ export function cartTotals(lines: CartLine[]) {
   )
 }
 
-const fmt = (v: number, digits = 3) =>
-  v.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 const zl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} zł`
 
 /**
@@ -140,53 +138,49 @@ export function inquiryText(lines: CartLine[], contact: Contact): string {
 export const inquirySubject = (lines: CartLine[]) =>
   `Zapytanie o wycenę – fronty gięte (${lines.length} poz., ${cartTotals(lines).pieces} szt.)`
 
-/**
- * Wiadomość do biura: pełne wyliczenie (m², stawki, dopłaty, ceny)
- * i proponowana odpowiedź do klienta, gotowa do skopiowania.
- */
-export function officeEmail(lines: CartLine[], contact: Contact): { subject: string; text: string } {
-  const totals = cartTotals(lines)
-  const who = contact.company.trim() || contact.email.trim()
-  const subject = `Zapytanie o wycenę – ${who} – ${lines.length} poz., ${totals.pieces} szt.${
-    totals.unpriced === 0 ? `, ${zl(totals.price)}` : ''
-  }`
+export interface OrderEmail {
+  subject: string
+  /** Wiersze maila w kolejności: [etykieta, wartość] – serwis wysyłki układa je w tabelę. */
+  rows: [string, string][]
+}
 
-  const out = ['NOWE ZAPYTANIE O WYCENĘ – kalkulator frontów giętych', '', 'KLIENT', ...contactLines(contact), '', 'POZYCJE']
+/**
+ * Wiadomość do biura: „Nowe zamówienie” – firma, klient, telefon, pozycje
+ * (LP, nazwa frontu, rzut, cena za szt., ilość, cena za całość) i SUMA.
+ * `planUrl` buduje link do rzutu danego frontu.
+ */
+export function orderEmail(lines: CartLine[], contact: Contact, planUrl: (config: Configuration) => string): OrderEmail {
+  const totals = cartTotals(lines)
+  const company = contact.company.trim()
+  const subject = `Nowe zamówienie – ${company || contact.email.trim()}`
+  const rows: [string, string][] = [
+    ['Nowe zamówienie', new Date().toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' })],
+    ['Firma', company || '—'],
+    ['Klient', contact.email.trim()],
+    ['Nr tel.', contact.phone.trim()],
+  ]
+  if (contact.notes.trim()) rows.push(['Uwagi klienta', contact.notes.trim()])
+  rows.push(['Zamówienie', `${lines.length} poz. · ${totals.pieces} szt.`])
   lines.forEach((l, i) => {
     const p = l.price
-    out.push('', `${i + 1}. ${l.result.code} ${l.result.flutingCode} – ${l.item.qty} szt.`)
-    out.push(`   ${describeConfig(l.item.config, l.result.flutingCode)}`)
-    out.push(
-      `   Powierzchnia: ${l.item.qty} × ${fmt(l.result.areaM2)} m² = ${fmt(l.areaM2)} m² (rozwinięcie ${fmt(l.result.developedMm, 1)} mm × H ${l.item.config.heightMm} mm)`,
-    )
-    const extras = p.surcharges.map((s) => ` + ${Math.round(s.rate * 100)}% (${s.label})`).join('')
-    if (p.total !== null && p.rate !== null && p.unitPrice !== null) {
-      out.push(`   Stawka: ${p.baseLabel} ${zl(p.baseRate ?? 0)}/m²${extras} = ${zl(Math.round(p.rate))}/m²`)
-      out.push(`   Cena: ${zl(p.unitPrice)} / szt. × ${l.item.qty} = ${zl(p.total)}`)
-    } else {
-      out.push(`   Cena: DO USTALENIA – ${p.missing}${extras ? ` (dopłaty:${extras})` : ''}`)
-    }
+    const unit = p.unitPrice !== null ? zl(p.unitPrice) : 'do ustalenia'
+    const total = p.total !== null ? zl(p.total) : 'do ustalenia'
+    rows.push([
+      `${i + 1}. ${l.result.code} ${l.result.flutingCode}`,
+      [
+        `Nazwa: ${describeConfig(l.item.config, l.result.flutingCode)}`,
+        `Rzut: ${planUrl(l.item.config)}`,
+        `Cena za szt.: ${unit}`,
+        `Ilość: ${l.item.qty} szt.`,
+        `Cena za całość: ${total}`,
+      ].join('\n'),
+    ])
   })
-  out.push('', 'PODSUMOWANIE', `Sztuk: ${totals.pieces}`, `Powierzchnia: ${fmt(totals.areaM2)} m²`)
-  out.push(
-    totals.unpriced === 0
-      ? `Wartość: ${zl(totals.price)}`
-      : `Wartość wycenionych pozycji: ${zl(totals.price)} (bez ceny: ${totals.unpriced} poz.)`,
-  )
-
-  out.push('', '────────────────────────────────', 'PROPONOWANA ODPOWIEDŹ DO KLIENTA', '────────────────────────────────', '')
-  out.push('Dzień dobry,', '', 'dziękujemy za zapytanie. Przesyłamy wycenę frontów giętych:', '')
-  lines.forEach((l, i) => {
-    const price = l.price.total !== null ? zl(l.price.total) : 'wycena indywidualna'
-    out.push(`${i + 1}. ${l.result.code} ${l.result.flutingCode}, ${l.item.qty} szt. – ${price}`)
-    out.push(`   ${describeConfig(l.item.config, l.result.flutingCode)}`)
-  })
-  out.push('')
-  if (totals.unpriced === 0) out.push(`Razem: ${zl(totals.price)}`)
-  else if (totals.price > 0) out.push(`Razem (bez pozycji wycenianych indywidualnie): ${zl(totals.price)}`)
-  if (totals.unpriced > 0) out.push('Pozycje oznaczone „wycena indywidualna” wycenimy osobno.')
-  out.push('', 'W razie pytań prosimy o kontakt.', '', 'Pozdrawiamy', 'Primo Meble', `tel. ${CONTACT.phone}`)
-  return { subject, text: out.join('\n') }
+  rows.push([
+    'SUMA',
+    totals.unpriced === 0 ? zl(totals.price) : `${zl(totals.price)} + ${totals.unpriced} poz. do ustalenia`,
+  ])
+  return { subject, rows }
 }
 
 // --- Zapis w przeglądarce (tylko wygoda: pusty lub niedostępny storage nie psuje strony) ---

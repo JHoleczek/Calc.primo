@@ -25,6 +25,7 @@ import { SubmitForm } from './components/SubmitForm'
 import { catalogImage, endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
+import { configFromHash } from './lib/share'
 import {
   addItem,
   cartLines,
@@ -125,7 +126,9 @@ function MmInput({
 }
 
 export default function App() {
-  const [config, setConfig] = useState<Configuration>(DEFAULT_CONFIGURATION)
+  // Link „Rzut” z maila (#rzut=…) otwiera dany front od razu w rzucie z góry.
+  const [linked] = useState(() => configFromHash(window.location.hash))
+  const [config, setConfig] = useState<Configuration>(linked ?? DEFAULT_CONFIGURATION)
   const result = useMemo(() => calculate(config), [config])
 
   // Koszyk: zapisywany w przeglądarce, żeby przetrwał odświeżenie strony.
@@ -409,7 +412,7 @@ export default function App() {
   return (
     <div className="layout">
       <aside className="layout__viz" aria-label="Wizualizacja">
-        <VisualizationPanel config={config} result={result} />
+        <VisualizationPanel config={config} result={result} initialView={linked ? 'plan' : '3d'} />
       </aside>
 
       <main className="layout__config">

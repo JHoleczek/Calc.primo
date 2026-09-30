@@ -8,7 +8,7 @@ import {
   duplicateItem,
   inquiryText,
   loadCart,
-  officeEmail,
+  orderEmail,
   removeItem,
   setQty,
   updateItem,
@@ -48,7 +48,7 @@ describe('koszyk', () => {
     expect(t.areaM2).toBeCloseTo((2 * quarter) / 1000)
   })
 
-  it('zapytanie klienta nie zawiera m² ani cen; wiadomość do biura – tak, z propozycją odpowiedzi', () => {
+  it('zapytanie klienta nie zawiera m² ani cen; zamówienie do biura: firma, klient, tel., pozycje, SUMA', () => {
     const cart = addItem([], { ...cfg, materialId: 'lakierowane', color: 'RAL 9010', flutingId: 'F07' }, 2)
     const lines = cartLines(cart)
     const contact = { phone: '600 100 200', email: 'jan@firma.pl', company: 'Firma Sp. z o.o.', notes: 'pilne' }
@@ -59,24 +59,29 @@ describe('koszyk', () => {
     expect(client).not.toContain('m²')
     expect(client).not.toContain('zł')
 
-    const office = officeEmail(lines, contact)
+    const order = orderEmail(lines, contact, () => 'https://x/#rzut=abc')
     const area = (Math.PI * 300) / 2 / 1000
     const unit = Math.round(area * 2750)
-    expect(office.text).toContain('m²')
-    expect(office.text).toContain('2750 zł/m²')
-    expect(office.text).toContain(`${unit.toLocaleString('pl-PL')} zł / szt. × 2`)
-    expect(office.text).toContain('PROPONOWANA ODPOWIEDŹ DO KLIENTA')
-    expect(office.text).toContain('Firma: Firma Sp. z o.o.')
-    expect(office.subject).toContain('Firma Sp. z o.o.')
+    const labels = order.rows.map((r) => r[0])
+    expect(order.subject).toBe('Nowe zamówienie – Firma Sp. z o.o.')
+    expect(labels.slice(0, 4)).toEqual(['Nowe zamówienie', 'Firma', 'Klient', 'Nr tel.'])
+    expect(labels[labels.length - 1]).toBe('SUMA')
+    const item = order.rows.find((r) => r[0].startsWith('1. EG-N0-R300 F07'))![1]
+    expect(item).toContain('Rzut: https://x/#rzut=abc')
+    expect(item).toContain(`Cena za szt.: ${unit.toLocaleString('pl-PL')} zł`)
+    expect(item).toContain('Ilość: 2 szt.')
+    expect(item).toContain(`Cena za całość: ${(unit * 2).toLocaleString('pl-PL')} zł`)
+    expect(order.rows[order.rows.length - 1][1]).toBe(`${(unit * 2).toLocaleString('pl-PL')} zł`)
     expect(cartTotals(lines).price).toBe(unit * 2)
   })
 
   it('pozycje bez stawki (fornir) są oznaczone do ustalenia', () => {
     const lines = cartLines(addItem([], { ...cfg, materialId: 'fornirowane' }))
-    const office = officeEmail(lines, { phone: '600100200', email: 'a@b.pl', company: '', notes: '' })
+    const order = orderEmail(lines, { phone: '600100200', email: 'a@b.pl', company: '', notes: '' }, () => '')
     expect(lines[0].price.total).toBeNull()
-    expect(office.text).toContain('DO USTALENIA')
-    expect(office.text).toContain('wycena indywidualna')
+    expect(order.rows.find((r) => r[0] === 'Firma')![1]).toBe('—')
+    expect(order.rows.find((r) => r[0].startsWith('1.'))![1]).toContain('Cena za szt.: do ustalenia')
+    expect(order.rows[order.rows.length - 1][1]).toContain('1 poz. do ustalenia')
     expect(cartTotals(lines).unpriced).toBe(1)
   })
 

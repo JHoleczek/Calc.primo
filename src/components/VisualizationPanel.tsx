@@ -35,10 +35,12 @@ function saveBlob(blob: Blob, name: string) {
 interface Props {
   config: Configuration
   result: Result
+  /** Widok na starcie (np. rzut – po otwarciu linku z maila). */
+  initialView?: View
 }
 
-export function VisualizationPanel({ config, result }: Props) {
-  const [view, setView] = useState<View>('3d')
+export function VisualizationPanel({ config, result, initialView = '3d' }: Props) {
+  const [view, setView] = useState<View>(initialView)
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
