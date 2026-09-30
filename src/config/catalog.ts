@@ -156,7 +156,13 @@ export const MATERIALS: Material[] = [
 export const CONTACT = { email: 'biuro.primomeble@gmail.com', phone: '691-766-559' }
 
 /**
- * Wysyłka zapytania z przeglądarki (strona statyczna, bez własnego serwera): FormSubmit.
- * Pierwsze zapytanie wysyła na adres biura e-mail aktywacyjny – trzeba go raz potwierdzić.
+ * Adres, na który trafiają zapytania o wycenę.
+ * TYMCZASOWO 02holek@gmail.com (brak dostępu do skrzynki biura) – docelowo CONTACT.email.
  */
-export const QUOTE_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT.email}`
+export const QUOTE_RECIPIENT = '02holek@gmail.com'
+
+/**
+ * Wysyłka zapytania z przeglądarki (strona statyczna, bez własnego serwera): FormSubmit.
+ * Pierwsze zapytanie wysyła na QUOTE_RECIPIENT e-mail aktywacyjny – trzeba go raz potwierdzić.
+ */
+export const QUOTE_ENDPOINT = `https://formsubmit.co/ajax/${QUOTE_RECIPIENT}`

@@ -43,7 +43,7 @@ npm run build    # build produkcyjny do dist/
   (Esc / ✕ / tło zamykają, fokus zostaje w panelu).
 - `src/components/SubmitForm.tsx` + `src/lib/sendQuote.ts` – „Zapytaj o wycenę” w koszyku: telefon i e-mail
   (wymagane), firma i uwagi (opcjonalne). Wysyłka przez FormSubmit (strona jest statyczna) na
-  biuro.primomeble@gmail.com: pełne wyliczenie (m², stawki, dopłaty, ceny) + proponowana odpowiedź do klienta.
+  02holek@gmail.com (tymczasowo; docelowo biuro.primomeble@gmail.com – `QUOTE_RECIPIENT` w `src/config/catalog.ts`): pełne wyliczenie (m², stawki, dopłaty, ceny) + proponowana odpowiedź do klienta.
   Pierwsze zapytanie wysyła na adres biura e-mail aktywacyjny – trzeba go raz potwierdzić.
   Gdy wysyłka się nie uda, klient może wysłać zapytanie ze swojej poczty (wersja bez m² i cen).
 - `src/config/pricing.ts` + `src/lib/pricing.ts` – cennik [zł/m²] i dopłaty (H > 2780 mm +30%, bryła +25%,
