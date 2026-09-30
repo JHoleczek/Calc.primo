@@ -347,6 +347,26 @@ export default function App() {
       body: <div className="dim-cards">{dimCards}</div>,
     },
     {
+      title: 'Materiał',
+      subtitle: 'Wybierz wykończenie',
+      body: (
+        <ChoiceGroup
+          name="material"
+          value={config.materialId}
+          onChange={setMaterial}
+          variant="cards"
+          columns={3}
+          choices={MATERIALS.map((m) => ({
+            value: m.id,
+            label: m.name,
+            hint: m.smoothOnly ? `Tylko gładki (${SMOOTH_FLUTING_ID})` : 'Wszystkie ryflowania',
+            disabled: tall && !m.smoothOnly,
+            disabledReason: `Niedostępne przy H > ${TALL_HEIGHT_MM} mm`,
+          }))}
+        />
+      ),
+    },
+    {
       title: 'Ryflowanie',
       subtitle: 'Wybierz wzór frezowania lica',
       hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (F00).` : undefined,
@@ -364,26 +384,6 @@ export default function App() {
             // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
             disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
             disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
-          }))}
-        />
-      ),
-    },
-    {
-      title: 'Materiał',
-      subtitle: 'Wybierz wykończenie',
-      body: (
-        <ChoiceGroup
-          name="material"
-          value={config.materialId}
-          onChange={setMaterial}
-          variant="cards"
-          columns={3}
-          choices={MATERIALS.map((m) => ({
-            value: m.id,
-            label: m.name,
-            hint: m.smoothOnly ? `Tylko gładki (${SMOOTH_FLUTING_ID})` : 'Wszystkie ryflowania',
-            disabled: tall && !m.smoothOnly,
-            disabledReason: `Niedostępne przy H > ${TALL_HEIGHT_MM} mm`,
           }))}
         />
       ),
