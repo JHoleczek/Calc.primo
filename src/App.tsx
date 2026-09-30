@@ -367,6 +367,22 @@ export default function App() {
       ),
     },
     {
+      title: 'Kolor',
+      subtitle: material.colorRequired ? 'Wpisz kolor farby – wymagany' : 'Wpisz kolor – opcjonalnie',
+      body: (
+        <input
+          className={`text-input${config.color.trim() ? ' text-input--filled' : ''}`}
+          type="text"
+          id="color"
+          aria-label="Kolor farby"
+          placeholder={material.colorPlaceholder}
+          value={config.color}
+          required={material.colorRequired}
+          onChange={(e) => set('color', e.target.value)}
+        />
+      ),
+    },
+    {
       title: 'Ryflowanie',
       subtitle: 'Wybierz wzór frezowania lica',
       hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (F00).` : undefined,
@@ -385,22 +401,6 @@ export default function App() {
             disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
             disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
           }))}
-        />
-      ),
-    },
-    {
-      title: 'Kolor',
-      subtitle: material.colorRequired ? 'Wpisz kolor farby – wymagany' : 'Wpisz kolor – opcjonalnie',
-      body: (
-        <input
-          className={`text-input${config.color.trim() ? ' text-input--filled' : ''}`}
-          type="text"
-          id="color"
-          aria-label="Kolor farby"
-          placeholder={material.colorPlaceholder}
-          value={config.color}
-          required={material.colorRequired}
-          onChange={(e) => set('color', e.target.value)}
         />
       ),
     },
