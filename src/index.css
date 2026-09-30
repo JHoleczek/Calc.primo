@@ -1925,38 +1925,93 @@ textarea.text-input {
 /* ---------- Stopka ---------- */
 
 .site-footer {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: -16px;
-  padding-top: 24px;
+  gap: 24px;
+  margin-top: -8px;
+  padding: 28px 0 4px;
   border-top: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--muted);
 }
 
-.site-footer__contact,
-.site-footer__links {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 18px;
+.site-footer p {
+  margin: 0;
 }
 
 .site-footer__brand {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text);
 }
 
+.site-footer__tagline {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 24px;
+}
+
+.site-footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.site-footer__col--wide {
+  grid-column: 1 / -1;
+}
+
+.site-footer__heading {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.site-footer address {
+  font-style: normal;
+}
+
 .site-footer a {
-  color: var(--muted);
+  width: fit-content;
+  color: var(--text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .site-footer a:hover {
   color: var(--gold);
+  text-decoration: underline;
+}
+
+.site-footer__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.site-footer__copy {
+  font-size: 12px;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
 }
 
 .site-footer .link-btn {
@@ -1965,9 +2020,10 @@ textarea.text-input {
   color: var(--muted);
 }
 
-.site-footer__copy {
-  margin: 0;
-  font-size: 12px;
+@container (max-width: 360px) {
+  .site-footer__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---------- Informacja o cookies ---------- */

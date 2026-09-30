@@ -155,6 +155,19 @@ export const MATERIALS: Material[] = [
 /** Kontakt do wyceny (z katalogu). */
 export const CONTACT = { email: 'biuro.primomeble@gmail.com', phone: '691-766-559' }
 
+/** Dane firmy (stopka, polityka prywatności). */
+export const COMPANY = {
+  brand: 'Primo Meble',
+  legalName: 'Primo Duda Krzysztof, Marek Skiba',
+  legalForm: 'spółka cywilna',
+  street: 'ul. Michała Glinki 7',
+  city: '41-905 Bytom',
+  nip: '6262940701',
+  regon: '241149669',
+  www: 'www.primomeble.pl',
+  since: 2009,
+}
+
 /**
  * Adres, na który trafiają zapytania o wycenę.
  * TYMCZASOWO 02holek@gmail.com (brak dostępu do skrzynki biura) – docelowo CONTACT.email.

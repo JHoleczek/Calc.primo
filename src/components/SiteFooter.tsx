@@ -1,26 +1,59 @@
 import { useEffect, useRef, useState } from 'react'
-import { CONTACT } from '../config/catalog'
+import { COMPANY, CONTACT } from '../config/catalog'
 
 const phoneHref = `tel:+48${CONTACT.phone.replace(/\D/g, '')}`
 
-/** Stopka na końcu konfiguratora: kontakt, prawa, polityka prywatności i cookies. */
+/** Stopka na końcu konfiguratora: marka, kontakt, adres, dane firmy, dokumenty. */
 export function SiteFooter({ onPrivacy }: { onPrivacy: (section?: 'cookies') => void }) {
   return (
     <footer className="site-footer">
-      <div className="site-footer__contact">
-        <span className="site-footer__brand">Primo Meble</span>
-        <a href={phoneHref}>{CONTACT.phone}</a>
-        <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
+      <div className="site-footer__top">
+        <p className="site-footer__brand">{COMPANY.brand}</p>
+        <p className="site-footer__tagline">Fronty gięte · producent mebli od {COMPANY.since} r.</p>
       </div>
-      <div className="site-footer__links">
-        <button type="button" className="link-btn" onClick={() => onPrivacy()}>
-          Polityka prywatności
-        </button>
-        <button type="button" className="link-btn" onClick={() => onPrivacy('cookies')}>
-          Cookies
-        </button>
+
+      <div className="site-footer__grid">
+        <div className="site-footer__col">
+          <h2 className="site-footer__heading">Kontakt</h2>
+          <a href={phoneHref}>tel. {CONTACT.phone}</a>
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
+          <a href={`https://${COMPANY.www}`} target="_blank" rel="noopener noreferrer">
+            {COMPANY.www}
+          </a>
+        </div>
+        <div className="site-footer__col">
+          <h2 className="site-footer__heading">Adres</h2>
+          <address>
+            {COMPANY.street}
+            <br />
+            {COMPANY.city}
+          </address>
+        </div>
+        <div className="site-footer__col site-footer__col--wide">
+          <h2 className="site-footer__heading">Dane firmy</h2>
+          <p>
+            {COMPANY.legalName} {COMPANY.legalForm}
+          </p>
+          <p>
+            NIP {COMPANY.nip} · REGON {COMPANY.regon}
+          </p>
+        </div>
       </div>
-      <p className="site-footer__copy">© {new Date().getFullYear()} Primo Meble. Ceny i wymiary w kalkulatorze mają charakter poglądowy – ostateczną wycenę przygotowuje biuro.</p>
+
+      <div className="site-footer__bottom">
+        <p className="site-footer__copy">
+          © {new Date().getFullYear()} {COMPANY.brand}. Ceny i wymiary w kalkulatorze są poglądowe – ostateczną wycenę
+          przygotowuje biuro.
+        </p>
+        <div className="site-footer__links">
+          <button type="button" className="link-btn" onClick={() => onPrivacy()}>
+            Polityka prywatności
+          </button>
+          <button type="button" className="link-btn" onClick={() => onPrivacy('cookies')}>
+            Cookies
+          </button>
+        </div>
+      </div>
     </footer>
   )
 }
@@ -86,7 +119,9 @@ export function PrivacyDialog({ open, section, onClose }: { open: boolean; secti
       <div className="privacy__body">
         <h3>Administrator danych</h3>
         <p>
-          Administratorem danych podanych w formularzu „Zapytaj o wycenę” jest Primo Meble. Kontakt w sprawie danych:{' '}
+          Administratorem danych podanych w formularzu „Zapytaj o wycenę” jest{' '}
+          {`${COMPANY.legalName} ${COMPANY.legalForm} (${COMPANY.brand})`}, {COMPANY.street}, {COMPANY.city}, NIP {COMPANY.nip},
+          REGON {COMPANY.regon}. Kontakt w sprawie danych:{' '}
           <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>, tel. <a href={phoneHref}>{CONTACT.phone}</a>.
         </p>
 
