@@ -1,13 +1,14 @@
 import type { FlutingProfile as Profile } from '../config/catalog'
 
 const BOARD = 18 // grubość płyty [mm]
+/** Szerokość wycinka płyty [mm] – taka sama dla wszystkich wzorów, więc ilustracje mają jeden rozmiar. */
+const W = 48
 
 /**
  * Przekrój płyty z frezem (widok z boku): szary kształt z jasnym konturem.
  * Rysowany z wymiarów profilu z katalogu – każdy wzór ma swój kształt.
  */
 export function FlutingProfile({ profile }: { profile?: Profile }) {
-  const W = profile ? Math.max(profile.pitchMm * 3, 48) : 48
   // Gładki (bez profilu): prosty prostokąt.
   let top = `M 0 0 L ${W} 0`
   if (profile) {
