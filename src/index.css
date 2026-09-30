@@ -1,6 +1,6 @@
 /* ==========================================================================
    Design system „Primo Calc” (primo_calc_design-system.pdf)
-   – ciemne, ciepłe tło; płaskie karty bez ramek, ostre krawędzie, odstępy 4 px,
+   – ciemne, ciepłe tło; płaskie karty bez ramek, minimalne zaokrąglenie (3 px), odstępy 4 px,
    – typografia Avenir (zastępczo Figtree): nagłówki sekcji wersalikami + podtytuł,
    – złoto #EDC880 tylko jako wyróżnienie: zaznaczenie, podkreślenie wypełnionego pola,
      wyróżnione elementy ikon,
@@ -35,6 +35,8 @@
 
   --font: 'Avenir Next', Avenir, Figtree, 'Helvetica Neue', Arial, sans-serif;
   --gap: 4px;
+  --radius: 3px;
+  --radius-sm: 2px;
 
   color-scheme: dark;
   font-family: var(--font);
@@ -51,7 +53,44 @@
 *::before,
 *::after {
   box-sizing: border-box;
-  border-radius: 0;
+}
+
+/* Minimalne zaokrąglenie narożników – karty, pola, przyciski, panele. */
+.choice,
+.dim-card,
+.mm-input,
+.text-input,
+.result,
+.result__errors,
+.btn-primary,
+.edit-banner,
+.cta,
+.cta__summary span,
+.cart-item,
+.cart__totals div,
+.qty__btn,
+.qty__input,
+.cart-button,
+.drawer__close,
+.submit__error,
+.viz__tab,
+.viz__stage,
+.viz__download-btn,
+.plan-nav__tools {
+  border-radius: var(--radius);
+}
+
+.result__code-fluting,
+.cart-item__fluting,
+.cart-button__badge,
+.viz__swatch {
+  border-radius: var(--radius-sm);
+}
+
+/* Zdjęcie w CTA i scena przycięte do zaokrąglenia rodzica. */
+.cta,
+.viz__stage {
+  overflow: hidden;
 }
 
 body {
