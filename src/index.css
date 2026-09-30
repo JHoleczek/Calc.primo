@@ -594,6 +594,7 @@ a:hover {
   font-size: 13px;
   line-height: 1.35;
   color: var(--muted);
+  transition: color 0.15s;
 }
 
 /* Karty: ikona u góry, nazwa i podpis na dole. */
