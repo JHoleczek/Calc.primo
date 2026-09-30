@@ -162,10 +162,13 @@ export const CONTACT = { email: 'biuro.primomeble@gmail.com', phone: '691-766-55
 export const QUOTE_RECIPIENT = '02holek@gmail.com'
 
 /**
- * Wysyłka zapytania z przeglądarki (strona statyczna, bez własnego serwera): FormSubmit.
- * Pierwsze zapytanie wysyła na QUOTE_RECIPIENT e-mail aktywacyjny – trzeba go raz potwierdzić.
+ * Wysyłka zapytań z przeglądarki (strona statyczna, bez własnego serwera): Web3Forms.
+ * Klucz (Access Key) zakłada się na https://web3forms.com dla adresu odbiorcy – maile trafiają
+ * na adres przypisany do klucza, więc sam adres nie jest widoczny w kodzie strony.
+ * Pusty klucz = zapasowo FormSubmit (bywa niestabilny).
  */
-export const QUOTE_ENDPOINT = `https://formsubmit.co/ajax/${QUOTE_RECIPIENT}`
+export const WEB3FORMS_ACCESS_KEY = '655b5c13-3149-4f61-b21b-4feda58727ac'
 
-/** Ten sam serwis przez zwykły formularz (awaryjnie, gdy zapytanie w tle jest blokowane). */
-export const QUOTE_FORM_ACTION = `https://formsubmit.co/${QUOTE_RECIPIENT}`
+export const QUOTE_ENDPOINT = WEB3FORMS_ACCESS_KEY
+  ? 'https://api.web3forms.com/submit'
+  : `https://formsubmit.co/ajax/${QUOTE_RECIPIENT}`

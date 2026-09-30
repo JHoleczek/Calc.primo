@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CONTACT, QUOTE_RECIPIENT } from '../config/catalog'
 import { contactErrors, EMPTY_CONTACT, inquirySubject, inquiryText, type CartLine, type Contact } from '../lib/cart'
-import { QuoteNetworkError, sendQuote, SENT_HASH, submitQuoteForm } from '../lib/sendQuote'
+import { sendQuote } from '../lib/sendQuote'
 
 interface Props {
   lines: CartLine[]
@@ -9,7 +9,7 @@ interface Props {
   onClear: () => void
 }
 
-type Status = 'idle' | 'form' | 'sending' | 'redirecting' | 'sent' | 'error'
+type Status = 'idle' | 'form' | 'sending' | 'sent' | 'error'
 
 /**
  * Koniec koszyka: „Zapytaj o wycenę” → telefon, e-mail, (firma) → wysyłka do biura.
@@ -17,8 +17,7 @@ type Status = 'idle' | 'form' | 'sending' | 'redirecting' | 'sent' | 'error'
  */
 export function SubmitForm({ lines, onClear }: Props) {
   const [contact, setContact] = useState<Contact>(EMPTY_CONTACT)
-  // Powrót z wysyłki zwykłym formularzem (serwis przekierowuje z powrotem ze znacznikiem w adresie).
-  const [status, setStatus] = useState<Status>(() => (window.location.hash === SENT_HASH ? 'sent' : 'idle'))
+  const [status, setStatus] = useState<Status>('idle')
   const [touched, setTouched] = useState(false)
   const [honey, setHoney] = useState('')
   const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no')
@@ -42,12 +41,6 @@ export function SubmitForm({ lines, onClear }: Props) {
       if (!honey) await sendQuote(lines, contact)
       setStatus('sent')
     } catch (e) {
-      // Zapytanie w tle zablokowane (sieć, bloker reklam) – wysyłamy zwykłym formularzem.
-      if (e instanceof QuoteNetworkError) {
-        setStatus('redirecting')
-        submitQuoteForm(lines, contact)
-        return
-      }
       // Odpowiedź serwisu wysyłki (np. prośba o aktywację) – pomaga ustalić przyczynę.
       setErrorDetail(e instanceof Error ? e.message : String(e))
       setStatus('error')
@@ -165,10 +158,10 @@ export function SubmitForm({ lines, onClear }: Props) {
       <p className="submit__required">* pola wymagane</p>
 
       <div className="cta__actions">
-        <button type="submit" className="btn-primary" disabled={status === 'sending' || status === 'redirecting' || empty || invalid}>
-          {status === 'sending' || status === 'redirecting' ? 'Wysyłanie…' : 'Wyślij zapytanie'}
+        <button type="submit" className="btn-primary" disabled={status === 'sending' || empty || invalid}>
+          {status === 'sending' ? 'Wysyłanie…' : 'Wyślij zapytanie'}
         </button>
-        <button type="button" className="link-btn" onClick={() => setStatus('idle')} disabled={status === 'sending' || status === 'redirecting'}>
+        <button type="button" className="link-btn" onClick={() => setStatus('idle')} disabled={status === 'sending'}>
           Anuluj
         </button>
       </div>

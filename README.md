@@ -42,9 +42,10 @@ npm run build    # build produkcyjny do dist/
 - `src/components/CartDrawer.tsx` – ikona koszyka (lewy górny róg, na telefonie prawy) i panel wysuwany z prawej
   (Esc / ✕ / tło zamykają, fokus zostaje w panelu).
 - `src/components/SubmitForm.tsx` + `src/lib/sendQuote.ts` – „Zapytaj o wycenę” w koszyku: telefon i e-mail
-  (wymagane), firma i uwagi (opcjonalne). Wysyłka przez FormSubmit (strona jest statyczna) na
-  02holek@gmail.com (tymczasowo; docelowo biuro.primomeble@gmail.com – `QUOTE_RECIPIENT` w `src/config/catalog.ts`): pełne wyliczenie (m², stawki, dopłaty, ceny) + proponowana odpowiedź do klienta.
-  Pierwsze zapytanie wysyła na adres biura e-mail aktywacyjny – trzeba go raz potwierdzić.
+  (wymagane), firma i uwagi (opcjonalne). Wysyłka przez Web3Forms (strona jest statyczna) –
+  klucz `WEB3FORMS_ACCESS_KEY` w `src/config/catalog.ts`, zakładany na web3forms.com dla adresu odbiorcy
+  (tymczasowo 02holek@gmail.com, docelowo biuro.primomeble@gmail.com). Bez klucza – zapasowo FormSubmit.
+  Treść: pełne wyliczenie (m², stawki, dopłaty, ceny) + proponowana odpowiedź do klienta.
   Gdy wysyłka się nie uda, klient może wysłać zapytanie ze swojej poczty (wersja bez m² i cen).
 - `src/config/pricing.ts` + `src/lib/pricing.ts` – cennik [zł/m²] i dopłaty (H > 2780 mm +30%, bryła +25%,
   mnożone kolejno). `null` = cena do ustalenia (pozycja „wycena indywidualna”).

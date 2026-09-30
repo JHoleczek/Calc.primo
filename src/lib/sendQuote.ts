@@ -1,22 +1,25 @@
-import { QUOTE_ENDPOINT, QUOTE_FORM_ACTION } from '../config/catalog'
+import { QUOTE_ENDPOINT, WEB3FORMS_ACCESS_KEY } from '../config/catalog'
 import { officeEmail, type CartLine, type Contact } from './cart'
 
-/** Pola wiadomości do biura (FormSubmit → e-mail); „Odpowiedz” w poczcie trafia do klienta (_replyto). */
+/** Pola wiadomości do biura; „Odpowiedz” w poczcie trafia do klienta (replyto / _replyto). */
 export function quoteFields(lines: CartLine[], contact: Contact): Record<string, string> {
   const { subject, text } = officeEmail(lines, contact)
-  return {
-    _subject: subject,
-    _replyto: contact.email.trim(),
-    _template: 'box',
+  const common = {
     email: contact.email.trim(),
     telefon: contact.phone.trim(),
     firma: contact.company.trim() || '—',
     message: text,
   }
+  return WEB3FORMS_ACCESS_KEY
+    ? {
+        access_key: WEB3FORMS_ACCESS_KEY,
+        subject,
+        from_name: 'Kalkulator frontów giętych',
+        replyto: contact.email.trim(),
+        ...common,
+      }
+    : { _subject: subject, _replyto: contact.email.trim(), _template: 'box', ...common }
 }
-
-/** Wysyłka nie doszła do serwera (sieć, bloker reklam) – można spróbować zwykłym formularzem. */
-export class QuoteNetworkError extends Error {}
 
 /**
  * Wysyła zapytanie do biura. Dane idą jako zwykły formularz (FormData), bez nagłówka JSON –
@@ -29,7 +32,7 @@ export async function sendQuote(lines: CartLine[], contact: Contact, fetchImpl: 
   try {
     response = await fetchImpl(QUOTE_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body })
   } catch (e) {
-    throw new QuoteNetworkError(`brak połączenia z serwisem wysyłki (${e instanceof Error ? e.message : String(e)})`)
+    throw new Error(`brak połączenia z serwisem wysyłki (${e instanceof Error ? e.message : String(e)})`)
   }
   const data: unknown = await response.json().catch(() => null)
   const ok = !!data && typeof data === 'object' && String((data as { success?: unknown }).success) === 'true'
@@ -37,30 +40,4 @@ export async function sendQuote(lines: CartLine[], contact: Contact, fetchImpl: 
     const message = data && typeof data === 'object' ? String((data as { message?: unknown }).message ?? '') : ''
     throw new Error(message || `HTTP ${response.status}`)
   }
-}
-
-/** Znacznik w adresie po powrocie z wysyłki zwykłym formularzem. */
-export const SENT_HASH = '#zapytanie-wyslane'
-
-/**
- * Wysyłka awaryjna: zwykły formularz HTML (przejście na stronę serwisu i powrót tutaj).
- * Działa także tam, gdzie zapytania w tle są blokowane. Koszyk zostaje w przeglądarce.
- */
-export function submitQuoteForm(lines: CartLine[], contact: Contact) {
-  const form = document.createElement('form')
-  form.method = 'POST'
-  form.action = QUOTE_FORM_ACTION
-  form.acceptCharset = 'UTF-8'
-  const back = new URL(window.location.href)
-  back.hash = SENT_HASH
-  const fields = { ...quoteFields(lines, contact), _captcha: 'false', _next: back.toString() }
-  for (const [k, v] of Object.entries(fields)) {
-    const input = document.createElement('input')
-    input.type = 'hidden'
-    input.name = k
-    input.value = v
-    form.append(input)
-  }
-  document.body.append(form)
-  form.submit()
 }

@@ -25,7 +25,6 @@ import { SubmitForm } from './components/SubmitForm'
 import { catalogImage, endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
-import { SENT_HASH } from './lib/sendQuote'
 import {
   addItem,
   cartLines,
@@ -133,15 +132,10 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>(loadCart)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [cartMessage, setCartMessage] = useState('')
-  // Po powrocie z wysyłki zwykłym formularzem od razu pokazujemy koszyk z potwierdzeniem.
-  const [drawerOpen, setDrawerOpen] = useState(() => window.location.hash === SENT_HASH)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   // Zmiana klucza przebudowuje pola formularza po wczytaniu frontu do edycji.
   const [formKey, setFormKey] = useState(0)
   useEffect(() => saveCart(cart), [cart])
-  useEffect(() => {
-    // Usuwamy znacznik z adresu, żeby odświeżenie strony nie pokazywało potwierdzenia ponownie.
-    if (window.location.hash === SENT_HASH) history.replaceState(null, '', window.location.pathname + window.location.search)
-  }, [])
   const lines = useMemo(() => cartLines(cart), [cart])
   const pieces = lines.reduce((n, l) => n + l.item.qty, 0)
   const editingIndex = cart.findIndex((i) => i.id === editingId)
