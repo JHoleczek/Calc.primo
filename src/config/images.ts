@@ -1,17 +1,8 @@
-// Zdjęcie z katalogu Primo (src/assets/catalog) oraz ikony z design systemu.
-
-import type { FrontTypeId } from './catalog'
+// Ikony z design systemu (primo_calc_design-system.pdf) – wycięte 1:1, przezroczyste tło.
 // Adresy generuje Vite; w buildzie SINGLE_FILE obrazki są wstawiane inline.
 
-const files = import.meta.glob('../assets/catalog/*.{webp,png}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-}) as Record<string, string>
+import type { FrontTypeId } from './catalog'
 
-export const CTA_IMAGE = files['../assets/catalog/cta.png']
-
-// Ikony z design systemu (primo_calc_design-system.pdf) – wycięte 1:1, przezroczyste tło.
 const icons = import.meta.glob('../assets/icons/*.webp', {
   eager: true,
   query: '?url',

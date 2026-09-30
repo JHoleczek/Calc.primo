@@ -49,7 +49,9 @@ npm run build    # build produkcyjny do dist/
   Gdy wysyłka się nie uda, klient może wysłać zapytanie ze swojej poczty (wersja bez m² i cen).
 - `src/config/pricing.ts` + `src/lib/pricing.ts` – cennik [zł/m²] i dopłaty (H > 2780 mm +30%, bryła +25%,
   mnożone kolejno). `null` = cena do ustalenia (pozycja „wycena indywidualna”).
-- `src/components/CtaBanner.tsx` – baner ze zdjęciem na końcu strony, otwiera koszyk.
+- `src/components/SiteFooter.tsx` – stopka (kontakt, polityka prywatności, cookies), informacja o cookies
+  (strona nie używa cookies – tylko localStorage na koszyk) i okno z polityką prywatności (RODO).
+  Czcionka Figtree jest serwowana z serwera strony (@fontsource), bez Google Fonts.
 
 Klient nie widzi m² ani cen – tylko konfigurację i koszyk (z edycją). Uwaga: cennik jest w kodzie
 strony, więc technicznie da się go odczytać; pełne ukrycie wymaga własnego serwera.

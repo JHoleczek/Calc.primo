@@ -1,14 +1,17 @@
+import type { ReactNode } from 'react'
 import type { Result } from '../lib/calculate'
 
 interface Props {
   result: Result
+  /** Przyciski pod podsumowaniem (dodaj do koszyka / zobacz koszyk). */
+  children?: ReactNode
 }
 
 /**
  * Podsumowanie frontu dla klienta: kod katalogowy, dodatki i uwagi.
  * Bez m² i cen – te trafiają tylko do biura w zapytaniu o wycenę.
  */
-export function ResultPanel({ result }: Props) {
+export function ResultPanel({ result, children }: Props) {
   const invalid = result.errors.length > 0
 
   return (
@@ -44,6 +47,7 @@ export function ResultPanel({ result }: Props) {
       )}
 
       <p className="result__next">Dodaj front do koszyka, a na końcu kliknij „Zapytaj o wycenę” – przygotujemy ofertę.</p>
+      {children}
     </section>
   )
 }

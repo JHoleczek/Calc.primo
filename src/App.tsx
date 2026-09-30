@@ -21,7 +21,7 @@ import {
 } from './config/catalog'
 import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
-import { CtaBanner } from './components/CtaBanner'
+import { CookieNotice, PrivacyDialog, SiteFooter } from './components/SiteFooter'
 import { SubmitForm } from './components/SubmitForm'
 import { endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
@@ -137,6 +137,9 @@ export default function App() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [cartMessage, setCartMessage] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  // Polityka prywatności (opcjonalnie od razu na sekcji o cookies).
+  const [privacy, setPrivacy] = useState<{ open: boolean; section?: 'cookies' }>({ open: false })
+  const openPrivacy = (section?: 'cookies') => setPrivacy({ open: true, section })
   // Zmiana klucza przebudowuje pola formularza po wczytaniu frontu do edycji.
   const [formKey, setFormKey] = useState(0)
   useEffect(() => saveCart(cart), [cart])
@@ -453,36 +456,38 @@ export default function App() {
           </label>
         </form>
 
-        <ResultPanel result={result} />
+        <ResultPanel result={result}>
+          <div className="add-bar">
+            {editingId ? (
+              <>
+                <button type="button" className="btn-primary btn-cta" onClick={saveEdit} disabled={result.errors.length > 0}>
+                  Zapisz zmiany w pozycji {String(editingIndex + 1).padStart(2, '0')}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>
+                  Anuluj edycję
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="btn-primary btn-cta" onClick={addToCart} disabled={result.errors.length > 0}>
+                  Dodaj do koszyka
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => setDrawerOpen(true)}>
+                  Zobacz koszyk{pieces > 0 ? ` (${pieces})` : ''}
+                </button>
+              </>
+            )}
+            <p className="add-bar__status" role="status">
+              {cartMessage}
+            </p>
+          </div>
+        </ResultPanel>
 
-        <div className="add-bar">
-          {editingId ? (
-            <>
-              <button type="button" className="btn-primary btn-cta" onClick={saveEdit} disabled={result.errors.length > 0}>
-                Zapisz zmiany w pozycji {String(editingIndex + 1).padStart(2, '0')}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>
-                Anuluj edycję
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="btn-primary btn-cta" onClick={addToCart} disabled={result.errors.length > 0}>
-                Dodaj do koszyka
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => setDrawerOpen(true)}>
-                Zobacz koszyk{pieces > 0 ? ` (${pieces})` : ''}
-              </button>
-            </>
-          )}
-          <p className="add-bar__status" role="status">
-            {cartMessage}
-          </p>
-        </div>
-
-        <CtaBanner lines={lines} onOpenCart={() => setDrawerOpen(true)} />
+        <SiteFooter onPrivacy={openPrivacy} />
       </main>
 
+      <CookieNotice onPrivacy={openPrivacy} />
+      <PrivacyDialog open={privacy.open} section={privacy.section} onClose={() => setPrivacy({ open: false })} />
       <CartButton count={pieces} open={drawerOpen} onClick={() => setDrawerOpen(true)} />
       <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Cart
