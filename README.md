@@ -1,8 +1,9 @@
 # Kalkulator frontów giętych (Primo Meble)
 
 Kalkulator powierzchni (m²) frontów giętych z informacją o dodatkach.
-Ekran jest podzielony na pół: po lewej (desktop) / u góry (mobile) jest wizualizacja
-(model 3D oraz rzut z góry), resztę ekranu zajmuje konfiguracja.
+Wizualizacja (model 3D oraz rzut z góry) zajmuje całe tło strony, model stoi po lewej; konfigurator
+jest w pływającym panelu po prawej, koszyk w lewym górnym rogu. Na telefonie wizualizacja jest u góry,
+a konfigurator pod nią.
 
 Wygląd: design system „Primo Calc” (ciemne ciepłe tło, płaskie karty, nagłówki sekcji wersalikami,
 złoto #EDC880 tylko do wyróżnień, font Avenir / zastępczo Figtree). Ikony typów, wysokości i zakończenia
@@ -38,7 +39,7 @@ npm run build    # build produkcyjny do dist/
   typ, R, H, grubość), niezależnie od bieżącego powiększenia.
 - `src/lib/cart.ts` + `src/components/Cart.tsx` – koszyk: ilość, edycja, duplikowanie, usuwanie,
   sumy sztuk i m²; zapis w przeglądarce (localStorage).
-- `src/components/CartDrawer.tsx` – ikona koszyka w prawym górnym rogu i panel wysuwany z prawej
+- `src/components/CartDrawer.tsx` – ikona koszyka (lewy górny róg, na telefonie prawy) i panel wysuwany z prawej
   (Esc / ✕ / tło zamykają, fokus zostaje w panelu).
 - `src/components/SubmitForm.tsx` + `src/lib/sendQuote.ts` – „Zapytaj o wycenę” w koszyku: telefon i e-mail
   (wymagane), firma i uwagi (opcjonalne). Wysyłka przez FormSubmit (strona jest statyczna) na

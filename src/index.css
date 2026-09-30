@@ -169,7 +169,7 @@ a:hover {
   z-index: 10;
   top: var(--panel-gap);
   bottom: var(--panel-gap);
-  left: var(--panel-gap);
+  right: var(--panel-gap);
   width: var(--panel-w);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -223,7 +223,8 @@ a:hover {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 28px 88px 28px calc(var(--panel-w) + var(--panel-gap) * 2 + 32px);
+  /* Lewa część okna: miejsce na koszyk w rogu, po prawej pływający panel. */
+  padding: 28px calc(var(--panel-w) + var(--panel-gap) * 2 + 32px) 28px 88px;
   gap: 16px;
 }
 
@@ -245,9 +246,8 @@ a:hover {
   font: inherit;
   font-size: 14px;
   font-weight: 500;
-  padding: 9px 18px 7px;
+  padding: 9px 18px;
   border: 0;
-  border-bottom: 2px solid transparent;
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
@@ -263,7 +263,6 @@ a:hover {
 .viz__tab--active:hover {
   background: var(--field);
   color: var(--text);
-  border-bottom-color: var(--gold);
 }
 
 .viz__hint {
@@ -1460,7 +1459,7 @@ textarea.text-input {
 .cart-button {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 16px);
-  right: 16px;
+  left: 16px;
   z-index: 20;
   display: grid;
   place-items: center;
@@ -1476,6 +1475,14 @@ textarea.text-input {
 
 .cart-button:hover {
   background: var(--field);
+}
+
+/* Na telefonie (bez pływającego panelu) koszyk wraca do prawego rogu. */
+@media (max-width: 900px) {
+  .cart-button {
+    left: auto;
+    right: 16px;
+  }
 }
 
 .cart-button__badge {
@@ -1746,9 +1753,8 @@ textarea.text-input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 12px 7px;
+  padding: 9px 12px;
   border: 0;
-  border-bottom: 2px solid transparent;
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -1756,7 +1762,7 @@ textarea.text-input {
   font-weight: 600;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s;
 }
 
 .viz__download-btn svg {
@@ -1769,7 +1775,6 @@ textarea.text-input {
 
 .viz__download-btn:hover:not(:disabled) {
   background: var(--field);
-  border-bottom-color: var(--gold);
 }
 
 .viz__download-btn:disabled {
