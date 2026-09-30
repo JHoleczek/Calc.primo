@@ -404,23 +404,6 @@ export default function App() {
         />
       ),
     },
-    {
-      title: 'Bryła',
-      subtitle: 'Sam front czy front ze środkiem',
-      body: (
-        <ChoiceGroup
-          name="body"
-          variant="cards"
-          columns={2}
-          value={config.body ? 'body' : 'front'}
-          onChange={(v) => set('body', v === 'body')}
-          choices={[
-            { value: 'front', label: 'Sam front', hint: 'Tylko front gięty' },
-            { value: 'body', label: 'Bryła', hint: 'Front + środek' },
-          ]}
-        />
-      ),
-    },
   ]
 
   return (
@@ -449,6 +432,20 @@ export default function App() {
               {section.body}
             </Section>
           ))}
+
+          {/* Bryła – opcja dla każdego typu, jako drobny dopisek zamiast osobnej sekcji. */}
+          <label className="check" htmlFor="body">
+            <input id="body" type="checkbox" checked={config.body} onChange={(e) => set('body', e.target.checked)} />
+            <span className="check__box" aria-hidden="true">
+              <svg viewBox="0 0 16 16">
+                <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+              </svg>
+            </span>
+            <span className="check__text">
+              <span className="check__label">Bryła – front + środek</span>
+              <span className="check__hint">Jest możliwość wykonania całej bryły: frontu wraz ze środkiem.</span>
+            </span>
+          </label>
         </form>
 
         <ResultPanel result={result} />
@@ -456,25 +453,25 @@ export default function App() {
         <div className="add-bar">
           {editingId ? (
             <>
-              <button type="button" className="btn-primary" onClick={saveEdit} disabled={result.errors.length > 0}>
+              <button type="button" className="btn-primary btn-cta" onClick={saveEdit} disabled={result.errors.length > 0}>
                 Zapisz zmiany w pozycji {String(editingIndex + 1).padStart(2, '0')}
               </button>
-              <button type="button" className="link-btn" onClick={() => setEditingId(null)}>
+              <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>
                 Anuluj edycję
               </button>
             </>
           ) : (
-            <button type="button" className="btn-primary" onClick={addToCart} disabled={result.errors.length > 0}>
-              Dodaj do koszyka
-            </button>
+            <>
+              <button type="button" className="btn-primary btn-cta" onClick={addToCart} disabled={result.errors.length > 0}>
+                Dodaj do koszyka
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setDrawerOpen(true)}>
+                Zobacz koszyk{pieces > 0 ? ` (${pieces})` : ''}
+              </button>
+            </>
           )}
           <p className="add-bar__status" role="status">
-            {cartMessage}{' '}
-            {cartMessage && !editingId && (
-              <button type="button" className="link-btn" onClick={() => setDrawerOpen(true)}>
-                Zobacz koszyk
-              </button>
-            )}
+            {cartMessage}
           </p>
         </div>
 
