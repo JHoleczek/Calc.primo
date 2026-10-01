@@ -43,7 +43,9 @@ export function PlanView({ config, interactive = false }: Props) {
   }, [])
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
-  const geo = planGeometry(config)
+  // Krótszy bok obszaru rysunku (zaokrąglony, żeby drobne zmiany rozmiaru nie przestawiały widoku).
+  const screenMin = screen ? Math.round(Math.min(screen.w, screen.h) / 40) * 40 : Infinity
+  const geo = planGeometry(config, screenMin)
   const base = geo.view
   // Zmiana kształtu (inny gabaryt) wraca do pełnego widoku.
   const key = `${base.x}|${base.y}|${base.w}|${base.h}`

@@ -20,7 +20,7 @@ const exportCss = (k: number) =>
 .plan__dim line { stroke: #9b9b9b; stroke-width: 0.8px; }
 .plan__dim .plan__ext { stroke-dasharray: 1 3; }
 .plan__dashed { fill: none; stroke: #9b9b9b; stroke-width: 0.8px; stroke-dasharray: 5 4; }
-.plan__text, .plan__dim text { fill: #c9c9c9; font-family: 'Helvetica Neue', Arial, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+.plan__text, .plan__dim text { fill: #e4e4e4; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 500; text-anchor: middle; dominant-baseline: middle; }
 .plan__caption { fill: #8a8a8a; font-family: 'Helvetica Neue', Arial, sans-serif; }
 .plan__title { fill: #f2f2f2; font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 600; letter-spacing: 0.06em; }
 .plan__rule { stroke: #3a3a3a; stroke-width: 1px; }

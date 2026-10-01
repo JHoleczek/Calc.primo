@@ -12,8 +12,11 @@ export interface ViewBox {
   h: number
 }
 
-/** Geometria rzutu niezależna od skali ekranu. */
-export function planGeometry(shape: ShapeParams) {
+/**
+ * Geometria rzutu. `screenPx` – krótszy bok obszaru rysunku na ekranie [px]: na małym ekranie
+ * rzędy wymiarów są rozsuwane, żeby liczby (stały rozmiar w px) na siebie nie nachodziły.
+ */
+export function planGeometry(shape: ShapeParams, screenPx = Infinity) {
   const path = frontPath(shape)
   const g = THICKNESS_MM
   const samples = samplePath(path, 4, 1.5)
@@ -27,8 +30,11 @@ export function planGeometry(shape: ShapeParams) {
   const box = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
   const boxW = box.maxX - box.minX
   const boxH = box.maxY - box.minY
-  const unit = Math.max(boxW, boxH) / 100
-  const off = unit * 7
+  const extent = Math.max(boxW, boxH)
+  const unit = extent / 100
+  // Odstęp rzędu wymiarów ≥ ok. 24 px ekranu (widok ≈ gabaryt + 6,4 × odstęp).
+  const minOff = screenPx > 220 ? (24 * extent) / (screenPx - 160) : 0
+  const off = Math.max(unit * 7, minOff)
 
   // Widok: gabaryt + środki łuków + miejsce na dwa rzędy wymiarów z każdej strony.
   const centers = walked.flatMap((w) => (w.center ? [w.center] : []))

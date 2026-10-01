@@ -3,6 +3,9 @@ import { outerNormal } from '../lib/frontPath'
 import { fmtMm as fmt, type PlanGeometry, type Point } from '../lib/planGeometry'
 
 const add = (a: Point, b: Point, k = 1): Point => [a[0] + b[0] * k, a[1] + b[1] * k]
+/** Wielkość liczb na rysunku [px ekranu] – czytelna także na telefonie. */
+const TEXT = 15
+
 const toD = (pts: Point[]) => pts.map((q, i) => `${i ? 'L' : 'M'} ${q[0]} ${q[1]}`).join(' ')
 
 interface DimProps {
@@ -33,7 +36,7 @@ function Dimension({ p1, p2, dir, offset, label, px }: DimProps) {
   let angle = (Math.atan2(along[1], along[0]) * 180) / Math.PI
   if (angle >= 90) angle -= 180
   if (angle < -90) angle += 180
-  const mid = add([(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2], dir, px * 9)
+  const mid = add([(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2], dir, px * (TEXT * 0.8))
   // Linia wymiarowa wystaje odrobinę poza linie pomocnicze, jak na rysunku referencyjnym.
   const e1 = add(q1, u, -px * 4)
   const e2 = add(q2, u, px * 4)
@@ -46,7 +49,7 @@ function Dimension({ p1, p2, dir, offset, label, px }: DimProps) {
       {[q1, q2].map((q, i) => (
         <line key={i} x1={q[0] - tick[0]} y1={q[1] - tick[1]} x2={q[0] + tick[0]} y2={q[1] + tick[1]} />
       ))}
-      <text x={mid[0]} y={mid[1]} transform={`rotate(${angle} ${mid[0]} ${mid[1]})`} fontSize={px * 11}>
+      <text x={mid[0]} y={mid[1]} transform={`rotate(${angle} ${mid[0]} ${mid[1]})`} fontSize={px * TEXT}>
         {label}
       </text>
     </g>
@@ -121,7 +124,7 @@ export function PlanContent({ geo, px, hatchId }: { geo: PlanGeometry; px: numbe
     const base: Point = [rEnd[0] - rDir[0] * arrowLen, rEnd[1] - rDir[1] * arrowLen]
     const perp: Point = [-rDir[1], rDir[0]]
     const arrow = [rEnd, [base[0] + perp[0] * px * 3.5, base[1] + perp[1] * px * 3.5], [base[0] - perp[0] * px * 3.5, base[1] - perp[1] * px * 3.5]]
-    const label: Point = [c[0] + rDir[0] * r * 0.5 - perp[0] * px * 9, c[1] + rDir[1] * r * 0.5 - perp[1] * px * 9]
+    const label: Point = [c[0] + rDir[0] * r * 0.5 - perp[0] * px * (TEXT * 0.8), c[1] + rDir[1] * r * 0.5 - perp[1] * px * (TEXT * 0.8)]
     let angle = (Math.atan2(rDir[1], rDir[0]) * 180) / Math.PI
     if (angle >= 90) angle -= 180
     if (angle < -90) angle += 180
@@ -133,7 +136,7 @@ export function PlanContent({ geo, px, hatchId }: { geo: PlanGeometry; px: numbe
         />
         <line className="plan__thin" x1={c[0]} y1={c[1]} x2={base[0]} y2={base[1]} />
         <polygon className="plan__arrow" points={arrow.map((q) => q.join(',')).join(' ')} />
-        <text className="plan__text" x={label[0]} y={label[1]} transform={`rotate(${angle} ${label[0]} ${label[1]})`} fontSize={px * 11}>
+        <text className="plan__text" x={label[0]} y={label[1]} transform={`rotate(${angle} ${label[0]} ${label[1]})`} fontSize={px * TEXT}>
           R{r}
         </text>
       </g>,

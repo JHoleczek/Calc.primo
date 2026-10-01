@@ -267,11 +267,6 @@ a:hover {
   color: var(--text);
 }
 
-.viz__hint {
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .viz__stage {
   position: relative;
   flex: 1;
@@ -305,7 +300,7 @@ a:hover {
   --draw-grid: #1b1b1b;
   --draw-line: #f2f2f2;
   --draw-dim: #9b9b9b;
-  --draw-text: #c9c9c9;
+  --draw-text: #e4e4e4;
   --draw-axis: #8a8a8a;
 
   overflow: hidden;
@@ -379,7 +374,7 @@ a:hover {
 .plan__dim text {
   fill: var(--draw-text);
   font-family: 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 400;
+  font-weight: 500;
   text-anchor: middle;
   dominant-baseline: middle;
   font-variant-numeric: tabular-nums;
@@ -439,26 +434,18 @@ a:hover {
 
 @media (max-width: 900px) {
   .viz {
-    padding: 12px 72px 12px 16px;
+    padding: 12px 16px;
     gap: 8px;
   }
 
-  .viz__hint {
-    display: none;
+  /* Miejsce na ikonę koszyka w prawym górnym rogu – tylko przy zakładkach. */
+  .viz__bar {
+    padding-right: 64px;
   }
 
+  /* Telefon: bez opisów pod podglądem – całe miejsce dla modelu / rysunku. */
   .viz__meta {
-    gap: 6px 20px;
-  }
-
-  .viz__meta div {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 6px;
-  }
-
-  .viz__meta dd {
-    font-size: 14px;
+    display: none;
   }
 }
 
@@ -1797,9 +1784,15 @@ textarea.text-input {
     display: none;
   }
 
+  /* Telefon: pasek zoomu pod rysunkiem (nie zasłania wymiarów). */
+  .plan-nav {
+    flex-direction: column;
+    gap: 6px;
+  }
+
   .plan-nav__tools {
-    right: 6px;
-    bottom: 6px;
+    position: static;
+    align-self: flex-end;
   }
 
   .plan-nav__btn {
