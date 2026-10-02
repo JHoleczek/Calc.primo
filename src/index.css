@@ -9,6 +9,7 @@
    ========================================================================== */
 
 :root {
+  --bar-h: 40px;
   --bg: #141312;
   --panel: #191817;
   --surface: #1e1e1e;
@@ -248,7 +249,8 @@ a:hover {
   font: inherit;
   font-size: 14px;
   font-weight: 500;
-  padding: 9px 18px;
+  height: var(--bar-h);
+  padding: 0 18px;
   border: 0;
   background: var(--surface);
   color: var(--muted);
@@ -856,7 +858,7 @@ a:hover {
 
 .dim-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: var(--gap);
 }
 
@@ -878,6 +880,14 @@ a:hover {
 .dim-icon {
   max-width: 100%;
   height: auto;
+}
+
+/* Cienki jasnoszary kontur – jak w ikonach typów frontu. */
+.dim-icon__base,
+.dim-icon__gold {
+  stroke: #838383;
+  stroke-width: 0.9;
+  stroke-linejoin: round;
 }
 
 .dim-icon__base {
@@ -1574,15 +1584,16 @@ textarea.text-input {
 
 /* ---------- Ikona koszyka (prawy górny róg) ---------- */
 
+/* Ta sama wysokość i linia co zakładki „Model 3D / Rzut z góry”. */
 .cart-button {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 16px);
+  top: calc(env(safe-area-inset-top, 0px) + 28px);
   left: 16px;
   z-index: 20;
   display: grid;
   place-items: center;
   width: 48px;
-  height: 48px;
+  height: var(--bar-h);
   padding: 0;
   border: 0;
   background: var(--surface);
@@ -1598,6 +1609,7 @@ textarea.text-input {
 /* Na telefonie (bez pływającego panelu) koszyk wraca do prawego rogu. */
 @media (max-width: 900px) {
   .cart-button {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
     left: auto;
     right: 16px;
   }
