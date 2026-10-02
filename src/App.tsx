@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
+import { DimIcon } from './components/DimIcon'
 import { FlutingProfile } from './components/FlutingProfile'
 import { ResultPanel } from './components/ResultPanel'
 import { VisualizationPanel } from './components/VisualizationPanel'
@@ -23,7 +24,7 @@ import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CookieNotice, PrivacyDialog, SiteFooter } from './components/SiteFooter'
 import { SubmitForm } from './components/SubmitForm'
-import { endingIconFor, HEIGHT_ICON, TYPE_ICONS } from './config/images'
+import { TYPE_ICONS } from './config/images'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
 import { configFromHash } from './lib/share'
@@ -51,14 +52,57 @@ function Section({ title, subtitle, hint, children }: { title: string; subtitle?
   )
 }
 
-/** Karta wymiaru: ikona, tytuł, podtytuł i pola. */
-function DimCard({ icon, title, subtitle, children }: { icon: ReactNode; title: string; subtitle: string; children: ReactNode }) {
+/** Karta wymiaru: ikona z zaznaczonym wymiarem, pod nią pola (opcjonalnie ze złotą literą wymiaru). */
+function DimCard({ icon, title, letter, children }: { icon: ReactNode; title: string; letter?: string; children: ReactNode }) {
   return (
-    <div className="dim-card">
+    <div className="dim-card" role="group" aria-label={title}>
       <div className="dim-card__icon">{icon}</div>
-      <p className="dim-card__title">{title}</p>
-      <p className="dim-card__sub">{subtitle}</p>
-      <div className="dim-card__fields">{children}</div>
+      <div className="dim-card__fields">
+        {letter && (
+          <span className="dim-chip" aria-hidden="true">
+            {letter}
+          </span>
+        )}
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/** Wysokość H: suwak na całą szerokość konfiguratora + pole do wpisania dokładnej wartości. */
+function HeightField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const { min, max } = HEIGHT_RANGE
+  const v = Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min
+  const pct = (x: number) => `${((x - min) / (max - min)) * 100}%`
+  return (
+    <div className="height-field">
+      <div className="height-field__head">
+        <label className="height-field__label" htmlFor="height-range">
+          <span className="dim-chip" aria-hidden="true">
+            H
+          </span>
+          Wysokość
+        </label>
+        <MmInput id="height" label="Wysokość H – dokładna wartość" value={value} min={min} max={max} onChange={onChange} />
+      </div>
+      <input
+        id="height-range"
+        className="range"
+        type="range"
+        min={min}
+        max={max}
+        step={10}
+        value={v}
+        style={{ '--fill': pct(v), '--tall': pct(TALL_HEIGHT_MM) } as CSSProperties}
+        aria-valuetext={`${value} mm`}
+        aria-describedby="height-scale"
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+      <div className="height-field__scale" id="height-scale">
+        <span>{min} mm</span>
+        <span className="sr-only">Powyżej {TALL_HEIGHT_MM} mm (paski na suwaku) – tylko laminat gładki.</span>
+        <span>{max} mm</span>
+      </div>
     </div>
   )
 }
@@ -90,6 +134,13 @@ function MmInput({
 }) {
   const shown = (v: number) => (!Number.isFinite(v) || (zeroIsEmpty && v === 0) ? '' : String(v))
   const [text, setText] = useState(shown(value))
+  // Wartość zmieniona z zewnątrz (np. suwakiem) – pole pokazuje nową liczbę.
+  const [prevValue, setPrevValue] = useState(value)
+  if (!Object.is(prevValue, value)) {
+    setPrevValue(value)
+    const typed = text.trim() === '' ? (zeroIsEmpty ? 0 : NaN) : Number(text)
+    if (!Object.is(typed, value)) setText(shown(value))
+  }
   const filled = text.trim() !== '' && !(zeroIsEmpty && Number(text) === 0)
   const invalid = filled && !(Number(text) >= min && Number(text) <= max)
   return (
@@ -118,7 +169,7 @@ function MmInput({
         </span>
       </label>
       {caption && (
-        <span className="mm-field__caption" id={`${id}-caption`}>
+        <span className="sr-only" id={`${id}-caption`}>
           {caption}
         </span>
       )}
@@ -215,30 +266,13 @@ export default function App() {
   const rightMm = extensionMm(config.extRightMm)
   const icon = (src: string) => <img className="icon-img" src={src} alt="" />
 
-  // Karty wymiarów – zależne od typu.
-  const dimCards: ReactNode[] = [
-    <DimCard key="h" icon={icon(HEIGHT_ICON)} title="Wysokość" subtitle="Określ wysokość H">
-      <MmInput
-        id="height"
-        label="Wysokość H"
-        value={config.heightMm}
-        min={HEIGHT_RANGE.min}
-        max={HEIGHT_RANGE.max}
-        caption={`${HEIGHT_RANGE.min}–${HEIGHT_RANGE.max} mm`}
-        onChange={setHeight}
-      />
-    </DimCard>,
-  ]
+  // Karty wymiarów – zależne od typu (wysokość ma osobny suwak).
+  const dimCards: ReactNode[] = []
   if (t === 'narozne') {
     // Zakończenie wynika z przedłużeń: oba 0 → N0, jedno → N1, oba → N2.
     const ending = ENDINGS.find((e) => e.id === endingOf(config)) ?? ENDINGS[0]
     dimCards.push(
-      <DimCard
-        key="ext"
-        icon={icon(endingIconFor(leftMm > 0, rightMm > 0))}
-        title="Zakończenie"
-        subtitle={`Dodaj przedłużenie · ${ending.name}`}
-      >
+      <DimCard key="ext" icon={<DimIcon name="ext" left={leftMm > 0} right={rightMm > 0} />} title={`Przedłużenia – ${ending.name}`}>
         <MmInput
           id="ext-left"
           label="Przedłużenie lewe"
@@ -246,7 +280,7 @@ export default function App() {
           min={CORNER_EXTENSION.min}
           max={CORNER_EXTENSION.max}
           zeroIsEmpty
-          caption="lewe"
+          caption={`brak albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
           onChange={(v) => set('extLeftMm', v)}
         />
         <MmInput
@@ -256,7 +290,7 @@ export default function App() {
           min={CORNER_EXTENSION.min}
           max={CORNER_EXTENSION.max}
           zeroIsEmpty
-          caption="prawe"
+          caption={`brak albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
           onChange={(v) => set('extRightMm', v)}
         />
       </DimCard>,
@@ -265,7 +299,7 @@ export default function App() {
   if (t === 'przedluzane') {
     const min = config.radiusMm + EXTENDED_LENGTH.minAboveRadius
     dimCards.push(
-      <DimCard key="L" icon={icon(TYPE_ICONS.przedluzane)} title="Wymiar L" subtitle="Od lica łuku do końca">
+      <DimCard key="L" icon={<DimIcon name="l" />} title="Wymiar L – od lica łuku do końca" letter="L">
         <MmInput
           key={`L-${config.radiusMm}`}
           id="length"
@@ -282,7 +316,7 @@ export default function App() {
   if (t === 'obustronne') {
     const zMin = config.radiusMm + DOUBLE_Z.minAboveRadius
     dimCards.push(
-      <DimCard key="W" icon={icon(TYPE_ICONS.obustronne)} title="Szerokość" subtitle="Wybierz szerokość W">
+      <DimCard key="W" icon={<DimIcon name="w" />} title="Szerokość W" letter="W">
         <ChoiceGroup
           name="width"
           variant="grid"
@@ -292,7 +326,7 @@ export default function App() {
           choices={DOUBLE_WIDTHS.map((w) => ({ value: w, label: w }))}
         />
       </DimCard>,
-      <DimCard key="Z" icon={icon(TYPE_ICONS.obustronne)} title="Boki" subtitle="Dodaj przedłużenie boków Z">
+      <DimCard key="Z" icon={<DimIcon name="z" />} title="Boki Z – przedłużenie boków" letter="Z">
         <MmInput
           id="z"
           label="Wymiar Z – przedłużenie boków"
@@ -351,7 +385,12 @@ export default function App() {
       title: 'Wymiary',
       subtitle: 'Określ wysokość i przedłużenia',
       hint: tall ? `Powyżej ${TALL_HEIGHT_MM} mm front wykonujemy tylko z laminatu gładkiego.` : undefined,
-      body: <div className="dim-cards">{dimCards}</div>,
+      body: (
+        <>
+          <HeightField value={config.heightMm} onChange={setHeight} />
+          {dimCards.length > 0 && <div className="dim-cards">{dimCards}</div>}
+        </>
+      ),
     },
     {
       title: 'Materiał',

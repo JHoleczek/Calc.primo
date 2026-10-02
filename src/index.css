@@ -740,54 +740,187 @@ a:hover {
   object-fit: contain;
 }
 
-/* ---------- Karty wymiarów (wysokość, przedłużenia, L, W, Z) ---------- */
+/* ---------- Wysokość: suwak na całą szerokość + dokładna wartość ---------- */
+
+.height-field {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: var(--surface);
+  margin-bottom: var(--gap);
+}
+
+.height-field__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.height-field__label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.height-field__head .mm-field {
+  width: 132px;
+}
+
+.range {
+  --track: 6px;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Tor: złoto do bieżącej wartości, za progiem 2780 mm delikatne paski (tylko laminat, +30%). */
+.range::-webkit-slider-runnable-track {
+  height: var(--track);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(to right, var(--gold) var(--fill), transparent var(--fill)),
+    linear-gradient(to right, var(--field) var(--tall), transparent var(--tall)),
+    repeating-linear-gradient(135deg, transparent 0 3px, rgb(255 255 255 / 0.14) 3px 5px),
+    var(--field);
+}
+
+.range::-moz-range-track {
+  height: var(--track);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(to right, var(--field) var(--tall), transparent var(--tall)),
+    repeating-linear-gradient(135deg, transparent 0 3px, rgb(255 255 255 / 0.14) 3px 5px),
+    var(--field);
+}
+
+.range::-moz-range-progress {
+  height: var(--track);
+  border-radius: var(--radius-sm);
+  background: var(--gold);
+}
+
+.range::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: calc((var(--track) - 22px) / 2);
+  border: 0;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 4px var(--surface);
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 0.15s;
+}
+
+.range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 4px var(--surface);
+  transition: transform 0.15s;
+}
+
+.range:hover::-webkit-slider-thumb,
+.range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.range:hover::-moz-range-thumb,
+.range:active::-moz-range-thumb {
+  transform: scale(1.12);
+}
+
+.range:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.height-field__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Karty wymiarów (przedłużenia, L, W, Z) ---------- */
 
 .dim-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: var(--gap);
 }
 
 .dim-card {
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  gap: 22px;
+  padding: 24px 20px 20px;
   background: var(--surface);
 }
 
 .dim-card__icon {
   display: flex;
+  align-items: center;
   justify-content: center;
-  height: 130px;
-  margin-bottom: 18px;
+  height: 90px;
 }
 
-.dim-card__icon .icon-img {
-  max-width: 180px;
+.dim-icon {
+  max-width: 100%;
+  height: auto;
 }
 
-.dim-card__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.25;
+.dim-icon__base {
+  fill: #6a6a69;
 }
 
-.dim-card__sub {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: var(--muted);
+.dim-icon__gold {
+  fill: #ecd297;
+}
+
+/* Brak przedłużenia po tej stronie: sam przerywany kontur. */
+.dim-icon__off {
+  fill: none;
+  stroke: #ecd297;
+  stroke-width: 1;
+  stroke-dasharray: 3 2.5;
+  opacity: 0.55;
 }
 
 .dim-card__fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: var(--gap);
+  display: flex;
+  gap: 6px;
   margin-top: auto;
 }
 
-.dim-card__fields:has(> .mm-field + .mm-field) {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.dim-card__fields > .mm-field,
+.dim-card__fields > .choice-group {
+  flex: 1;
+}
+
+/* Złota litera wymiaru (H, L, W, Z) – kwadrat obok pola. */
+.dim-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--gold);
+  color: var(--on-gold);
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .dim-card .choice-group--grid .choice {
@@ -898,11 +1031,6 @@ a:hover {
   .mm-input__unit {
     flex: 1;
   }
-}
-
-.mm-field__caption {
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .text-input {

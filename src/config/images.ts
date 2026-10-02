@@ -16,9 +16,3 @@ export const TYPE_ICONS: Record<FrontTypeId, string> = {
   obustronne: icon('type-obustronne'),
   luk: icon('type-luk'),
 }
-
-export const HEIGHT_ICON = icon('height')
-
-/** Zakończenie: złote przedłużenie tam, gdzie jest wpisane, przerywany kontur tam, gdzie go brak. */
-export const endingIconFor = (hasLeft: boolean, hasRight: boolean) =>
-  icon(hasLeft && hasRight ? 'ending-n2' : hasLeft ? 'ending-n1-left' : hasRight ? 'ending-n1-right' : 'ending-n0')
