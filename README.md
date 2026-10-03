@@ -22,13 +22,13 @@ npm run build    # build produkcyjny do dist/
 
 - `src/config/catalog.ts` – dane z „Fronty Primo — Katalog frontów giętych 2026”:
   kategorie (narożne, przedłużane, obustronne, w łuk R200–350), promienie, zakończenia N0/N1/N2,
-  wymiary L / W / Z, ryflowanie F00–F13 z profilami, materiały (laminat – tylko gładki,
+  wymiary L / W / Z, ryflowanie FG (gładki) i FR01–FR13 z profilami, materiały (laminat – tylko gładki,
   fornir, lakier), grubość 18 mm, wysokość do 3200 mm.
 - `src/assets/catalog/` + `src/config/images.ts` – rysunki techniczne z katalogu (podglądy typów,
   zakończeń, przedłużeń, ryflowań) i zdjęcie do sekcji CTA.
 - `src/lib/frontPath.ts` – kształt frontu w rzucie jako ciąg łuków i odcinków prostych
   (po licu zewnętrznym). Z tego jednego opisu korzystają obliczenia, rzut 2D i model 3D.
-- `src/lib/calculate.ts` – kod katalogowy (np. `EG-N2-R300`), rozwinięcie, m², dodatki, walidacja.
+- `src/lib/calculate.ts` – kod katalogowy (np. `FGN-N2-R300`; typy FGN, FGP, FGO, FGOP, EGL), rozwinięcie, m², dodatki, walidacja.
 - `src/lib/frontGeometry.ts` – siatka 3D z ryflowaniem wyfrezowanym w licu.
 - `src/lib/paintColor.ts` – przybliżony kolor ekranowy z RAL / NCS / hex / nazwy.
 - `src/components/viz3d/` – scena three.js (React Three Fiber), ładowana leniwie.

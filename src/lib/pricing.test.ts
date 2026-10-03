@@ -7,12 +7,12 @@ const area = (Math.PI * 300) / 2 / 1000
 const price = (c: Configuration, qty = 1) => priceLine(c, calculate(c), qty)
 
 describe('cennik', () => {
-  it('lakier: gładki 2000, ryflowany 2600, F07/F08 2750 zł/m²', () => {
+  it('lakier: gładki 2000, ryflowany 2600, FR07/FR08 2750 zł/m²', () => {
     expect(price(lak).rate).toBe(2000)
     expect(price(lak).unitPrice).toBe(Math.round(area * 2000))
-    expect(price({ ...lak, flutingId: 'F03' }).rate).toBe(2600)
-    expect(price({ ...lak, flutingId: 'F07' }).rate).toBe(2750)
-    expect(price({ ...lak, flutingId: 'F08' }).rate).toBe(2750)
+    expect(price({ ...lak, flutingId: 'FR03' }).rate).toBe(2600)
+    expect(price({ ...lak, flutingId: 'FR07' }).rate).toBe(2750)
+    expect(price({ ...lak, flutingId: 'FR08' }).rate).toBe(2750)
     expect(price(lak, 3).total).toBe(Math.round(area * 2000) * 3)
   })
 

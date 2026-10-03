@@ -237,7 +237,7 @@ export default function App() {
   // Zmiana typu: promień dociągamy do listy katalogowej danego typu.
   const setType = (typeId: FrontTypeId) =>
     setConfig((c) => ({ ...c, typeId, radiusMm: allowedRadius(typeId, c.radiusMm) }))
-  // Laminat tylko gładki: przy wyborze laminatu ryflowanie wraca do F00.
+  // Laminat tylko gładki: przy wyborze laminatu ryflowanie wraca do FG.
   const setMaterial = (materialId: MaterialId) =>
     setConfig((c) => ({
       ...c,
@@ -431,7 +431,7 @@ export default function App() {
     {
       title: 'Ryflowanie',
       subtitle: 'Wybierz wzór frezowania lica',
-      hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (F00).` : undefined,
+      hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (FG).` : undefined,
       body: (
         <ChoiceGroup
           name="fluting"

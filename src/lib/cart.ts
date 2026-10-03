@@ -72,7 +72,7 @@ const zl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 
 
 /**
  * Jednolinijkowy opis frontu (bez ilości), np.
- * „Narożne · F03 Fala 18 · Fornirowane, dąb · H 720 mm · przedłużenie lewe 50 mm, prawe 80 mm · bryła”.
+ * „Narożne · FR03 Fala 18 · Fornirowane, dąb · H 720 mm · przedłużenie lewe 50 mm, prawe 80 mm · bryła”.
  */
 export function describeConfig(config: Configuration, flutingCode: string): string {
   const type = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]

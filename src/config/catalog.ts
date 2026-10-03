@@ -15,6 +15,8 @@ export type FrontTypeId = 'narozne' | 'przedluzane' | 'obustronne' | 'luk'
 
 export interface FrontType {
   id: FrontTypeId
+  /** Kod typu w kodzie katalogowym (np. FGN-N2-R300). */
+  code: string
   name: string
   description: string
   /** Krótki podpis na karcie typu. */
@@ -29,6 +31,7 @@ const range = (from: number, to: number, step: number) =>
 export const FRONT_TYPES: FrontType[] = [
   {
     id: 'narozne',
+    code: 'FGN',
     name: 'Narożne',
     short: 'Łuk 90°',
     description: 'Łuk 90°, zakończenia N0 / N1 / N2',
@@ -36,6 +39,7 @@ export const FRONT_TYPES: FrontType[] = [
   },
   {
     id: 'przedluzane',
+    code: 'FGP',
     name: 'Przedłużane',
     short: 'Łuk z przedłużeniem',
     description: 'Łuk 90° z prostym przedłużeniem, wymiar L max 700',
@@ -43,6 +47,7 @@ export const FRONT_TYPES: FrontType[] = [
   },
   {
     id: 'obustronne',
+    code: 'FGO',
     name: 'Obustronne',
     short: '2 łuki',
     description: 'Dwa łuki R100, szerokość W 600 / 700 / 800',
@@ -50,6 +55,7 @@ export const FRONT_TYPES: FrontType[] = [
   },
   {
     id: 'luk',
+    code: 'EGL',
     name: 'W łuk',
     short: 'Półokrąg 180°',
     description: 'Półokrąg 180°',
@@ -88,6 +94,8 @@ export const EXTENDED_LENGTH = { max: 700, minAboveRadius: 50, default: 700 }
 
 /** Elementy obustronne: szerokość W i opcjonalne przedłużenie boków Z [mm]. */
 export const DOUBLE_WIDTHS = [600, 700, 800]
+/** Kod obustronnego z przedłużeniem boków Z (front gięty obustronny przedłużany). */
+export const DOUBLE_EXTENDED_CODE = 'FGOP'
 export const DOUBLE_Z = { max: 200, minAboveRadius: 10, default: 200 }
 
 /**
@@ -114,24 +122,24 @@ export interface Fluting {
   profile?: FlutingProfile
 }
 
-export const SMOOTH_FLUTING_ID = 'F00'
+export const SMOOTH_FLUTING_ID = 'FG'
 
-/** Ryflowanie F00–F13; wymiary z rysunków katalogowych (środki podanych zakresów). */
+/** Ryflowanie: FG (gładki) i FR01–FR13; wymiary z rysunków katalogowych (środki podanych zakresów). */
 export const FLUTINGS: Fluting[] = [
-  { id: 'F00', name: 'Gładki' },
-  { id: 'F01', name: 'Wpust 15', profile: { shape: 'u', widthMm: 15, pitchMm: 27, depthMm: 3 } },
-  { id: 'F02', name: 'Klin 15', profile: { shape: 'v', widthMm: 15, pitchMm: 27, depthMm: 3 } },
-  { id: 'F03', name: 'Fala 18', profile: { shape: 'round', widthMm: 18, pitchMm: 19.5, depthMm: 4 } },
-  { id: 'F04', name: 'Fala 12', profile: { shape: 'u', widthMm: 11.5, pitchMm: 14.5, depthMm: 3 } },
-  { id: 'F05', name: 'Wałek 19', profile: { shape: 'rib', widthMm: 19, pitchMm: 19, depthMm: 5 } },
-  { id: 'F06', name: 'Wałek 25', profile: { shape: 'rib', widthMm: 25, pitchMm: 25, depthMm: 5 } },
-  { id: 'F07', name: 'Wałek 9', profile: { shape: 'rib', widthMm: 9, pitchMm: 9, depthMm: 4 } },
-  { id: 'F08', name: 'Wpust 20', profile: { shape: 'square', widthMm: 20, pitchMm: 40, depthMm: 4 } },
-  { id: 'F09', name: 'Rowek 6', profile: { shape: 'v', widthMm: 6, pitchMm: 25, depthMm: 3 } },
-  { id: 'F10', name: 'Rowek 3', profile: { shape: 'square', widthMm: 3, pitchMm: 23, depthMm: 3 } },
-  { id: 'F11', name: 'Wpust 10', profile: { shape: 'square', widthMm: 10, pitchMm: 20, depthMm: 4 } },
-  { id: 'F12', name: 'Fala 10', profile: { shape: 'round', widthMm: 10, pitchMm: 11.5, depthMm: 5 } },
-  { id: 'F13', name: 'Klin 10', profile: { shape: 'v', widthMm: 8, pitchMm: 18, depthMm: 5 } },
+  { id: 'FG', name: 'Gładki' },
+  { id: 'FR01', name: 'Wpust 15', profile: { shape: 'u', widthMm: 15, pitchMm: 27, depthMm: 3 } },
+  { id: 'FR02', name: 'Klin 15', profile: { shape: 'v', widthMm: 15, pitchMm: 27, depthMm: 3 } },
+  { id: 'FR03', name: 'Fala 18', profile: { shape: 'round', widthMm: 18, pitchMm: 19.5, depthMm: 4 } },
+  { id: 'FR04', name: 'Fala 12', profile: { shape: 'u', widthMm: 11.5, pitchMm: 14.5, depthMm: 3 } },
+  { id: 'FR05', name: 'Wałek 19', profile: { shape: 'rib', widthMm: 19, pitchMm: 19, depthMm: 5 } },
+  { id: 'FR06', name: 'Wałek 25', profile: { shape: 'rib', widthMm: 25, pitchMm: 25, depthMm: 5 } },
+  { id: 'FR07', name: 'Wałek 9', profile: { shape: 'rib', widthMm: 9, pitchMm: 9, depthMm: 4 } },
+  { id: 'FR08', name: 'Wpust 20', profile: { shape: 'square', widthMm: 20, pitchMm: 40, depthMm: 4 } },
+  { id: 'FR09', name: 'Rowek 6', profile: { shape: 'v', widthMm: 6, pitchMm: 25, depthMm: 3 } },
+  { id: 'FR10', name: 'Rowek 3', profile: { shape: 'square', widthMm: 3, pitchMm: 23, depthMm: 3 } },
+  { id: 'FR11', name: 'Wpust 10', profile: { shape: 'square', widthMm: 10, pitchMm: 20, depthMm: 4 } },
+  { id: 'FR12', name: 'Fala 10', profile: { shape: 'round', widthMm: 10, pitchMm: 11.5, depthMm: 5 } },
+  { id: 'FR13', name: 'Klin 10', profile: { shape: 'v', widthMm: 8, pitchMm: 18, depthMm: 5 } },
 ]
 
 export type MaterialId = 'laminat' | 'fornirowane' | 'lakierowane'

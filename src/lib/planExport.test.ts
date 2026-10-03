@@ -5,12 +5,12 @@ import { exportPlanSvg } from './planExport'
 
 describe('eksport rysunku technicznego', () => {
   it('samodzielny SVG z tłem, stylami, wymiarami i tabliczką', () => {
-    const file = exportPlanSvg({ ...DEFAULT_CONFIGURATION, extLeftMm: 50, extRightMm: 50, radiusMm: 300 }, 'EG-N2-R300 F00', 'Narożne', 1, renderToStaticMarkup)
+    const file = exportPlanSvg({ ...DEFAULT_CONFIGURATION, extLeftMm: 50, extRightMm: 50, radiusMm: 300 }, 'FGN-N2-R300 FG', 'Narożne', 1, renderToStaticMarkup)
     expect(file.svg.startsWith('<?xml')).toBe(true)
     expect(file.svg).toContain('xmlns="http://www.w3.org/2000/svg"')
     expect(file.svg).toContain('<style>')
     expect(file.svg).toContain('R300')
-    expect(file.svg).toContain('EG-N2-R300 F00')
+    expect(file.svg).toContain('FGN-N2-R300 FG')
     expect(file.width).toBe(1600)
     expect(file.height).toBeGreaterThan(100)
 

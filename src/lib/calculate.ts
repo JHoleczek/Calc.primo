@@ -1,6 +1,7 @@
 import {
   CORNER_EXTENSION,
   DEFAULT_HEIGHT_MM,
+  DOUBLE_EXTENDED_CODE,
   DOUBLE_WIDTHS,
   DOUBLE_Z,
   ENDINGS,
@@ -67,7 +68,9 @@ export function normalizeConfiguration(config: Partial<Configuration> & { ending
     endingId && rest.extLeftMm === undefined && rest.extRightMm === undefined
       ? { extLeftMm: endingId === 'n2' ? CORNER_EXTENSION.max : 0, extRightMm: endingId === 'n0' ? 0 : CORNER_EXTENSION.max }
       : {}
-  return { ...DEFAULT_CONFIGURATION, ...rest, ...legacy }
+  // Stare kody ryflowań (F00 → FG, F01 → FR01 …) z zapisanych koszyków i linków.
+  const flutingId = rest.flutingId?.replace(/^F00$/, SMOOTH_FLUTING_ID).replace(/^F(\d\d)$/, 'FR$1')
+  return { ...DEFAULT_CONFIGURATION, ...rest, ...legacy, ...(flutingId && { flutingId }) }
 }
 
 /** Zakończenie narożnika (N0/N1/N2) z wpisanych przedłużeń; inne typy – N0. */
@@ -94,7 +97,7 @@ export interface Note {
 
 /** Wynik liczony po licu zewnętrznym (R to promień powierzchni zewnętrznej). */
 export interface Result {
-  /** Kod elementu z katalogu, np. „EG-N2-R300”. */
+  /** Kod elementu z katalogu, np. „FGN-N2-R300”. */
   code: string
   /** Kod ryflowania, np. „F03”. */
   flutingCode: string
@@ -125,15 +128,18 @@ export function extensionText(config: Configuration): string {
 const pad3 = (n: number) => String(Math.round(n)).padStart(3, '0')
 
 function catalogCode(c: Configuration): string {
+  const type = (FRONT_TYPES.find((t) => t.id === c.typeId) ?? FRONT_TYPES[0]).code
   switch (c.typeId) {
     case 'narozne':
-      return `EG-${endingOf(c).toUpperCase()}-R${pad3(c.radiusMm)}`
+      return `${type}-${endingOf(c).toUpperCase()}-R${pad3(c.radiusMm)}`
     case 'przedluzane':
-      return `EG-N1-R${pad3(c.radiusMm)}-L${Math.round(c.lengthMm)}`
+      return `${type}-R${pad3(c.radiusMm)}-L${Math.round(c.lengthMm)}`
     case 'obustronne':
-      return `EG-D-R${c.radiusMm}-W${c.widthMm}${c.sideExtension ? `-Z${Math.round(c.zMm)}` : ''}`
+      return c.sideExtension
+        ? `${DOUBLE_EXTENDED_CODE}-R${c.radiusMm}-W${c.widthMm}-Z${Math.round(c.zMm)}`
+        : `${type}-R${c.radiusMm}-W${c.widthMm}`
     case 'luk':
-      return `EG-P-R${c.radiusMm}`
+      return `${type}-R${c.radiusMm}`
   }
 }
 

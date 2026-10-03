@@ -5,7 +5,7 @@
 import type { MaterialId } from './catalog'
 
 export interface MaterialPrices {
-  /** Lico gładkie (F00). */
+  /** Lico gładkie (FG). */
   smooth: number | null
   /** Lico ryflowane. */
   fluted: number | null
@@ -14,7 +14,7 @@ export interface MaterialPrices {
 }
 
 export const PRICES_PER_M2: Record<MaterialId, MaterialPrices> = {
-  lakierowane: { smooth: 2000, fluted: 2600, flutedSpecial: { F07: 2750, F08: 2750 } },
+  lakierowane: { smooth: 2000, fluted: 2600, flutedSpecial: { FR07: 2750, FR08: 2750 } },
   // Do ustalenia z szefem:
   fornirowane: { smooth: null, fluted: null },
   laminat: { smooth: null, fluted: null },

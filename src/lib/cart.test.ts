@@ -49,12 +49,12 @@ describe('koszyk', () => {
   })
 
   it('zapytanie klienta nie zawiera m² ani cen; zamówienie do biura: firma, klient, tel., pozycje, SUMA', () => {
-    const cart = addItem([], { ...cfg, materialId: 'lakierowane', color: 'RAL 9010', flutingId: 'F07' }, 2)
+    const cart = addItem([], { ...cfg, materialId: 'lakierowane', color: 'RAL 9010', flutingId: 'FR07' }, 2)
     const lines = cartLines(cart)
     const contact = { phone: '600 100 200', email: 'jan@firma.pl', company: 'Firma Sp. z o.o.', notes: 'pilne' }
 
     const client = inquiryText(lines, contact)
-    expect(client).toContain('EG-N0-R300 F07')
+    expect(client).toContain('FGN-N0-R300 FR07')
     expect(client).toContain('2 szt.')
     expect(client).not.toContain('m²')
     expect(client).not.toContain('zł')
@@ -66,7 +66,7 @@ describe('koszyk', () => {
     expect(order.subject).toBe('Nowe zamówienie – Firma Sp. z o.o.')
     expect(labels.slice(0, 4)).toEqual(['Nowe zamówienie', 'Firma', 'Klient', 'Nr tel.'])
     expect(labels[labels.length - 1]).toBe('SUMA')
-    const item = order.rows.find((r) => r[0].startsWith('1. EG-N0-R300 F07'))![1]
+    const item = order.rows.find((r) => r[0].startsWith('1. FGN-N0-R300 FR07'))![1]
     expect(item).toContain('Rzut: https://x/#rzut=abc')
     expect(item).toContain(`Cena za szt.: ${unit.toLocaleString('pl-PL')} zł`)
     expect(item).toContain('Ilość: 2 szt.')
