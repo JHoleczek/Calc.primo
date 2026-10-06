@@ -13,7 +13,7 @@ return [
     'from_name' => 'Primo Meble – kalkulator frontów',
 
     // Adres kalkulatora (z ukośnikiem na końcu) – z niego budowane są linki „Rzut” i „Utwórz ofertę”.
-    'site_url' => 'https://www.primomeble.pl/kalkulator/',
+    'site_url' => 'https://primomeble.pl/kalkulator/',
 
     // Prefiks numeru zapytania: ZP/2026/0001.
     'number_prefix' => 'ZP',

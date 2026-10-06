@@ -1,0 +1,6 @@
+# Kalkulator na razie dostępny tylko z linku: wyszukiwarki go nie indeksują.
+# (Plik działa na hostingu Apache/LiteSpeed, np. cyber_folks; GitHub Pages go ignoruje.)
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+Options -Indexes

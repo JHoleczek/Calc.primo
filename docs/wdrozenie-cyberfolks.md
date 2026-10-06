@@ -19,7 +19,7 @@ Plik `public/api/config.php` (bez haseł – można trzymać w repozytorium):
 
 - `office_email` – kto dostaje zapytania (teraz tymczasowo 02holek@gmail.com),
 - `from_email` – skrzynka z punktu 1,
-- `site_url` – adres kalkulatora z ukośnikiem na końcu, np. `https://www.primomeble.pl/kalkulator/`,
+- `site_url` – adres kalkulatora z ukośnikiem na końcu, np. `https://primomeble.pl/kalkulator/`,
 - `data_dir` – gdzie zapisywać licznik i kopie zapytań (najlepiej katalog poza `public_html`).
 
 W panelu ustaw PHP w wersji **8.1 lub nowszej**.
