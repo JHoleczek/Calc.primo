@@ -186,7 +186,7 @@ file_put_contents("$dataDir/zapytania/$fileId.json", json_encode($record, JSON_U
  * Wysyła mail HTML + tekst; obrazki (PNG) dołączone jako inline (cid:).
  * @param array<string, string> $images cid => dane PNG
  */
-function send_mail(array $config, string $to, string $subject, string $html, string $text, string $replyTo, array $images = []): bool
+function send_mail(array $config, string $to, string $subject, string $html, string $text, string $replyTo, array $images = [], string $bcc = ''): bool
 {
     $eol = "\r\n";
     $b64 = static fn(string $s): string => rtrim(chunk_split(base64_encode($s), 76, $eol));
@@ -221,6 +221,7 @@ function send_mail(array $config, string $to, string $subject, string $html, str
     $headers = implode($eol, [
         'From: ' . mb_encode_mimeheader($config['from_name'], 'UTF-8', 'B') . " <$from>",
         "Reply-To: $replyTo",
+        ...($bcc !== '' && filter_var($bcc, FILTER_VALIDATE_EMAIL) ? ["Bcc: $bcc"] : []),
         'MIME-Version: 1.0',
         "Content-Type: $contentType",
         'X-Mailer: kalkulator-frontow',
@@ -324,6 +325,7 @@ $clientText = "Dziękujemy – otrzymaliśmy zapytanie $number.\n\nPrzygotujemy 
 
 // Błąd potwierdzenia nie zatrzymuje zapytania – biuro już je ma.
 // „Odpowiedz” u klienta → firmowa skrzynka (nigdy prywatny adres odbiorcy zapytań).
-send_mail($config, $email, "Otrzymaliśmy zapytanie $number – Primo Meble", $clientHtml, $clientText, $config['client_reply_to'] ?? $config['from_email']);
+// Ukryta kopia do archiwum (config: archive_bcc) – wszystkie potwierdzenia widać w Gmailu.
+send_mail($config, $email, "Otrzymaliśmy zapytanie $number – Primo Meble", $clientHtml, $clientText, $config['client_reply_to'] ?? $config['from_email'], [], (string)($config['archive_bcc'] ?? ''));
 
 respond(200, ['ok' => true, 'number' => $number]);
