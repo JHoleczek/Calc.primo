@@ -323,6 +323,7 @@ $clientText = "Dziękujemy – otrzymaliśmy zapytanie $number.\n\nPrzygotujemy 
     . "Pozycje w zapytaniu:\n$listText\nPytania? Odpowiedz na tę wiadomość.\n\nPrimo Meble\n";
 
 // Błąd potwierdzenia nie zatrzymuje zapytania – biuro już je ma.
-send_mail($config, $email, "Otrzymaliśmy zapytanie $number – Primo Meble", $clientHtml, $clientText, $config['office_email']);
+// „Odpowiedz” u klienta → firmowa skrzynka (nigdy prywatny adres odbiorcy zapytań).
+send_mail($config, $email, "Otrzymaliśmy zapytanie $number – Primo Meble", $clientHtml, $clientText, $config['client_reply_to'] ?? $config['from_email']);
 
 respond(200, ['ok' => true, 'number' => $number]);

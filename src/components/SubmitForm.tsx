@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CONTACT, QUOTE_RECIPIENT } from '../config/catalog'
+import { CONTACT, PUBLIC_QUOTE_EMAIL } from '../config/catalog'
 import { contactErrors, EMPTY_CONTACT, inquirySubject, inquiryText, type CartLine, type Contact } from '../lib/cart'
 import { sendQuote } from '../lib/sendQuote'
 
@@ -50,10 +50,10 @@ export function SubmitForm({ lines, onClear }: Props) {
 
   const fallbackText = inquiryText(lines, contact)
   const subject = inquirySubject(lines)
-  const mailto = `mailto:${QUOTE_RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fallbackText)}`
+  const mailto = `mailto:${PUBLIC_QUOTE_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fallbackText)}`
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`Do: ${QUOTE_RECIPIENT}\nTemat: ${subject}\n\n${fallbackText}`)
+      await navigator.clipboard.writeText(`Do: ${PUBLIC_QUOTE_EMAIL}\nTemat: ${subject}\n\n${fallbackText}`)
       setCopied('yes')
     } catch {
       setCopied('failed')
@@ -171,7 +171,7 @@ export function SubmitForm({ lines, onClear }: Props) {
       <div role="alert">
         {status === 'error' && (
           <div className="submit__error">
-            <p>Nie udało się wysłać zapytania. Wyślij je e-mailem do {QUOTE_RECIPIENT} albo zadzwoń: {phoneLink}.</p>
+            <p>Nie udało się wysłać zapytania. Wyślij je e-mailem do {PUBLIC_QUOTE_EMAIL} albo zadzwoń: {phoneLink}.</p>
             {errorDetail && <p className="submit__detail">Odpowiedź serwera: {errorDetail}</p>}
             <div className="cta__actions">
               <a className="link-btn" href={mailto}>
@@ -181,7 +181,7 @@ export function SubmitForm({ lines, onClear }: Props) {
                 Kopiuj treść zapytania
               </button>
             </div>
-            {copied === 'yes' && <p className="cta__status">Skopiowano – wklej w wiadomości do {QUOTE_RECIPIENT}.</p>}
+            {copied === 'yes' && <p className="cta__status">Skopiowano – wklej w wiadomości do {PUBLIC_QUOTE_EMAIL}.</p>}
             {copied === 'failed' && <textarea className="text-input cta__fallback" readOnly rows={8} value={fallbackText} />}
           </div>
         )}

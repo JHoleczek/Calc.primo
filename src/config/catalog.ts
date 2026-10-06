@@ -198,6 +198,12 @@ export const WEB3FORMS_ACCESS_KEY = '655b5c13-3149-4f61-b21b-4feda58727ac'
  */
 export const QUOTE_API: string = import.meta.env.VITE_QUOTE_API ?? ''
 
+/**
+ * Adres pokazywany klientowi, gdy wysyłka się nie uda („wyślij e-mailem do …”).
+ * Na hostingu – firmowa skrzynka kalkulatora (prywatny adres odbiorcy zapytań nie może być widoczny).
+ */
+export const PUBLIC_QUOTE_EMAIL = QUOTE_API ? 'kalkulator@primomeble.pl' : QUOTE_RECIPIENT
+
 /** Domyślne warunki oferty (biuro może je zmienić w ofercie przed wysłaniem). */
 export const OFFER_DEFAULTS = {
   /** Ważność oferty [dni]. */

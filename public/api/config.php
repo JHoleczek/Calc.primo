@@ -12,6 +12,10 @@ return [
     'from_email' => 'kalkulator@primomeble.pl',
     'from_name' => 'Primo Meble – kalkulator frontów',
 
+    // Adres „Odpowiedz” w potwierdzeniu dla klienta – widoczny dla klienta, więc firmowy, nie prywatny.
+    // Odpowiedzi klientów trafiają do tej skrzynki (przekierowanie ustawia się w panelu cyber_folks).
+    'client_reply_to' => 'kalkulator@primomeble.pl',
+
     // Adres kalkulatora (z ukośnikiem na końcu) – z niego budowane są linki „Rzut” i „Utwórz ofertę”.
     'site_url' => 'https://primomeble.pl/kalkulator/',
 
