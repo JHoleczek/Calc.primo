@@ -174,6 +174,8 @@ export const COMPANY = {
   regon: '241149669',
   www: 'www.primomeble.pl',
   since: 2009,
+  /** Numer konta do zadatku (pokazywany w ofercie). Pusty = do uzupełnienia. */
+  bankAccount: '',
 }
 
 /**
@@ -189,6 +191,25 @@ export const QUOTE_RECIPIENT = '02holek@gmail.com'
  * Pusty klucz = zapasowo FormSubmit (bywa niestabilny).
  */
 export const WEB3FORMS_ACCESS_KEY = '655b5c13-3149-4f61-b21b-4feda58727ac'
+
+/**
+ * Własny serwer (cyber_folks): adres skryptu PHP, np. „api/wyslij.php”. Ustawiany przy budowaniu
+ * wersji na hosting (VITE_QUOTE_API). Pusty = strona bez serwera (GitHub Pages) → Web3Forms.
+ */
+export const QUOTE_API: string = import.meta.env.VITE_QUOTE_API ?? ''
+
+/** Domyślne warunki oferty (biuro może je zmienić w ofercie przed wysłaniem). */
+export const OFFER_DEFAULTS = {
+  /** Ważność oferty [dni]. */
+  validDays: 14,
+  /** Zadatek [% wartości brutto]. */
+  depositPct: 50,
+  /** Stawka VAT [%]. */
+  vatPct: 23,
+  /** Termin płatności zadatku od akceptacji [dni]. */
+  depositDays: 7,
+  leadTime: '4–6 tygodni od zaksięgowania zadatku',
+}
 
 export const QUOTE_ENDPOINT = WEB3FORMS_ACCESS_KEY
   ? 'https://api.web3forms.com/submit'

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Dane zapytań zapisywane przez api/wyslij.php (lokalne testy)
+public/api/data/

@@ -61,6 +61,19 @@ buduje i publikuje stronę pod https://jholeczek.github.io/Calc.primo/.
 
 Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 
+## Wysyłka zapytań i oferta (etap 1)
+
+Proces: **zapytanie z kalkulatora → oferta z biura → akceptacja e-mailem → zadatek**. Kalkulator nie jest sklepem –
+bez oferty z biura nie da się złożyć zamówienia.
+
+- Wersja na hosting cyber_folks (`VITE_QUOTE_API=api/wyslij.php`): formularz wysyła dane do `public/api/wyslij.php`.
+  Skrypt nadaje numer `ZP/RRRR/NNNN`, zapisuje kopię zapytania, wysyła biuru mail z cenami wstępnymi, miniaturami
+  rzutów i przyciskiem **„Utwórz ofertę”**, a klientowi potwierdzenie bez cen („to nie jest zamówienie”).
+- „Utwórz ofertę” otwiera kalkulator z adresem `#oferta=…` – edytor oferty (`src/components/OfferPage.tsx`):
+  biuro poprawia ceny netto, VAT, zadatek, termin i numer konta, zapisuje PDF i wysyła klientowi.
+- Wersja na GitHub Pages (bez serwera) dalej wysyła przez Web3Forms – do podglądu.
+- Wdrożenie na cyber_folks: `docs/wdrozenie-cyberfolks.md`.
+
 ## Założenia obliczeń
 
 - R to promień **lica zewnętrznego** (powierzchnia wewnętrzna ma R − 18 mm).

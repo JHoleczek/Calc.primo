@@ -25,3 +25,9 @@ export const TALL_SURCHARGE = 0.3
 
 /** Dopłata za bryłę (front + środek). */
 export const BODY_SURCHARGE = 0.25
+
+/**
+ * Czy stawki powyżej są netto (do ceny doliczany VAT) czy brutto.
+ * DO POTWIERDZENIA z szefem – w ofercie od tego zależy wyliczenie VAT i kwoty brutto.
+ */
+export const PRICE_BASIS: 'netto' | 'brutto' = 'netto'

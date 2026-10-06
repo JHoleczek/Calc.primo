@@ -22,6 +22,7 @@ export function SubmitForm({ lines, onClear }: Props) {
   const [honey, setHoney] = useState('')
   const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no')
   const [errorDetail, setErrorDetail] = useState('')
+  const [number, setNumber] = useState<string | null>(null)
   const empty = lines.length === 0
   const invalid = lines.some((l) => l.result.errors.length > 0)
   const errors = contactErrors(contact)
@@ -38,7 +39,7 @@ export function SubmitForm({ lines, onClear }: Props) {
     setStatus('sending')
     try {
       // Pole-pułapka na boty: wypełnione = udajemy sukces bez wysyłki.
-      if (!honey) await sendQuote(lines, contact)
+      if (!honey) setNumber((await sendQuote(lines, contact)).number)
       setStatus('sent')
     } catch (e) {
       // Odpowiedź serwisu wysyłki (np. prośba o aktywację) – pomaga ustalić przyczynę.
@@ -63,12 +64,13 @@ export function SubmitForm({ lines, onClear }: Props) {
   if (status === 'sent') {
     return (
       <div className="submit" id="wyslij" role="status">
-        <h3 className="submit__title">Dziękujemy – zapytanie wysłane</h3>
+        <h3 className="submit__title">Dziękujemy – zapytanie {number ? `${number} ` : ''}wysłane</h3>
         <p className="cta__desc">
-          {contact.email.trim()
-            ? `Przygotujemy wycenę i odezwiemy się na ${contact.email.trim()} lub pod numer ${contact.phone.trim()}.`
-            : 'Przygotujemy wycenę i odezwiemy się na podany adres e-mail lub telefon.'}
+          {number ? `Potwierdzenie wysłaliśmy na ${contact.email.trim()}. ` : ''}
+          Biuro sprawdzi wymiary i przygotuje ofertę – prześlemy ją na {contact.email.trim() || 'podany adres e-mail'}
+          {contact.phone.trim() ? ` lub odezwiemy się pod numer ${contact.phone.trim()}` : ''}.
         </p>
+        <p className="cta__desc">To nie jest zamówienie ani płatność – zamówienie składasz dopiero po akceptacji oferty.</p>
         <div className="cta__actions">
           <button
             type="button"

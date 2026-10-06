@@ -15,3 +15,13 @@ H > 2780 mm +30%, bryła +25%. Poniższe braki są w wycenie oznaczone „DO UST
 7. **Kolor lakieru** – czy RAL / NCS / połysk / mat zmienia cenę?
 8. **Minimum** – czy jest minimalna powierzchnia lub kwota zamówienia, transport, termin realizacji
    do wpisania w odpowiedzi do klienta?
+
+## Oferta (etap 1: zapytanie → oferta z biura → akceptacja → zadatek)
+
+9. **Numer konta** do wpłat zadatku (wpisywany w ofercie – `COMPANY.bankAccount` w `src/config/catalog.ts`).
+10. **Zadatek** – ile procent wartości brutto? (teraz 50%) W ile dni od akceptacji? (teraz 7)
+11. **Termin realizacji** – jaki wpisywać domyślnie? (teraz „4–6 tygodni od zaksięgowania zadatku”)
+12. **Ważność oferty** – ile dni? (teraz 14)
+13. **Reszta płatności** – przed odbiorem/wysyłką? Czy jest dostawa i jej koszt?
+14. **Regulamin i treść warunków w ofercie** – do sprawdzenia przez prawnika przed startem
+    (zadatek, brak prawa odstąpienia przy produkcji na wymiar, reklamacje).

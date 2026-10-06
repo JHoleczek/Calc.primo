@@ -7,6 +7,10 @@ import { planGeometry } from './planGeometry'
 
 const EXPORT_WIDTH = 1600
 
+/** Miniatura rzutu w mailu do biura: układ jak na ekranie 420 px (czytelne opisy), plik 660 px, w mailu 220 px. */
+export const THUMB_LAYOUT_WIDTH = 420
+export const THUMB_SCALE = 660 / THUMB_LAYOUT_WIDTH
+
 /** Style rysunku osadzane w pliku (plik ma działać bez arkusza strony); grubości linii × `k`. */
 const exportCss = (k: number) =>
   `
@@ -53,12 +57,14 @@ export function exportPlanSvg(
   /** Skala pliku (np. 2 dla PNG) – ten sam układ, grubsze linie i większe wymiary w pikselach. */
   scale = 1,
   render: (element: ReactElement) => string = renderMarkup,
+  /** Szerokość układu [px]: mniejsza = opisy i linie większe względem rysunku (miniatury). */
+  layoutWidth = EXPORT_WIDTH,
 ): PlanExport {
-  const geo = planGeometry(config)
+  const geo = planGeometry(config, layoutWidth < EXPORT_WIDTH ? layoutWidth : Infinity)
   const { x, y, w, h } = geo.view
-  const px = w / EXPORT_WIDTH
+  const px = w / layoutWidth
   const band = px * 72
-  const width = EXPORT_WIDTH * scale
+  const width = Math.round(layoutWidth * scale)
   const height = Math.round(((h + band) / px) * scale)
   const grid = px * 24
 

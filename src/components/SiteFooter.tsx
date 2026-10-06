@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { COMPANY, CONTACT } from '../config/catalog'
+import { COMPANY, CONTACT, QUOTE_API } from '../config/catalog'
 
 const phoneHref = `tel:+48${CONTACT.phone.replace(/\D/g, '')}`
 
@@ -133,10 +133,18 @@ export function PrivacyDialog({ open, section, onClose }: { open: boolean; secti
         </p>
 
         <h3>Komu przekazujemy dane</h3>
-        <p>
-          Wiadomość z formularza jest wysyłana do nas przez serwis Web3Forms, który dostarcza ją na naszą skrzynkę e-mail.
-          Strona jest hostowana w serwisie GitHub Pages. Nie sprzedajemy danych i nie przekazujemy ich w celach marketingowych.
-        </p>
+        {QUOTE_API ? (
+          <p>
+            Strona i formularz działają na serwerze naszego dostawcy hostingu (cyber_folks S.A., Polska), który przechowuje
+            zapytania i wysyła wiadomości e-mail w naszym imieniu. Na podany adres e-mail wysyłamy potwierdzenie przyjęcia
+            zapytania. Nie sprzedajemy danych i nie przekazujemy ich w celach marketingowych.
+          </p>
+        ) : (
+          <p>
+            Wiadomość z formularza jest wysyłana do nas przez serwis Web3Forms, który dostarcza ją na naszą skrzynkę e-mail.
+            Strona jest hostowana w serwisie GitHub Pages. Nie sprzedajemy danych i nie przekazujemy ich w celach marketingowych.
+          </p>
+        )}
 
         <h3>Jak długo</h3>
         <p>

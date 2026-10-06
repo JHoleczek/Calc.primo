@@ -1,0 +1,50 @@
+# Publikacja kalkulatora na hostingu cyber_folks (FTP) – wersja z własną wysyłką zapytań (api/wyslij.php).
+# Uruchamia się przy pushu, ale wgrywa pliki tylko wtedy, gdy w repozytorium są ustawione sekrety FTP
+# (Settings → Secrets and variables → Actions): FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_DIR.
+name: Deploy na cyber_folks
+
+on:
+  push:
+    branches: [claude/bent-front-calculator-yent1s]
+  workflow_dispatch:
+
+concurrency:
+  group: cyberfolks
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_FTP: ${{ secrets.FTP_SERVER != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Sprawdzenie skryptów PHP
+        run: for f in public/api/*.php; do php -l "$f"; done
+      # Ścieżki względne – działa w dowolnym katalogu (np. /kalkulator/); formularz wysyła do api/wyslij.php.
+      - run: npx tsc -b && npx vite build --base=./
+        env:
+          VITE_QUOTE_API: api/wyslij.php
+      - name: Brak sekretów FTP – pomijam wgrywanie
+        if: env.HAS_FTP != 'true'
+        run: echo "Ustaw sekrety FTP_SERVER, FTP_USERNAME, FTP_PASSWORD i FTP_DIR, aby wgrywać na cyber_folks."
+      - name: Wgranie przez FTPS
+        if: env.HAS_FTP == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: dist/
+          server-dir: ${{ secrets.FTP_DIR }}
+          # Dane zapytań na serwerze nigdy nie są nadpisywane ani usuwane.
+          exclude: |
+            **/.git*
+            api/data/**
