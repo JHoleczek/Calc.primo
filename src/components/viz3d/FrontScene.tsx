@@ -12,18 +12,12 @@ import { buildFrontGeometry } from '../../lib/frontGeometry'
 export interface FrontSceneProps {
   geometry: FrontGeometryInput
   materialId: MaterialId
-  /** Kolor farby / bejcy (hex) lub null, gdy nie rozpoznano. */
-  colorHex: string | null
+  /** Kolor drewna w modelu (hex) – wszystkie materiały pokazujemy w odcieniu forniru (lepiej widać kształt). */
+  colorHex: string
 }
 
 const FOV = 32
 
-const PAINT_FALLBACK = '#e8e6e1'
-/** Kolor bazowy materiałów bez farby (laminat – neutralny dekor, fornir – drewno). */
-const WOOD_COLORS: Record<Exclude<MaterialId, 'lakierowane'>, string> = {
-  laminat: '#d9d5cd',
-  fornirowane: '#cfa878',
-}
 
 /** Oświetlenie otoczenia z wbudowanego „pokoju” three.js (bez plików HDR). */
 function RoomLighting() {
@@ -60,13 +54,8 @@ function FrontMesh({ geometry, materialId, colorHex }: FrontSceneProps) {
   }, [data])
   useEffect(() => () => edgeGeometry.dispose(), [edgeGeometry])
 
-  // Jednolity kolor bez tekstur: lakier w kolorze farby, drewno w odcieniu
-  // bazowym (wpisany kolor traktujemy jak bejcę).
-  const color = useMemo(() => {
-    if (materialId === 'lakierowane') return new THREE.Color(colorHex ?? PAINT_FALLBACK)
-    const wood = new THREE.Color(WOOD_COLORS[materialId])
-    return colorHex ? wood.lerp(new THREE.Color(colorHex), 0.65) : wood
-  }, [materialId, colorHex])
+  // Jednolity kolor bez tekstur – odcień forniru dla każdego materiału.
+  const color = useMemo(() => new THREE.Color(colorHex), [colorHex])
 
   const material = useMemo(
     () =>

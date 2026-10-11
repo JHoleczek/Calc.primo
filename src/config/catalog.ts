@@ -147,18 +147,67 @@ export type MaterialId = 'laminat' | 'fornirowane' | 'lakierowane'
 export interface Material {
   id: MaterialId
   name: string
+  /** Krótki opis na karcie materiału. */
+  hint: string
   /** Tylko lico gładkie (bez ryflowania). */
   smoothOnly: boolean
-  /** Czy kolor (farba) jest wymagany. */
-  colorRequired: boolean
-  colorPlaceholder: string
+  /** Pole tekstowe pod materiałem: tytuł sekcji, podpis, podpowiedź w pustym polu. */
+  field: { title: string; label: string; placeholder: string; required: boolean }
+  /** Ważna informacja dla klienta (np. kto pokrywa koszt laminatu). */
+  note?: string
 }
 
+// Kolejność kart: lakier, fornir, laminat.
 export const MATERIALS: Material[] = [
-  { id: 'laminat', name: 'Laminat', smoothOnly: true, colorRequired: false, colorPlaceholder: 'np. dekor / kolor laminatu' },
-  { id: 'fornirowane', name: 'Fornirowane', smoothOnly: false, colorRequired: false, colorPlaceholder: 'np. dąb naturalny, bejca' },
-  { id: 'lakierowane', name: 'Lakierowane', smoothOnly: false, colorRequired: true, colorPlaceholder: 'np. RAL 9010, NCS S 0502-Y' },
+  {
+    id: 'lakierowane',
+    name: 'Lakierowane',
+    hint: 'Wszystkie ryflowania',
+    smoothOnly: false,
+    field: { title: 'Kolor', label: 'Kolor farby', placeholder: 'np. RAL 9010, NCS S 0502-Y', required: true },
+  },
+  {
+    id: 'fornirowane',
+    name: 'Fornirowane',
+    hint: 'Dąb lub orzech, wszystkie ryflowania',
+    smoothOnly: false,
+    field: { title: 'Bejca', label: 'Kolor bejcy', placeholder: 'Kolor / numer bejcy', required: true },
+  },
+  {
+    id: 'laminat',
+    name: 'Laminat',
+    hint: 'Tylko gładki (FG)',
+    smoothOnly: true,
+    field: {
+      title: 'Dekor',
+      label: 'Numer dekoru / numer i symbol laminatu',
+      placeholder: 'Numer dekoru / numer i symbol laminatu',
+      required: true,
+    },
+    note: 'Koszt laminatu po stronie klienta.',
+  },
 ]
+
+/** Rodzaje forniru (przy materiale „Fornirowane”). */
+export type VeneerId = 'dab' | 'dab-bejcowany' | 'orzech'
+
+export interface Veneer {
+  id: VeneerId
+  name: string
+  /** Czy wymaga podania koloru bejcy. */
+  stained: boolean
+  /** Odcień drewna w modelu 3D (poglądowo). */
+  color3d: string
+}
+
+export const VENEERS: Veneer[] = [
+  { id: 'dab', name: 'Dąb naturalny', stained: false, color3d: '#cfa878' },
+  { id: 'dab-bejcowany', name: 'Dąb bejcowany', stained: true, color3d: '#a97c50' },
+  { id: 'orzech', name: 'Orzech amerykański', stained: false, color3d: '#8a5f42' },
+]
+
+/** Kolor modelu 3D dla lakieru i laminatu – jak fornir dębowy (forma frontu lepiej widoczna). */
+export const DEFAULT_WOOD_3D = VENEERS[0].color3d
 
 /** Kontakt do wyceny (z katalogu). */
 export const CONTACT = { email: 'biuro.primomeble@gmail.com', phone: '691-766-559' }

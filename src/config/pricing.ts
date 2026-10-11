@@ -2,8 +2,6 @@
 // Klient nie widzi cen ani m² – trafiają tylko do biura w zapytaniu o wycenę.
 // null = cena jeszcze nieustalona (pozycja do indywidualnej wyceny).
 
-import type { MaterialId } from './catalog'
-
 export interface MaterialPrices {
   /** Lico gładkie (FG). */
   smooth: number | null
@@ -11,14 +9,24 @@ export interface MaterialPrices {
   fluted: number | null
   /** Ryflowania z osobną stawką. */
   flutedSpecial?: Record<string, number>
+  /** Wykonanie surowe (bez wykończenia) – z cennika, na razie niewybierane w kalkulatorze. */
+  raw?: number
 }
 
-export const PRICES_PER_M2: Record<MaterialId, MaterialPrices> = {
-  lakierowane: { smooth: 2000, fluted: 2600, flutedSpecial: { FR07: 2750, FR08: 2750 } },
-  // Do ustalenia z szefem:
-  fornirowane: { smooth: null, fluted: null },
-  laminat: { smooth: null, fluted: null },
+/** Klucz stawki: lakier, fornir dębowy, fornir orzechowy, laminat. */
+export type PriceKey = 'lakierowane' | 'dab' | 'orzech' | 'laminat'
+
+// Cennik szefa (cennik_giete.xlsx, październik 2026). Stawki netto.
+export const PRICES_PER_M2: Record<PriceKey, MaterialPrices> = {
+  lakierowane: { smooth: 1800, fluted: 2600, flutedSpecial: { FR07: 2750, FR12: 2750 }, raw: 1200 },
+  dab: { smooth: 2700, fluted: 3100, flutedSpecial: { FR07: 3250, FR12: 3250 }, raw: 2000 },
+  orzech: { smooth: 2850, fluted: 3200, flutedSpecial: { FR07: 3450, FR12: 3450 }, raw: 2100 },
+  // Tylko gładki; sam laminat kupuje / pokrywa klient.
+  laminat: { smooth: 2600, fluted: null },
 }
+
+/** Fornir bejcowany: dopłata do stawki [zł/m²] (gładki i ryflowany). */
+export const STAIN_SURCHARGE_PER_M2 = 100
 
 /** Dopłata za wysokość H powyżej TALL_HEIGHT_MM. */
 export const TALL_SURCHARGE = 0.3
@@ -28,6 +36,7 @@ export const BODY_SURCHARGE = 0.25
 
 /**
  * Czy stawki powyżej są netto (do ceny doliczany VAT) czy brutto.
- * DO POTWIERDZENIA z szefem – w ofercie od tego zależy wyliczenie VAT i kwoty brutto.
+ * Potwierdzone przez szefa: netto. W ofercie od tego zależy wyliczenie VAT i kwoty brutto.
  */
 export const PRICE_BASIS: 'netto' | 'brutto' = 'netto'
+

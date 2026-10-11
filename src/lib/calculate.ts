@@ -12,9 +12,11 @@ import {
   MATERIALS,
   SMOOTH_FLUTING_ID,
   TALL_HEIGHT_MM,
+  VENEERS,
   type EndingId,
   type FrontTypeId,
   type MaterialId,
+  type VeneerId,
 } from '../config/catalog'
 import { cornerEnding, extensionMm, frontPath, pathLength, segmentLength } from './frontPath'
 
@@ -37,6 +39,9 @@ export interface Configuration {
   zMm: number
   flutingId: string
   materialId: MaterialId
+  /** Fornirowane: rodzaj forniru. */
+  veneerId: VeneerId
+  /** Lakier: kolor farby; fornir bejcowany: kolor bejcy; laminat: numer dekoru / symbol laminatu. */
   color: string
   /** Bryła: front + środek (zamiast samego frontu). */
   body: boolean
@@ -53,7 +58,8 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   sideExtension: false,
   zMm: DOUBLE_Z.default,
   flutingId: SMOOTH_FLUTING_ID,
-  materialId: MATERIALS[0].id,
+  materialId: 'laminat',
+  veneerId: VENEERS[0].id,
   color: '',
   body: false,
 }
@@ -211,14 +217,18 @@ export function calculate(config: Configuration): Result {
   if (fluting.id !== SMOOTH_FLUTING_ID) {
     notes.push({ level: 'addon', text: `Ryflowanie ${fluting.id} – ${fluting.name}` })
   }
-  // Brak koloru nie wpływa na m² – tylko przypominamy, że jest potrzebny do zamówienia.
-  if (material.colorRequired && color === '') {
-    notes.push({ level: 'warning', text: `Wpisz kolor farby – wymagany do zamówienia frontu ${material.name.toLowerCase()}go.` })
+  // Brak koloru / dekoru nie wpływa na m² – tylko przypominamy, że jest potrzebny do zamówienia.
+  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
+  if (material.id === 'fornirowane') notes.push({ level: 'addon', text: `Fornir: ${veneer.name.toLowerCase()}` })
+  const needsField = material.id !== 'fornirowane' || veneer.stained
+  if (needsField && material.field.required && color === '') {
+    notes.push({ level: 'warning', text: `Wpisz: ${material.field.label.toLowerCase()} – wymagane do zamówienia.` })
   }
-  if (color !== '') {
-    const label = material.id === 'lakierowane' ? 'Lakierowanie w kolorze' : 'Wykończenie'
+  if (needsField && color !== '') {
+    const label = { lakierowane: 'Lakierowanie w kolorze', fornirowane: 'Bejca', laminat: 'Dekor' }[material.id]
     notes.push({ level: 'addon', text: `${label}: ${color}` })
   }
+  if (material.note) notes.push({ level: 'info', text: material.note })
 
   return {
     code: catalogCode(config),

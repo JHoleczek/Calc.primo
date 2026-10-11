@@ -7,6 +7,8 @@ import {
   MATERIALS,
   SMOOTH_FLUTING_ID,
   THICKNESS_MM,
+  DEFAULT_WOOD_3D,
+  VENEERS,
 } from '../config/catalog'
 import type { Configuration, Result } from '../lib/calculate'
 import type { FrontGeometryInput } from '../lib/frontGeometry'
@@ -44,6 +46,7 @@ export function VisualizationPanel({ config, result, initialView = '3d' }: Props
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
+  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
   // Ryflowanie po regułach materiału (laminat = tylko gładki) – tak jak w wyniku.
   const fluting = FLUTINGS.find((f) => f.id === result.flutingCode) ?? FLUTINGS[0]
   const paint = useMemo(() => resolvePaintColor(config.color), [config.color])
@@ -153,7 +156,7 @@ export function VisualizationPanel({ config, result, initialView = '3d' }: Props
             <FrontScene
               geometry={geometry}
               materialId={material.id}
-              colorHex={paint?.hex ?? null}
+              colorHex={material.id === 'fornirowane' ? veneer.color3d : DEFAULT_WOOD_3D}
               fallback={<PlanView config={config} />}
             />
           </Suspense>
@@ -185,13 +188,21 @@ export function VisualizationPanel({ config, result, initialView = '3d' }: Props
             </dd>
           </div>
         )}
+        {material.id === 'fornirowane' && (
+          <div>
+            <dt>Fornir</dt>
+            <dd>{veneer.name}</dd>
+          </div>
+        )}
         {colorText !== '' && (
           <div>
-            <dt>Kolor</dt>
+            <dt>{material.field.title}</dt>
             <dd className="viz__color">
-              {paint && <span className="viz__swatch" style={{ background: paint.hex }} aria-hidden="true" />}
+              {material.id === 'lakierowane' && paint && <span className="viz__swatch" style={{ background: paint.hex }} aria-hidden="true" />}
               {colorText}
-              <span className="viz__color-note">{paint ? `(${paint.source}, poglądowo)` : '(nierozpoznany)'}</span>
+              {material.id === 'lakierowane' && (
+                <span className="viz__color-note">{paint ? `(${paint.source}, poglądowo)` : '(nierozpoznany)'}</span>
+              )}
             </dd>
           </div>
         )}

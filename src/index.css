@@ -68,6 +68,7 @@
 .btn-primary,
 .btn-secondary,
 .check__box,
+.check--card,
 .edit-banner,
 .cart-item,
 .cart__totals div,
@@ -2019,16 +2020,16 @@ textarea.text-input {
   background: var(--field-hover);
 }
 
-.check input:checked + .check__box {
+.check input:checked ~ .check__box {
   background: var(--gold);
   box-shadow: none;
 }
 
-.check input:checked + .check__box svg {
+.check input:checked ~ .check__box svg {
   opacity: 1;
 }
 
-.check input:focus-visible + .check__box {
+.check input:focus-visible ~ .check__box {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
@@ -2047,6 +2048,70 @@ textarea.text-input {
 .check__hint {
   font-size: 13px;
   color: var(--muted);
+}
+
+/* Bryła jako karta: grafika, opis, dopłata i pole wyboru po prawej. */
+.check--card {
+  align-items: center;
+  gap: 18px;
+  margin-top: 0;
+  padding: 16px 20px;
+  background: var(--surface);
+  transition: background 0.15s;
+}
+
+.check--card:hover {
+  background: var(--surface-hover);
+}
+
+.check--card .check__text {
+  flex: 1;
+  gap: 4px;
+}
+
+.check__icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 136px;
+}
+
+.check__badge {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.check--card input:checked ~ .check__text .check__badge {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+
+@media (max-width: 480px) {
+  .check__icon {
+    width: 88px;
+  }
+
+  .check__icon svg {
+    width: 88px;
+    height: auto;
+  }
+}
+
+/* Uwaga przy materiale (np. koszt laminatu po stronie klienta). */
+.section__note {
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.text-input--below {
+  margin-top: var(--gap);
 }
 
 .submit__detail {
@@ -2633,4 +2698,79 @@ body.offer-mode {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+}
+
+/* ---------- Rysunek wymiarowy ryflowania (okno) ---------- */
+
+.fluting-detail__open {
+  margin-top: 12px;
+}
+
+.fluting-detail__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 8px 0 16px;
+  background: var(--draw-bg);
+}
+
+.fluting-detail__board {
+  fill: #3a3a39;
+  stroke: var(--draw-line);
+  stroke-width: 0.25;
+  stroke-linejoin: round;
+}
+
+.fluting-detail__dim line {
+  stroke: var(--gold);
+  stroke-width: 0.18;
+}
+
+.fluting-detail__dim text {
+  fill: var(--text);
+  font-weight: 500;
+}
+
+#fd-arrow path {
+  fill: var(--gold);
+}
+
+.fluting-detail__ext {
+  stroke: var(--draw-dim);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.8 0.6;
+}
+
+.fluting-detail__ext--axis {
+  stroke-dasharray: 2 0.6 0.4 0.6;
+}
+
+.fluting-detail__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.fluting-detail__list div {
+  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.fluting-detail__list dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.fluting-detail__list dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.fluting-detail__note {
+  margin-top: 12px !important;
+  font-size: 12px;
 }

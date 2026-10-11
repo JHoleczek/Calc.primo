@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
+import { BodyIcon } from './components/BodyIcon'
 import { DimIcon } from './components/DimIcon'
+import { FlutingDetail } from './components/FlutingDetail'
 import { FlutingProfile } from './components/FlutingProfile'
 import { ResultPanel } from './components/ResultPanel'
 import { VisualizationPanel } from './components/VisualizationPanel'
@@ -17,6 +19,7 @@ import {
   SMOOTH_FLUTING_ID,
   TALL_HEIGHT_MM,
   THICKNESS_MM,
+  VENEERS,
   type FrontTypeId,
   type MaterialId,
 } from './config/catalog'
@@ -25,6 +28,7 @@ import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CookieNotice, PrivacyDialog, SiteFooter } from './components/SiteFooter'
 import { SubmitForm } from './components/SubmitForm'
 import { TYPE_ICONS } from './config/images'
+import { BODY_SURCHARGE } from './config/pricing'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
 import { configFromHash } from './lib/share'
@@ -232,6 +236,9 @@ export default function App() {
 
   const frontType = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
+  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
+  const selectedFluting = FLUTINGS.find((f) => f.id === (material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId)) ?? FLUTINGS[0]
+  const [flutingDetail, setFlutingDetail] = useState(false)
   const t = config.typeId
 
   // Zmiana typu: promień dociągamy do listy katalogowej danego typu.
@@ -243,6 +250,8 @@ export default function App() {
       ...c,
       materialId,
       flutingId: MATERIALS.find((m) => m.id === materialId)?.smoothOnly ? SMOOTH_FLUTING_ID : c.flutingId,
+      // Pole pod materiałem znaczy co innego (kolor RAL / bejca / dekor) – po zmianie zaczynamy od pustego.
+      color: materialId === c.materialId ? c.color : '',
     }))
   // Powyżej 2780 mm tylko laminat gładki – przełączamy materiał od razu.
   const smoothOnlyMaterial = MATERIALS.find((m) => m.smoothOnly) ?? MATERIALS[0]
@@ -382,19 +391,29 @@ export default function App() {
       ),
     },
     {
-      title: 'Wymiary',
-      subtitle: 'Określ wysokość i przedłużenia',
+      title: 'Wysokość',
+      subtitle: 'Określ wysokość H',
       hint: tall ? `Powyżej ${TALL_HEIGHT_MM} mm front wykonujemy tylko z laminatu gładkiego.` : undefined,
-      body: (
-        <>
-          <HeightField value={config.heightMm} onChange={setHeight} />
-          {dimCards.length > 0 && <div className="dim-cards">{dimCards}</div>}
-        </>
-      ),
+      body: <HeightField value={config.heightMm} onChange={setHeight} />,
     },
+    ...(dimCards.length > 0
+      ? [
+          {
+            title: t === 'obustronne' ? 'Szerokość i przedłużenie' : 'Przedłużenie',
+            subtitle:
+              t === 'narozne'
+                ? `Dodaj przedłużenie lewe i prawe (${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm)`
+                : t === 'przedluzane'
+                  ? 'Określ wymiar L – od lica łuku do końca'
+                  : 'Wybierz szerokość W i dodaj przedłużenie boków Z',
+            body: <div className="dim-cards">{dimCards}</div>,
+          },
+        ]
+      : []),
     {
       title: 'Materiał',
       subtitle: 'Wybierz wykończenie',
+      hint: material.note ? <strong className="section__note">{material.note}</strong> : undefined,
       body: (
         <ChoiceGroup
           name="material"
@@ -405,7 +424,7 @@ export default function App() {
           choices={MATERIALS.map((m) => ({
             value: m.id,
             label: m.name,
-            hint: m.smoothOnly ? `Tylko gładki (${SMOOTH_FLUTING_ID})` : 'Wszystkie ryflowania',
+            hint: m.note ? `${m.hint} · ${m.note.replace(/\.$/, '').toLowerCase()}` : m.hint,
             disabled: tall && !m.smoothOnly,
             disabledReason: `Niedostępne przy H > ${TALL_HEIGHT_MM} mm`,
           }))}
@@ -413,19 +432,36 @@ export default function App() {
       ),
     },
     {
-      title: 'Kolor',
-      subtitle: material.colorRequired ? 'Wpisz kolor farby – wymagany' : 'Wpisz kolor – opcjonalnie',
+      title: material.id === 'fornirowane' ? 'Fornir' : material.field.title,
+      subtitle:
+        material.id === 'fornirowane'
+          ? 'Wybierz rodzaj forniru'
+          : `Wpisz: ${material.field.label.toLowerCase()}${material.field.required ? ' – wymagane' : ''}`,
       body: (
-        <input
-          className={`text-input${config.color.trim() ? ' text-input--filled' : ''}`}
-          type="text"
-          id="color"
-          aria-label="Kolor farby"
-          placeholder={material.colorPlaceholder}
-          value={config.color}
-          required={material.colorRequired}
-          onChange={(e) => set('color', e.target.value)}
-        />
+        <>
+          {material.id === 'fornirowane' && (
+            <ChoiceGroup
+              name="veneer"
+              variant="cards"
+              columns={3}
+              value={config.veneerId}
+              onChange={(v) => setConfig((c) => ({ ...c, veneerId: v, color: VENEERS.find((x) => x.id === v)?.stained ? c.color : '' }))}
+              choices={VENEERS.map((v) => ({ value: v.id, label: v.name }))}
+            />
+          )}
+          {(material.id !== 'fornirowane' || veneer.stained) && (
+            <input
+              className={`text-input${config.color.trim() ? ' text-input--filled' : ''}${material.id === 'fornirowane' ? ' text-input--below' : ''}`}
+              type="text"
+              id="color"
+              aria-label={material.field.label}
+              placeholder={material.field.placeholder}
+              value={config.color}
+              required={material.field.required}
+              onChange={(e) => set('color', e.target.value)}
+            />
+          )}
+        </>
       ),
     },
     {
@@ -433,22 +469,30 @@ export default function App() {
       subtitle: 'Wybierz wzór frezowania lica',
       hint: material.smoothOnly ? `${material.name} występuje tylko w wersji gładkiej (FG).` : undefined,
       body: (
-        <ChoiceGroup
-          name="fluting"
-          variant="tiles"
-          columns={3}
-          value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
-          onChange={(v) => set('flutingId', v)}
-          choices={FLUTINGS.map((f) => ({
-            value: f.id,
-            label: f.id,
-            hint: f.name,
-            icon: <FlutingProfile profile={f.profile} />,
-            // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
-            disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
-            disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
-          }))}
-        />
+        <>
+          <ChoiceGroup
+            name="fluting"
+            variant="tiles"
+            columns={3}
+            value={material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId}
+            onChange={(v) => set('flutingId', v)}
+            choices={FLUTINGS.map((f) => ({
+              value: f.id,
+              label: f.id,
+              hint: f.name,
+              icon: <FlutingProfile profile={f.profile} />,
+              // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
+              disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
+              disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
+            }))}
+          />
+          {selectedFluting.profile && (
+            <button type="button" className="link-btn fluting-detail__open" onClick={() => setFlutingDetail(true)}>
+              Rysunek wymiarowy {selectedFluting.id}
+            </button>
+          )}
+          <FlutingDetail fluting={selectedFluting} open={flutingDetail} onClose={() => setFlutingDetail(false)} />
+        </>
       ),
     },
   ]
@@ -480,17 +524,21 @@ export default function App() {
             </Section>
           ))}
 
-          {/* Bryła – opcja dla każdego typu, jako drobny dopisek zamiast osobnej sekcji. */}
-          <label className="check" htmlFor="body">
+          {/* Bryła – opcja dla każdego typu: karta z grafiką i dopłatą. */}
+          <label className="check check--card" htmlFor="body">
             <input id="body" type="checkbox" checked={config.body} onChange={(e) => set('body', e.target.checked)} />
+            <span className="check__icon" aria-hidden="true">
+              <BodyIcon on={config.body} />
+            </span>
+            <span className="check__text">
+              <span className="check__label">Bryła – front + środek</span>
+              <span className="check__hint">Wykonamy cały korpus razem z frontem giętym.</span>
+              <span className="check__badge">+{Math.round(BODY_SURCHARGE * 100)}% do ceny</span>
+            </span>
             <span className="check__box" aria-hidden="true">
               <svg viewBox="0 0 16 16">
                 <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
               </svg>
-            </span>
-            <span className="check__text">
-              <span className="check__label">Bryła – front + środek</span>
-              <span className="check__hint">Jest możliwość wykonania całej bryły: frontu wraz ze środkiem.</span>
             </span>
           </label>
         </form>

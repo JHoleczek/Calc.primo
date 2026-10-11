@@ -1,5 +1,5 @@
-import { MATERIALS, SMOOTH_FLUTING_ID, TALL_HEIGHT_MM } from '../config/catalog'
-import { BODY_SURCHARGE, PRICES_PER_M2, TALL_SURCHARGE } from '../config/pricing'
+import { MATERIALS, SMOOTH_FLUTING_ID, TALL_HEIGHT_MM, VENEERS } from '../config/catalog'
+import { BODY_SURCHARGE, PRICES_PER_M2, STAIN_SURCHARGE_PER_M2, TALL_SURCHARGE, type PriceKey } from '../config/pricing'
 import { isTall, type Configuration, type Result } from './calculate'
 
 // Wycena pozycji – tylko do wiadomości dla biura (klient nie widzi cen ani m²).
@@ -28,11 +28,18 @@ export interface LinePrice {
 /** Dopłaty są mnożone kolejno (np. H > 2780 i bryła: × 1,30 × 1,25). */
 export function priceLine(config: Configuration, result: Result, qty: number): LinePrice {
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
-  const prices = PRICES_PER_M2[material.id]
+  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
+  const veneered = material.id === 'fornirowane'
+  const key: PriceKey =
+    material.id === 'fornirowane' ? (veneer.id === 'orzech' ? 'orzech' : 'dab') : material.id
+  const prices = PRICES_PER_M2[key]
   const fluted = result.flutingCode !== SMOOTH_FLUTING_ID
   const special = fluted ? prices.flutedSpecial?.[result.flutingCode] : undefined
-  const baseRate = special ?? (fluted ? prices.fluted : prices.smooth)
-  const baseLabel = `${material.name} ${fluted ? `ryflowany ${result.flutingCode}` : 'gładki'}`
+  const listRate = special ?? (fluted ? prices.fluted : prices.smooth)
+  // Bejca: stała dopłata do stawki za m² (przed dopłatami procentowymi).
+  const stain = veneered && veneer.stained ? STAIN_SURCHARGE_PER_M2 : 0
+  const baseRate = listRate === null ? null : listRate + stain
+  const baseLabel = `${veneered ? `Fornir ${veneer.name.toLowerCase()}` : material.name} ${fluted ? `ryflowany ${result.flutingCode}` : 'gładki'}`
 
   const surcharges: Surcharge[] = []
   if (isTall(config.heightMm)) surcharges.push({ label: `H > ${TALL_HEIGHT_MM} mm`, rate: TALL_SURCHARGE })

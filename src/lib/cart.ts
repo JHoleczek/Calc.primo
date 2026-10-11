@@ -1,4 +1,4 @@
-import { FLUTINGS, FRONT_TYPES, MATERIALS } from '../config/catalog'
+import { FLUTINGS, FRONT_TYPES, MATERIALS, VENEERS } from '../config/catalog'
 import { calculate, extensionText, normalizeConfiguration, type Configuration } from './calculate'
 import { priceLine, type LinePrice } from './pricing'
 
@@ -80,10 +80,17 @@ export function describeConfig(config: Configuration, flutingCode: string): stri
   const fluting = FLUTINGS.find((f) => f.id === flutingCode) ?? FLUTINGS[0]
   const color = config.color.trim()
   const ext = extensionText(config)
+  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
+  const finish =
+    material.id === 'fornirowane'
+      ? `Fornir ${veneer.name.toLowerCase()}${veneer.stained && color ? `, bejca ${color}` : ''}`
+      : material.id === 'laminat'
+        ? `Laminat${color ? `, dekor ${color}` : ''} (koszt laminatu po stronie klienta)`
+        : `${material.name}${color ? `, ${color}` : ''}`
   return [
     type.name,
     `${fluting.id} ${fluting.name}`,
-    `${material.name}${color ? `, ${color}` : ''}`,
+    finish,
     `H ${config.heightMm} mm`,
     ...(ext ? [ext] : []),
     ...(config.body ? ['bryła (front + środek)'] : []),

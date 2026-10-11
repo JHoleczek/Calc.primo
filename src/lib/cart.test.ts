@@ -75,8 +75,8 @@ describe('koszyk', () => {
     expect(cartTotals(lines).price).toBe(unit * 2)
   })
 
-  it('pozycje bez stawki (fornir) są oznaczone do ustalenia', () => {
-    const lines = cartLines(addItem([], { ...cfg, materialId: 'fornirowane' }))
+  it('pozycje bez ceny (np. błędny wymiar) są oznaczone do ustalenia', () => {
+    const lines = cartLines(addItem([], { ...cfg, heightMm: 50 }))
     const order = orderEmail(lines, { phone: '600100200', email: 'a@b.pl', company: '', notes: '' }, () => '')
     expect(lines[0].price.total).toBeNull()
     expect(order.rows.find((r) => r[0] === 'Firma')![1]).toBe('—')

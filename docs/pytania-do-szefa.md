@@ -1,20 +1,26 @@
 # Pytania do szefa – cennik frontów giętych
 
-Stan kalkulatora: lakier gładki 2000 zł/m², lakier ryflowany 2600 zł/m², FR07 i FR08 2750 zł/m²,
-H > 2780 mm +30%, bryła +25%. Poniższe braki są w wycenie oznaczone „DO USTALENIA / wycena indywidualna”.
+Źródło stawek: `cennik_giete.xlsx` od szefa (październik 2026), wpisane w `src/config/pricing.ts`. Stawki netto.
 
-1. **Fornir** – ile za m²? Gładki / ryflowany? Czy FR07 i FR08 też droższe?
-2. **Laminat** – ile za m² (tylko gładki)? To jedyny materiał przy H > 2780 mm, więc bez tej ceny
-   wysokie fronty w ogóle nie dostaną ceny.
-3. **Netto czy brutto** – ceny 2000 / 2600 / 2750 zł to netto czy brutto?
-4. **Dopłaty razem** – H > 2780 i bryła jednocześnie: mnożymy (×1,30 × 1,25 = +62,5%, tak jest teraz)
-   czy dodajemy (+55%)?
-5. **Bryła** – co dokładnie znaczy „front + środek”? Czy potrzebujemy od klienta dodatkowych wymiarów
-   (głębokość, półki, plecy)? Czy +25% liczymy od m² frontu?
-6. **Przedłużenia N1/N2** – czy przedłużenia (10–50 mm) mają dopłatę poza samym m²?
-7. **Kolor lakieru** – czy RAL / NCS / połysk / mat zmienia cenę?
-8. **Minimum** – czy jest minimalna powierzchnia lub kwota zamówienia, transport, termin realizacji
-   do wpisania w odpowiedzi do klienta?
+| Materiał | Gładki (FG) | Ryflowany | FR07 i FR12 | Surowe |
+|---|---|---|---|---|
+| Lakierowane | 1800 | 2600 | 2750 | 1200 |
+| Fornir dąb | 2700 | 3100 | 3250 | 2000 |
+| Fornir orzech amerykański | 2850 | 3200 | 3450 | 2100 |
+| Laminat (tylko gładki) | 2600 | – | – | – |
+
+Fornir bejcowany: +100 zł/m². Laminat: koszt samego laminatu po stronie klienta. H > 2780 mm +30%, bryła +25% –
+dopłaty mnożone (potwierdzone). Przedłużenia – tylko m², bez dopłaty (potwierdzone). Bryła – bez dodatkowych
+wymiarów, w kalkulatorze grafika i „+25%” (potwierdzone).
+
+## Otwarte
+
+1. **Surowe** – co to dokładnie jest (front bez lakieru / bez wykończenia)? Czy klient ma to wybierać w kalkulatorze?
+   Stawki są już w cenniku (`raw`), ale kalkulator ich na razie nie używa.
+2. **FR07 i FR12** – w nowym cenniku droższe są FR07 i FR12 (wcześniej FR07 i FR08). Czy FR08 jest teraz w zwykłej cenie?
+3. **Bejca na orzechu** – w cenniku jest „+100” także przy orzechu. Czy orzech też może być bejcowany?
+4. **Kolor lakieru** – odpowiedź „klient pokrywa koszt”: czy to znaczy dopłatę za kolory specjalne (np. metalik)?
+5. **Minimum** – minimalna powierzchnia / kwota zamówienia, transport.
 
 ## Oferta (etap 1: zapytanie → oferta z biura → akceptacja → zadatek)
 
