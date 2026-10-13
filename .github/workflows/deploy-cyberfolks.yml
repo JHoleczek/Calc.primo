@@ -64,7 +64,7 @@ jobs:
           code=$?
           cat lftp.log
           if [ $code -ne 0 ]; then
-            grep -E '\*\*\*\*|<--- [45][0-9][0-9]|Fatal|refused|timed out|certificate|Login' lftp.log | grep -v PASS | tail -n 12 | sed 's/^/::error::/'
+            grep -E '\*\*\*\*|<---|--->|Fatal|refused|timed out|certificate|Login|Connect' lftp.log | grep -v PASS | head -n 25 | sed 's/^/::error::/'
             exit $code
           fi
           echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików do $FTP_DIR"
