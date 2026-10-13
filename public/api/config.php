@@ -3,8 +3,8 @@
 // Nie ma tu haseł: PHP wysyła pocztę przez serwer pocztowy hostingu (funkcja mail()).
 
 return [
-    // Kto dostaje zapytania. TYMCZASOWO 02holek@gmail.com – docelowo skrzynka biura.
-    'office_email' => '02holek@gmail.com',
+    // Kto dostaje zapytania – firmowa skrzynka kalkulatora (przekierowanie dalej ustawia się w panelu cyber_folks).
+    'office_email' => 'kalkulator@primomeble.pl',
 
     // Nadawca maili – skrzynka założona w panelu cyber_folks na domenie strony
     // (np. kalkulator@primomeble.pl). Musi być na tej samej domenie co hosting,
@@ -18,7 +18,7 @@ return [
 
     // Ukryta kopia (BCC) każdego potwierdzenia wysłanego klientowi – archiwum wysłanych maili w Gmailu.
     // Klient tego adresu nie widzi. Pusty = bez kopii.
-    'archive_bcc' => '02holek@gmail.com',
+    'archive_bcc' => 'kalkulator@primomeble.pl',
 
     // Adres kalkulatora (z ukośnikiem na końcu) – z niego budowane są linki „Rzut” i „Utwórz ofertę”.
     'site_url' => 'https://primomeble.pl/kalkulator/',
