@@ -34,17 +34,34 @@ jobs:
       - name: Brak sekretów FTP – pomijam wgrywanie
         if: env.HAS_FTP != 'true'
         run: echo "Ustaw sekrety FTP_SERVER, FTP_USERNAME, FTP_PASSWORD i FTP_DIR, aby wgrywać na cyber_folks."
+      # lftp: szyfrowane FTP (FTPS), bez usuwania plików na serwerze (dane zapytań w api/data zostają).
+      # Błędy połączenia trafiają do adnotacji przebiegu, żeby było widać przyczynę bez pobierania logów.
       - name: Wgranie przez FTPS
         if: env.HAS_FTP == 'true'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: dist/
-          server-dir: ${{ secrets.FTP_DIR }}
-          # Dane zapytań na serwerze nigdy nie są nadpisywane ani usuwane.
-          exclude: |
-            **/.git*
-            api/data/**
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          # Hasło tylko w zmiennej środowiskowej (lftp --env-password) – bez wstawiania do polecenia.
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_DIR }}
+        run: |
+          sudo apt-get update -qq > /dev/null && sudo apt-get install -y -qq lftp > /dev/null
+          set +e
+          lftp -c "
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ssl:verify-certificate yes;
+            set ftp:passive-mode true;
+            set net:timeout 20;
+            set net:max-retries 2;
+            set net:reconnect-interval-base 5;
+            open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER;
+            mirror --reverse --verbose --parallel=3 --exclude-glob api/data/ dist/ \"$FTP_DIR\"
+          " > lftp.log 2>&1
+          code=$?
+          cat lftp.log
+          if [ $code -ne 0 ]; then
+            tail -n 8 lftp.log | sed 's/^/::error::/'
+            exit $code
+          fi
+          echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików do $FTP_DIR"
