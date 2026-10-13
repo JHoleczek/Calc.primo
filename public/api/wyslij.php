@@ -112,6 +112,12 @@ foreach (array_values($itemsIn) as $i => $it) {
         'code' => $code,
         'fluting' => $fluting,
         'name' => $str($it['name'] ?? '', 300),
+        'height' => is_int($it['height'] ?? null) || is_float($it['height'] ?? null) ? (int)round($it['height']) : null,
+        'ext' => $str($it['ext'] ?? '', 80),
+        'finish' => $str($it['finish'] ?? '', 160),
+        'flutingName' => $str($it['flutingName'] ?? '', 40),
+        'body' => ($it['body'] ?? false) === true,
+        'area' => $num($it['area'] ?? null),
         'qty' => $qty,
         'unit' => $num($it['unit'] ?? null),
         'total' => $num($it['total'] ?? null),
@@ -244,57 +250,45 @@ foreach ($items as $it) {
 }
 $sumText = zl($sum) . ($unpriced ? " + $unpriced poz. do ustalenia" : '');
 
-// Mail do biura.
+// Mail do biura: krótki nagłówek z kontaktem, tabela pozycji, na dole cena za całość.
 $images = [];
+$cell = 'padding:6px 8px;border:1px solid #ddd;vertical-align:top';
+$num2 = static fn(?float $v): string => $v === null ? '—' : number_format($v, 2, ',', ' ');
+$cols = ['LP', 'Kod', 'Wysokość', 'Przedłużenia', 'Dekor', 'Ryflowanie', 'Bryła', 'Cena jedn.', 'Ilość', 'm²'];
 $rows = '';
 $textRows = '';
 foreach ($items as $i => $it) {
     $lp = $i + 1;
-    $title = $it['code'] . ' ' . $it['fluting'];
-    $link = $it['rzut'] !== '' ? $site . '#rzut=' . $it['rzut'] : '';
-    $img = '';
-    if ($it['png'] !== null) {
-        $cid = "rzut$lp";
-        $images[$cid] = $it['png'];
-        $img = '<img src="cid:' . $cid . '" width="220" alt="Rzut ' . h($title) . '" style="display:block;border:0;background:#0c0c0c">';
-    }
-    $rzutCell = $img !== '' ? ($link !== '' ? '<a href="' . h($link) . '">' . $img . '</a>' : $img) : ($link !== '' ? '<a href="' . h($link) . '">rzut</a>' : '—');
-    $rows .= '<tr>'
-        . '<td style="padding:8px;border-bottom:1px solid #ddd;vertical-align:top">' . $lp . '</td>'
-        . '<td style="padding:8px;border-bottom:1px solid #ddd;vertical-align:top"><b>' . h($title) . '</b><br><span style="color:#555">' . h($it['name']) . '</span></td>'
-        . '<td style="padding:8px;border-bottom:1px solid #ddd;vertical-align:top">' . $rzutCell . '</td>'
-        . '<td style="padding:8px;border-bottom:1px solid #ddd;vertical-align:top;white-space:nowrap;text-align:right">' . h(zl($it['unit'])) . '</td>'
-        . '<td style="padding:8px;border-bottom:1px solid #ddd;vertical-align:top;text-align:right">' . $it['qty'] . '</td>'
-        . '<td style="padding:8px;border-bottom:1px solid #ddd;vertical-align:top;white-space:nowrap;text-align:right">' . h(zl($it['total'])) . '</td>'
-        . '</tr>';
-    $textRows .= "$lp. $title\n   {$it['name']}\n   Rzut: $link\n   Cena za szt.: " . zl($it['unit']) . "\n   Ilość: {$it['qty']} szt.\n   Cena za całość: " . zl($it['total']) . "\n\n";
+    $values = [
+        (string)$lp,
+        $it['code'],
+        $it['height'] !== null ? $it['height'] . ' mm' : '—',
+        $it['ext'] !== '' ? $it['ext'] : '—',
+        $it['finish'] !== '' ? $it['finish'] : '—',
+        trim($it['fluting'] . ' ' . $it['flutingName']),
+        $it['body'] ? 'TAK' : 'NIE',
+        zl($it['unit']),
+        $it['qty'] . ' szt.',
+        $num2($it['area']),
+    ];
+    $rows .= '<tr>' . implode('', array_map(static fn($v, $k) => '<td style="' . $cell . ($k >= 7 ? ';text-align:right;white-space:nowrap' : '') . '">' . h($v) . '</td>', $values, array_keys($values))) . '</tr>';
+    $textRows .= implode(' | ', $values) . "\n";
 }
 
 $who = $company !== '' ? $company : $email;
-$telHref = 'tel:' . preg_replace('/[^0-9+]/', '', $phone);
-$officeHtml = '<!doctype html><html><body style="margin:0;padding:24px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#151515">'
-    . '<div style="max-width:760px;margin:0 auto;background:#fff;padding:24px">'
-    . '<h1 style="margin:0 0 4px;font-size:22px">Nowe zapytanie ' . h($number) . '</h1>'
-    . '<p style="margin:0 0 20px;color:#555">' . h($date) . '</p>'
-    . '<table style="border-collapse:collapse;margin-bottom:20px;font-size:14px">'
-    . '<tr><td style="padding:3px 16px 3px 0;color:#555">Firma</td><td>' . h($company !== '' ? $company : '—') . '</td></tr>'
-    . '<tr><td style="padding:3px 16px 3px 0;color:#555">Klient</td><td><a href="mailto:' . h($email) . '">' . h($email) . '</a></td></tr>'
-    . '<tr><td style="padding:3px 16px 3px 0;color:#555">Nr tel.</td><td><a href="' . h($telHref) . '">' . h($phone) . '</a></td></tr>'
-    . ($notes !== '' ? '<tr><td style="padding:3px 16px 3px 0;color:#555;vertical-align:top">Uwagi</td><td>' . nl2br(h($notes)) . '</td></tr>' : '')
-    . '</table>'
-    . '<h2 style="font-size:16px;margin:0 0 8px">Zamówienie: ' . count($items) . ' poz. · ' . $pieces . ' szt.</h2>'
-    . '<table style="border-collapse:collapse;width:100%;font-size:14px">'
-    . '<tr style="background:#f0ece2;text-align:left"><th style="padding:8px">LP</th><th style="padding:8px">Nazwa frontu</th><th style="padding:8px">Rzut</th><th style="padding:8px;text-align:right">Cena za szt.</th><th style="padding:8px;text-align:right">Ilość</th><th style="padding:8px;text-align:right">Cena za całość</th></tr>'
+$contact = implode(' · ', array_filter([$company, $email, $phone, $notes !== '' ? "Uwagi: $notes" : '']));
+$officeHtml = '<!doctype html><html><body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;color:#151515;font-size:13px">'
+    . '<p style="margin:0 0 12px"><b>' . h($number) . '</b> · ' . h($date) . '<br>' . h($contact) . '</p>'
+    . '<table style="border-collapse:collapse;font-size:13px">'
+    . '<tr style="background:#f0ece2;text-align:left">' . implode('', array_map(static fn($c) => '<th style="' . $cell . '">' . h($c) . '</th>', $cols)) . '</tr>'
     . $rows
-    . '<tr><td colspan="5" style="padding:12px 8px;text-align:right;font-weight:bold">SUMA</td><td style="padding:12px 8px;text-align:right;font-weight:bold;white-space:nowrap">' . h($sumText) . '</td></tr>'
+    . '<tr><td colspan="9" style="' . $cell . ';text-align:right;font-weight:bold">CENA ZA CAŁOŚĆ (netto)</td>'
+    . '<td style="' . $cell . ';text-align:right;font-weight:bold;white-space:nowrap">' . h($sumText) . '</td></tr>'
     . '</table>'
-    . '<p style="margin:16px 0 0;font-size:13px;color:#555">Ceny wstępne z kalkulatora – przed wysłaniem oferty sprawdź wymiary i ceny. Klient dostał potwierdzenie bez cen.</p>'
-    . ($offerUrl !== '' ? '<p style="margin:24px 0 0"><a href="' . h($offerUrl) . '" style="display:inline-block;background:#edc880;color:#151515;padding:14px 28px;text-decoration:none;font-weight:bold;letter-spacing:.04em">UTWÓRZ OFERTĘ</a></p>' : '')
-    . '</div></body></html>';
+    . ($offerUrl !== '' ? '<p style="margin:12px 0 0;font-size:12px"><a href="' . h($offerUrl) . '">Utwórz ofertę</a></p>' : '')
+    . '</body></html>';
 
-$officeText = "Nowe zapytanie $number ($date)\n\nFirma: " . ($company !== '' ? $company : '—') . "\nKlient: $email\nNr tel.: $phone\n"
-    . ($notes !== '' ? "Uwagi: $notes\n" : '') . "\nZamówienie: " . count($items) . " poz. · $pieces szt.\n\n$textRows"
-    . "SUMA: $sumText\n\nCeny wstępne z kalkulatora – sprawdź przed wysłaniem oferty.\n"
+$officeText = "$number · $date\n$contact\n\n" . implode(' | ', $cols) . "\n$textRows\nCENA ZA CAŁOŚĆ (netto): $sumText\n"
     . ($offerUrl !== '' ? "\nUtwórz ofertę: $offerUrl\n" : '');
 
 $sentOffice = send_mail($config, $config['office_email'], "Nowe zapytanie $number – $who", $officeHtml, $officeText, $email, $images);

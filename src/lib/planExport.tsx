@@ -7,10 +7,6 @@ import { planGeometry } from './planGeometry'
 
 const EXPORT_WIDTH = 1600
 
-/** Miniatura rzutu w mailu do biura: układ jak na ekranie 420 px (czytelne opisy), plik 660 px, w mailu 220 px. */
-export const THUMB_LAYOUT_WIDTH = 420
-export const THUMB_SCALE = 660 / THUMB_LAYOUT_WIDTH
-
 /** Style rysunku osadzane w pliku (plik ma działać bez arkusza strony); grubości linii × `k`. */
 const exportCss = (k: number) =>
   `

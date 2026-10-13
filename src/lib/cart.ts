@@ -1,5 +1,6 @@
 import { FLUTINGS, FRONT_TYPES, MATERIALS, VENEERS } from '../config/catalog'
 import { calculate, extensionText, normalizeConfiguration, type Configuration } from './calculate'
+import { extensionMm } from './frontPath'
 import { priceLine, type LinePrice } from './pricing'
 
 // Koszyk frontów do oceny: czyste funkcje (łatwe do testowania) + zapis w przeglądarce.
@@ -70,27 +71,46 @@ export function cartTotals(lines: CartLine[]) {
 
 const zl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} zł`
 
+/** Wykończenie: materiał z kolorem / fornirem / dekorem, np. „Laminat, dekor U999 ST2 (koszt laminatu po stronie klienta)”. */
+export function finishText(config: Configuration): string {
+  const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
+  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
+  const color = config.color.trim()
+  if (material.id === 'fornirowane') return `Fornir ${veneer.name.toLowerCase()}${veneer.stained && color ? `, bejca ${color}` : ''}`
+  if (material.id === 'laminat') return `Laminat${color ? `, dekor ${color}` : ''} (koszt laminatu po stronie klienta)`
+  return `${material.name}${color ? `, ${color}` : ''}`
+}
+
+/** Przedłużenia w skrócie do tabeli: „0 mm”, „lewe 30 / prawe 50 mm”, „600 mm (L 700)”, „2 × 140 mm (Z 200)”. */
+export function extensionsText(config: Configuration): string {
+  const r = config.radiusMm
+  switch (config.typeId) {
+    case 'narozne': {
+      const left = extensionMm(config.extLeftMm)
+      const right = extensionMm(config.extRightMm)
+      return left || right ? `lewe ${left} / prawe ${right} mm` : '0 mm'
+    }
+    case 'przedluzane':
+      return `${Math.round(config.lengthMm - r)} mm (L ${Math.round(config.lengthMm)})`
+    case 'obustronne':
+      return config.sideExtension ? `2 × ${Math.round(config.zMm - r)} mm (Z ${Math.round(config.zMm)})` : '0 mm'
+    default:
+      return '0 mm'
+  }
+}
+
 /**
  * Jednolinijkowy opis frontu (bez ilości), np.
- * „Narożne · FR03 Fala 18 · Fornirowane, dąb · H 720 mm · przedłużenie lewe 50 mm, prawe 80 mm · bryła”.
+ * „Narożne · FR03 Fala 18 · Fornir dąb naturalny · H 720 mm · przedłużenie lewe 50 mm, prawe 80 mm · bryła”.
  */
 export function describeConfig(config: Configuration, flutingCode: string): string {
   const type = FRONT_TYPES.find((t) => t.id === config.typeId) ?? FRONT_TYPES[0]
-  const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
   const fluting = FLUTINGS.find((f) => f.id === flutingCode) ?? FLUTINGS[0]
-  const color = config.color.trim()
   const ext = extensionText(config)
-  const veneer = VENEERS.find((v) => v.id === config.veneerId) ?? VENEERS[0]
-  const finish =
-    material.id === 'fornirowane'
-      ? `Fornir ${veneer.name.toLowerCase()}${veneer.stained && color ? `, bejca ${color}` : ''}`
-      : material.id === 'laminat'
-        ? `Laminat${color ? `, dekor ${color}` : ''} (koszt laminatu po stronie klienta)`
-        : `${material.name}${color ? `, ${color}` : ''}`
   return [
     type.name,
     `${fluting.id} ${fluting.name}`,
-    finish,
+    finishText(config),
     `H ${config.heightMm} mm`,
     ...(ext ? [ext] : []),
     ...(config.body ? ['bryła (front + środek)'] : []),

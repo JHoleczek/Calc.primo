@@ -1,7 +1,6 @@
-import { exportPlanSvg, renderMarkup, svgToPng, THUMB_LAYOUT_WIDTH, THUMB_SCALE } from './planExport'
-import { describeConfig, orderEmail, type CartLine, type Contact } from './cart'
+import { describeConfig, extensionsText, finishText, orderEmail, type CartLine, type Contact } from './cart'
 import { offerCode, planCode, planLink } from './share'
-import { QUOTE_API, QUOTE_ENDPOINT, WEB3FORMS_ACCESS_KEY } from '../config/catalog'
+import { FLUTINGS, QUOTE_API, QUOTE_ENDPOINT, WEB3FORMS_ACCESS_KEY } from '../config/catalog'
 
 /** Wynik wysyłki: numer zapytania nadany przez nasz serwer (Web3Forms go nie nadaje). */
 export interface QuoteReceipt {
@@ -34,6 +33,13 @@ export function quotePayload(lines: CartLine[], contact: Contact) {
       code: l.result.code,
       fluting: l.result.flutingCode,
       name: describeConfig(l.item.config, l.result.flutingCode),
+      height: l.item.config.heightMm,
+      ext: extensionsText(l.item.config),
+      finish: finishText(l.item.config),
+      flutingName: FLUTINGS.find((f) => f.id === l.result.flutingCode)?.name ?? '',
+      body: l.item.config.body,
+      // m² całej pozycji (sztuka × ilość).
+      area: Math.round(l.areaM2 * 1000) / 1000,
       qty: l.item.qty,
       unit: l.price.unitPrice,
       total: l.price.total,
@@ -43,29 +49,12 @@ export function quotePayload(lines: CartLine[], contact: Contact) {
   }
 }
 
-/** Miniatura rzutu do maila (PNG w base64) – przy błędzie po prostu bez obrazka. */
-async function thumbnail(line: CartLine): Promise<string | undefined> {
-  try {
-    const title = `${line.result.code} ${line.result.flutingCode}`
-    const file = exportPlanSvg(line.item.config, title, '', THUMB_SCALE, renderMarkup, THUMB_LAYOUT_WIDTH)
-    const blob = await svgToPng(file)
-    const bytes = new Uint8Array(await blob.arrayBuffer())
-    let bin = ''
-    bytes.forEach((b) => (bin += String.fromCharCode(b)))
-    return btoa(bin)
-  } catch {
-    return undefined
-  }
-}
-
 const unreachable = (e: unknown) => new Error(`brak połączenia z serwisem wysyłki (${e instanceof Error ? e.message : String(e)})`)
 
 /** Wysyła zapytanie do biura: przez nasz serwer (jeśli jest) albo przez Web3Forms. */
 export async function sendQuote(lines: CartLine[], contact: Contact, fetchImpl: typeof fetch = fetch): Promise<QuoteReceipt> {
   if (QUOTE_API) {
-    const payload = quotePayload(lines, contact)
-    const pngs = await Promise.all(lines.map(thumbnail))
-    const body = JSON.stringify({ ...payload, items: payload.items.map((it, i) => ({ ...it, png: pngs[i] })) })
+    const body = JSON.stringify(quotePayload(lines, contact))
     let response: Response
     try {
       response = await fetchImpl(QUOTE_API, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body })
