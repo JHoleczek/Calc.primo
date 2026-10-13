@@ -65,6 +65,10 @@ jobs:
           cat lftp.log
           if [ $code -ne 0 ]; then
             grep -E '\*\*\*\*|<---|--->|Fatal|refused|timed out|certificate|Login|Connect' lftp.log | grep -v PASS | head -n 25 | sed 's/^/::error::/'
+            # Diagnostyka bez hasła: czy serwer rozmawia bez szyfrowania (problem z TLS) czy zrywa każde połączenie (blokada IP).
+            lftp -c "debug 3; set ftp:ssl-allow false; set net:max-retries 1; set net:timeout 15; open ftp://$FTP_SERVER; quote NOOP" > diag.log 2>&1
+            grep -E '\*\*\*\*|<---|--->' diag.log | head -n 8 | sed 's/^/::warning::bez TLS: /'
+            echo "::warning::IP runnera: $(curl -s https://api.ipify.org)"
             exit $code
           fi
           echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików do $FTP_DIR"
