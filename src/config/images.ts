@@ -16,3 +16,6 @@ export const TYPE_ICONS: Record<FrontTypeId, string> = {
   obustronne: icon('type-obustronne'),
   luk: icon('type-luk'),
 }
+
+/** Bryła (front + środek) – ikona z projektu (SVG). */
+export { default as BODY_ICON } from '../assets/icons/bryla.svg'

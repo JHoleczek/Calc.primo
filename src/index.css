@@ -2077,6 +2077,19 @@ textarea.text-input {
   width: 136px;
 }
 
+.check__icon img {
+  display: block;
+  height: 104px;
+  width: auto;
+  transition: filter 0.2s, opacity 0.2s;
+}
+
+/* Bez bryły ikona przygaszona – po zaznaczeniu w pełnych kolorach. */
+.check--card input:not(:checked) ~ .check__icon img {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
 .check__badge {
   align-self: flex-start;
   margin-top: 4px;
@@ -2098,9 +2111,8 @@ textarea.text-input {
     width: 88px;
   }
 
-  .check__icon svg {
-    width: 88px;
-    height: auto;
+  .check__icon img {
+    height: 80px;
   }
 }
 

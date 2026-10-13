@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
-import { BodyIcon } from './components/BodyIcon'
 import { DimIcon } from './components/DimIcon'
 import { FlutingDetail } from './components/FlutingDetail'
 import { FlutingProfile } from './components/FlutingProfile'
@@ -27,7 +26,7 @@ import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CookieNotice, PrivacyDialog, SiteFooter } from './components/SiteFooter'
 import { SubmitForm } from './components/SubmitForm'
-import { TYPE_ICONS } from './config/images'
+import { BODY_ICON, TYPE_ICONS } from './config/images'
 import { BODY_SURCHARGE } from './config/pricing'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
@@ -528,7 +527,7 @@ export default function App() {
           <label className="check check--card" htmlFor="body">
             <input id="body" type="checkbox" checked={config.body} onChange={(e) => set('body', e.target.checked)} />
             <span className="check__icon" aria-hidden="true">
-              <BodyIcon on={config.body} />
+              <img src={BODY_ICON} alt="" />
             </span>
             <span className="check__text">
               <span className="check__label">Bryła – front + środek</span>
