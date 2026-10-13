@@ -70,3 +70,6 @@ jobs:
             exit $code
           fi
           echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików do $FTP_DIR"
+          # Gdzie dokładnie trafiły pliki (pełna ścieżka na serwerze) i czy jest tam skrypt wysyłki.
+          lftp -c "set ftp:ssl-force true; set ssl:verify-certificate yes; open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER; cd \"$FTP_DIR\"; pwd; cls -l api/wyslij.php index.html" > where.log 2>&1
+          sed 's/^/::notice::serwer: /' where.log | head -n 5
