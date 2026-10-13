@@ -47,7 +47,10 @@ jobs:
         run: |
           sudo apt-get update -qq > /dev/null && sudo apt-get install -y -qq lftp > /dev/null
           set +e
+          # Szybki test, czy serwer w ogóle przyjmuje połączenia na porcie 21 (blokady zagraniczne / firewall).
+          if timeout 10 bash -c "</dev/tcp/$FTP_SERVER/21" 2>/dev/null; then echo "::notice::Port 21 na $FTP_SERVER otwarty"; else echo "::error::Brak połączenia z $FTP_SERVER:21 (serwer odrzuca połączenia z GitHuba – sprawdź blokadę FTP z zagranicy w panelu)"; fi
           lftp -c "
+            debug 3;
             set ftp:ssl-force true;
             set ftp:ssl-protect-data true;
             set ssl:verify-certificate yes;
@@ -61,7 +64,7 @@ jobs:
           code=$?
           cat lftp.log
           if [ $code -ne 0 ]; then
-            tail -n 8 lftp.log | sed 's/^/::error::/'
+            grep -E '\*\*\*\*|<--- [45][0-9][0-9]|Fatal|refused|timed out|certificate|Login' lftp.log | grep -v PASS | tail -n 12 | sed 's/^/::error::/'
             exit $code
           fi
           echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików do $FTP_DIR"
