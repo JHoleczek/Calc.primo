@@ -42,11 +42,9 @@ npm run build    # build produkcyjny do dist/
 - `src/components/CartDrawer.tsx` – ikona koszyka (lewy górny róg, na telefonie prawy) i panel wysuwany z prawej
   (Esc / ✕ / tło zamykają, fokus zostaje w panelu).
 - `src/components/SubmitForm.tsx` + `src/lib/sendQuote.ts` – „Zapytaj o wycenę” w koszyku: telefon i e-mail
-  (wymagane), firma i uwagi (opcjonalne). Wysyłka przez Web3Forms (strona jest statyczna) –
-  klucz `WEB3FORMS_ACCESS_KEY` w `src/config/catalog.ts`, zakładany na web3forms.com dla adresu odbiorcy
-  (tymczasowo 02holek@gmail.com, docelowo biuro.primomeble@gmail.com). Bez klucza – zapasowo FormSubmit.
-  Treść: pełne wyliczenie (m², stawki, dopłaty, ceny) + proponowana odpowiedź do klienta.
-  Gdy wysyłka się nie uda, klient może wysłać zapytanie ze swojej poczty (wersja bez m² i cen).
+  (wymagane), firma i uwagi (opcjonalne). Wysyłka przez własny skrypt `public/api/wyslij.php` na hostingu –
+  bez serwisów zewnętrznych. Gdy wysyłka się nie uda, klient może wysłać zapytanie ze swojej poczty
+  na kalkulator@primomeble.pl (wersja bez m² i cen).
 - `src/config/pricing.ts` + `src/lib/pricing.ts` – cennik [zł/m²] i dopłaty (H > 2780 mm +30%, bryła +25%,
   mnożone kolejno). `null` = cena do ustalenia (pozycja „wycena indywidualna”).
 - `src/components/SiteFooter.tsx` – stopka (kontakt, polityka prywatności, cookies), informacja o cookies
@@ -56,8 +54,9 @@ npm run build    # build produkcyjny do dist/
 Klient nie widzi m² ani cen – tylko konfigurację i koszyk (z edycją). Uwaga: cennik jest w kodzie
 strony, więc technicznie da się go odczytać; pełne ukrycie wymaga własnego serwera.
 
-Hosting: GitHub Pages (`.github/workflows/pages.yml`) – każdy push na gałąź domyślną testuje,
-buduje i publikuje stronę pod https://jholeczek.github.io/Calc.primo/.
+Hosting: cyber_folks, https://primomeble.pl/kalkulator/ (`.github/workflows/deploy-cyberfolks.yml`) – każdy push
+testuje, buduje i wgrywa stronę przez FTPS. Strona nie korzysta z żadnych serwisów zewnętrznych (czcionki, model 3D,
+formularz i poczta – wszystko z własnego serwera).
 
 Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 
@@ -66,12 +65,11 @@ Pojedynczy plik HTML do podglądu: `SINGLE_FILE=1 npx vite build --base=./`.
 Proces: **zapytanie z kalkulatora → oferta z biura → akceptacja e-mailem → zadatek**. Kalkulator nie jest sklepem –
 bez oferty z biura nie da się złożyć zamówienia.
 
-- Wersja na hosting cyber_folks (`VITE_QUOTE_API=api/wyslij.php`): formularz wysyła dane do `public/api/wyslij.php`.
-  Skrypt nadaje numer `ZP/RRRR/NNNN`, zapisuje kopię zapytania, wysyła biuru mail z cenami wstępnymi, miniaturami
-  rzutów i przyciskiem **„Utwórz ofertę”**, a klientowi potwierdzenie bez cen („to nie jest zamówienie”).
+- Formularz wysyła dane do `public/api/wyslij.php`. Skrypt nadaje numer `ZP/RRRR/NNNN`, zapisuje kopię zapytania,
+  wysyła biuru mail z tabelą pozycji (kod, wysokość, przedłużenia, dekor, ryflowanie, bryła, cena, ilość, m²) i ceną
+  za całość oraz linkiem „Utwórz ofertę”, a klientowi potwierdzenie bez cen („to nie jest zamówienie”).
 - „Utwórz ofertę” otwiera kalkulator z adresem `#oferta=…` – edytor oferty (`src/components/OfferPage.tsx`):
   biuro poprawia ceny netto, VAT, zadatek, termin i numer konta, zapisuje PDF i wysyła klientowi.
-- Wersja na GitHub Pages (bez serwera) dalej wysyła przez Web3Forms – do podglądu.
 - Wdrożenie na cyber_folks: `docs/wdrozenie-cyberfolks.md`.
 
 ## Założenia obliczeń

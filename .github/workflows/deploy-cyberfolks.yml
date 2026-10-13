@@ -29,8 +29,6 @@ jobs:
         run: for f in public/api/*.php; do php -l "$f"; done
       # Ścieżki względne – działa w dowolnym katalogu (np. /kalkulator/); formularz wysyła do api/wyslij.php.
       - run: npx tsc -b && npx vite build --base=./
-        env:
-          VITE_QUOTE_API: api/wyslij.php
       - name: Brak sekretów FTP – pomijam wgrywanie
         if: env.HAS_FTP != 'true'
         run: echo "Ustaw sekrety FTP_SERVER, FTP_USERNAME, FTP_PASSWORD i FTP_DIR, aby wgrywać na cyber_folks."

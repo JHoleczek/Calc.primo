@@ -227,31 +227,14 @@ export const COMPANY = {
   bankAccount: '',
 }
 
-/**
- * Adres, na który trafiają zapytania o wycenę.
- * TYMCZASOWO 02holek@gmail.com (brak dostępu do skrzynki biura) – docelowo CONTACT.email.
- */
-export const QUOTE_RECIPIENT = '02holek@gmail.com'
+/** Adres zapytań pokazywany klientowi (np. gdy wysyłka się nie uda) – firmowa skrzynka kalkulatora. */
+export const PUBLIC_QUOTE_EMAIL = 'kalkulator@primomeble.pl'
 
 /**
- * Wysyłka zapytań z przeglądarki (strona statyczna, bez własnego serwera): Web3Forms.
- * Klucz (Access Key) zakłada się na https://web3forms.com dla adresu odbiorcy – maile trafiają
- * na adres przypisany do klucza, więc sam adres nie jest widoczny w kodzie strony.
- * Pusty klucz = zapasowo FormSubmit (bywa niestabilny).
+ * Wysyłka zapytań: własny skrypt PHP na hostingu (cyber_folks), ścieżka względna do strony.
+ * Bez serwisów zewnętrznych – maile wysyła serwer pocztowy hostingu.
  */
-export const WEB3FORMS_ACCESS_KEY = '655b5c13-3149-4f61-b21b-4feda58727ac'
-
-/**
- * Własny serwer (cyber_folks): adres skryptu PHP, np. „api/wyslij.php”. Ustawiany przy budowaniu
- * wersji na hosting (VITE_QUOTE_API). Pusty = strona bez serwera (GitHub Pages) → Web3Forms.
- */
-export const QUOTE_API: string = import.meta.env.VITE_QUOTE_API ?? ''
-
-/**
- * Adres pokazywany klientowi, gdy wysyłka się nie uda („wyślij e-mailem do …”).
- * Na hostingu – firmowa skrzynka kalkulatora (prywatny adres odbiorcy zapytań nie może być widoczny).
- */
-export const PUBLIC_QUOTE_EMAIL = QUOTE_API ? 'kalkulator@primomeble.pl' : QUOTE_RECIPIENT
+export const QUOTE_API: string = import.meta.env.VITE_QUOTE_API || 'api/wyslij.php'
 
 /** Domyślne warunki oferty (biuro może je zmienić w ofercie przed wysłaniem). */
 export const OFFER_DEFAULTS = {
@@ -265,7 +248,3 @@ export const OFFER_DEFAULTS = {
   depositDays: 7,
   leadTime: '4–6 tygodni od zaksięgowania zadatku',
 }
-
-export const QUOTE_ENDPOINT = WEB3FORMS_ACCESS_KEY
-  ? 'https://api.web3forms.com/submit'
-  : `https://formsubmit.co/ajax/${QUOTE_RECIPIENT}`

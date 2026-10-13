@@ -5,8 +5,8 @@ import { configFromHash, offerCode, offerFromHash, planLink } from './share'
 describe('link do rzutu', () => {
   it('koduje i odtwarza konfigurację (z polskimi znakami)', () => {
     const cfg = { ...DEFAULT_CONFIGURATION, radiusMm: 450, extLeftMm: 30, color: 'dąb żółty', body: true }
-    const url = planLink(cfg, 'https://jholeczek.github.io/Calc.primo/#stare')
-    expect(url.startsWith('https://jholeczek.github.io/Calc.primo/#rzut=')).toBe(true)
+    const url = planLink(cfg, 'https://primomeble.pl/kalkulator/#stare')
+    expect(url.startsWith('https://primomeble.pl/kalkulator/#rzut=')).toBe(true)
     expect(configFromHash(url.slice(url.indexOf('#')))).toEqual(cfg)
     expect(configFromHash('#cos-innego')).toBeNull()
     expect(configFromHash('#rzut=%%%')).toBeNull()

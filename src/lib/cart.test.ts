@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { quotePayload } from './sendQuote'
 import { DEFAULT_CONFIGURATION } from './calculate'
 import {
   addItem,
@@ -8,7 +9,6 @@ import {
   duplicateItem,
   inquiryText,
   loadCart,
-  orderEmail,
   removeItem,
   setQty,
   updateItem,
@@ -48,7 +48,7 @@ describe('koszyk', () => {
     expect(t.areaM2).toBeCloseTo((2 * quarter) / 1000)
   })
 
-  it('zapytanie klienta nie zawiera m² ani cen; zamówienie do biura: firma, klient, tel., pozycje, SUMA', () => {
+  it('zapytanie klienta nie zawiera m² ani cen; do biura: kontakt i pozycje z ceną, ilością i m²', () => {
     const cart = addItem([], { ...cfg, materialId: 'lakierowane', color: 'RAL 9010', flutingId: 'FR07' }, 2)
     const lines = cartLines(cart)
     const contact = { phone: '600 100 200', email: 'jan@firma.pl', company: 'Firma Sp. z o.o.', notes: 'pilne' }
@@ -59,29 +59,32 @@ describe('koszyk', () => {
     expect(client).not.toContain('m²')
     expect(client).not.toContain('zł')
 
-    const order = orderEmail(lines, contact, () => 'https://x/#rzut=abc')
+    const payload = quotePayload(lines, contact)
     const area = (Math.PI * 300) / 2 / 1000
     const unit = Math.round(area * 2750)
-    const labels = order.rows.map((r) => r[0])
-    expect(order.subject).toBe('Nowe zamówienie – Firma Sp. z o.o.')
-    expect(labels.slice(0, 4)).toEqual(['Nowe zamówienie', 'Firma', 'Klient', 'Nr tel.'])
-    expect(labels[labels.length - 1]).toBe('SUMA')
-    const item = order.rows.find((r) => r[0].startsWith('1. FGN-N0-R300 FR07'))![1]
-    expect(item).toContain('Rzut: https://x/#rzut=abc')
-    expect(item).toContain(`Cena za szt.: ${unit.toLocaleString('pl-PL')} zł`)
-    expect(item).toContain('Ilość: 2 szt.')
-    expect(item).toContain(`Cena za całość: ${(unit * 2).toLocaleString('pl-PL')} zł`)
-    expect(order.rows[order.rows.length - 1][1]).toBe(`${(unit * 2).toLocaleString('pl-PL')} zł`)
+    expect(payload.contact).toEqual(contact)
+    expect(payload.items[0]).toMatchObject({
+      code: 'FGN-N0-R300',
+      fluting: 'FR07',
+      flutingName: 'Wałek 9',
+      height: cfg.heightMm,
+      ext: '0 mm',
+      finish: 'Lakierowane, RAL 9010',
+      body: false,
+      qty: 2,
+      unit,
+      total: unit * 2,
+    })
+    expect(payload.items[0].area).toBeCloseTo(area * 2, 3)
     expect(cartTotals(lines).price).toBe(unit * 2)
   })
 
-  it('pozycje bez ceny (np. błędny wymiar) są oznaczone do ustalenia', () => {
+  it('pozycje bez ceny (np. błędny wymiar) idą do biura jako „do ustalenia”', () => {
     const lines = cartLines(addItem([], { ...cfg, heightMm: 50 }))
-    const order = orderEmail(lines, { phone: '600100200', email: 'a@b.pl', company: '', notes: '' }, () => '')
+    const payload = quotePayload(lines, { phone: '600100200', email: 'a@b.pl', company: '', notes: '' })
     expect(lines[0].price.total).toBeNull()
-    expect(order.rows.find((r) => r[0] === 'Firma')![1]).toBe('—')
-    expect(order.rows.find((r) => r[0].startsWith('1.'))![1]).toContain('Cena za szt.: do ustalenia')
-    expect(order.rows[order.rows.length - 1][1]).toContain('1 poz. do ustalenia')
+    expect(payload.items[0].unit).toBeNull()
+    expect(payload.items[0].total).toBeNull()
     expect(cartTotals(lines).unpriced).toBe(1)
   })
 

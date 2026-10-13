@@ -69,7 +69,6 @@ export function cartTotals(lines: CartLine[]) {
   )
 }
 
-const zl = (v: number) => `${v.toLocaleString('pl-PL', { maximumFractionDigits: 0 })} zł`
 
 /** Wykończenie: materiał z kolorem / fornirem / dekorem, np. „Laminat, dekor U999 ST2 (koszt laminatu po stronie klienta)”. */
 export function finishText(config: Configuration): string {
@@ -164,51 +163,6 @@ export function inquiryText(lines: CartLine[], contact: Contact): string {
 
 export const inquirySubject = (lines: CartLine[]) =>
   `Zapytanie o wycenę – fronty gięte (${lines.length} poz., ${cartTotals(lines).pieces} szt.)`
-
-export interface OrderEmail {
-  subject: string
-  /** Wiersze maila w kolejności: [etykieta, wartość] – serwis wysyłki układa je w tabelę. */
-  rows: [string, string][]
-}
-
-/**
- * Wiadomość do biura: „Nowe zamówienie” – firma, klient, telefon, pozycje
- * (LP, nazwa frontu, rzut, cena za szt., ilość, cena za całość) i SUMA.
- * `planUrl` buduje link do rzutu danego frontu.
- */
-export function orderEmail(lines: CartLine[], contact: Contact, planUrl: (config: Configuration) => string): OrderEmail {
-  const totals = cartTotals(lines)
-  const company = contact.company.trim()
-  const subject = `Nowe zamówienie – ${company || contact.email.trim()}`
-  const rows: [string, string][] = [
-    ['Nowe zamówienie', new Date().toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' })],
-    ['Firma', company || '—'],
-    ['Klient', contact.email.trim()],
-    ['Nr tel.', contact.phone.trim()],
-  ]
-  if (contact.notes.trim()) rows.push(['Uwagi klienta', contact.notes.trim()])
-  rows.push(['Zamówienie', `${lines.length} poz. · ${totals.pieces} szt.`])
-  lines.forEach((l, i) => {
-    const p = l.price
-    const unit = p.unitPrice !== null ? zl(p.unitPrice) : 'do ustalenia'
-    const total = p.total !== null ? zl(p.total) : 'do ustalenia'
-    rows.push([
-      `${i + 1}. ${l.result.code} ${l.result.flutingCode}`,
-      [
-        `Nazwa: ${describeConfig(l.item.config, l.result.flutingCode)}`,
-        `Rzut: ${planUrl(l.item.config)}`,
-        `Cena za szt.: ${unit}`,
-        `Ilość: ${l.item.qty} szt.`,
-        `Cena za całość: ${total}`,
-      ].join('\n'),
-    ])
-  })
-  rows.push([
-    'SUMA',
-    totals.unpriced === 0 ? zl(totals.price) : `${zl(totals.price)} + ${totals.unpriced} poz. do ustalenia`,
-  ])
-  return { subject, rows }
-}
 
 // --- Zapis w przeglądarce (tylko wygoda: pusty lub niedostępny storage nie psuje strony) ---
 
