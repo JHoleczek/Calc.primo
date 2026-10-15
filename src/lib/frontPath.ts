@@ -70,9 +70,12 @@ export function frontPath(p: ShapeParams): FrontPath {
     }
     case 'przedluzane': {
       const L = Math.min(EXTENDED_LENGTH.max, Math.max(R + 1, p.lengthMm))
+      // N1: krótkie przedłużenie przed łukiem (po stronie przeciwnej do L).
+      const n1 = Math.min(CORNER_EXTENSION.max, extensionMm(p.extLeftMm))
       return {
         startHeadingDeg: 0,
         segments: [
+          ...(n1 > 0 ? [{ kind: 'line', length: n1 } as Segment] : []),
           { kind: 'arc', radius: R, angleDeg: 90 },
           { kind: 'line', length: L - R },
         ],

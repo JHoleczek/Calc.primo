@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
 import { DimIcon } from './components/DimIcon'
+import { IconL, IconW, IconZ } from './components/LineIcons'
 import { FlutingDetail } from './components/FlutingDetail'
 import { FlutingProfile } from './components/FlutingProfile'
 import { ResultPanel } from './components/ResultPanel'
@@ -242,7 +243,12 @@ export default function App() {
 
   // Zmiana typu: promień dociągamy do listy katalogowej danego typu.
   const setType = (typeId: FrontTypeId) =>
-    setConfig((c) => ({ ...c, typeId, radiusMm: allowedRadius(typeId, c.radiusMm) }))
+    setConfig((c) =>
+      c.typeId === typeId
+        ? c
+        : // Przedłużenia znaczą co innego w każdym typie – po zmianie typu startujemy od zera.
+          { ...c, typeId, radiusMm: allowedRadius(typeId, c.radiusMm), extLeftMm: 0, extRightMm: 0 },
+    )
   // Laminat tylko gładki: przy wyborze laminatu ryflowanie wraca do FG.
   const setMaterial = (materialId: MaterialId) =>
     setConfig((c) => ({
@@ -307,7 +313,7 @@ export default function App() {
   if (t === 'przedluzane') {
     const min = config.radiusMm + EXTENDED_LENGTH.minAboveRadius
     dimCards.push(
-      <DimCard key="L" icon={<DimIcon name="l" />} title="Wymiar L – od lica łuku do końca" letter="L">
+      <DimCard key="L" icon={<IconL />} title="Wymiar L – od lica łuku do końca" letter="L">
         <MmInput
           key={`L-${config.radiusMm}`}
           id="length"
@@ -319,12 +325,24 @@ export default function App() {
           onChange={(v) => set('lengthMm', v)}
         />
       </DimCard>,
+      <DimCard key="N1" icon={<IconL n1={leftMm > 0 ? 'on' : 'off'} />} title="Przedłużenie N1 – przed łukiem" letter="N1">
+        <MmInput
+          id="ext-n1"
+          label="Przedłużenie N1"
+          value={config.extLeftMm}
+          min={CORNER_EXTENSION.min}
+          max={CORNER_EXTENSION.max}
+          zeroIsEmpty
+          caption={`brak albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
+          onChange={(v) => set('extLeftMm', v)}
+        />
+      </DimCard>,
     )
   }
   if (t === 'obustronne') {
     const zMin = config.radiusMm + DOUBLE_Z.minAboveRadius
     dimCards.push(
-      <DimCard key="W" icon={<DimIcon name="w" />} title="Szerokość W" letter="W">
+      <DimCard key="W" icon={<IconW />} title="Szerokość W" letter="W">
         <ChoiceGroup
           name="width"
           variant="grid"
@@ -334,7 +352,7 @@ export default function App() {
           choices={DOUBLE_WIDTHS.map((w) => ({ value: w, label: w }))}
         />
       </DimCard>,
-      <DimCard key="Z" icon={<DimIcon name="z" />} title="Boki Z – przedłużenie boków" letter="Z">
+      <DimCard key="Z" icon={<IconZ />} title="Boki Z – przedłużenie boków" letter="Z">
         <MmInput
           id="z"
           label="Wymiar Z – przedłużenie boków"
@@ -403,7 +421,7 @@ export default function App() {
               t === 'narozne'
                 ? `Dodaj przedłużenie lewe i prawe (${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm)`
                 : t === 'przedluzane'
-                  ? 'Określ wymiar L – od lica łuku do końca'
+                  ? `Określ wymiar L i opcjonalnie przedłużenie N1 (${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm)`
                   : 'Wybierz szerokość W i dodaj przedłużenie boków Z',
             body: <div className="dim-cards">{dimCards}</div>,
           },

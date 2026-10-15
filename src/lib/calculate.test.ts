@@ -109,3 +109,15 @@ describe('stare kody ryflowań', () => {
     expect(normalizeConfiguration({ flutingId: 'FR03' }).flutingId).toBe('FR03')
   })
 })
+
+describe('przedłużany z N1', () => {
+  it('N1 przed łukiem: kod FGP-N1-…, dodatkowe mm w rozwinięciu, zakres 10–50', () => {
+    const base = { ...DEFAULT_CONFIGURATION, typeId: 'przedluzane' as const, radiusMm: 100, lengthMm: 700 }
+    const without = calculate(base)
+    const withN1 = calculate({ ...base, extLeftMm: 30 })
+    expect(without.code).toBe('FGP-R100-L700')
+    expect(withN1.code).toBe('FGP-N1-R100-L700')
+    expect(withN1.developedMm - without.developedMm).toBeCloseTo(30)
+    expect(calculate({ ...base, extLeftMm: 5 }).errors.join(' ')).toContain('N1')
+  })
+})

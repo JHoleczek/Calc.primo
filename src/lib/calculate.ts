@@ -79,9 +79,12 @@ export function normalizeConfiguration(config: Partial<Configuration> & { ending
   return { ...DEFAULT_CONFIGURATION, ...rest, ...legacy, ...(flutingId && { flutingId }) }
 }
 
-/** Zakończenie narożnika (N0/N1/N2) z wpisanych przedłużeń; inne typy – N0. */
+/** Zakończenie (N0/N1/N2) z wpisanych przedłużeń: narożny – lewe/prawe, przedłużany – N1 przed łukiem; inne – N0. */
 export function endingOf(config: Pick<Configuration, 'typeId' | 'extLeftMm' | 'extRightMm'>): EndingId {
-  return config.typeId === 'narozne' ? cornerEnding(config) : 'n0'
+  if (config.typeId === 'narozne') return cornerEnding(config)
+  // Przedłużany: opcjonalne N1 – przedłużenie przed łukiem (pole „lewe”).
+  if (config.typeId === 'przedluzane') return extensionMm(config.extLeftMm) > 0 ? 'n1' : 'n0'
+  return 'n0'
 }
 
 /** Wysokość wymagająca laminatu gładkiego i dopłaty. */
@@ -123,6 +126,9 @@ const mmText = (mm: number) => (Number.isFinite(mm) ? `${Math.round(mm)} mm` : '
 
 /** Opis przedłużeń narożnika, np. „przedłużenie lewe 30 mm, prawe 50 mm”; pusty dla N0 i innych typów. */
 export function extensionText(config: Configuration): string {
+  if (config.typeId === 'przedluzane') {
+    return extensionMm(config.extLeftMm) > 0 ? `przedłużenie N1 ${mmText(config.extLeftMm)}` : ''
+  }
   if (config.typeId !== 'narozne') return ''
   const parts = [
     ...(extensionMm(config.extLeftMm) > 0 ? [`lewe ${mmText(config.extLeftMm)}`] : []),
@@ -139,7 +145,7 @@ function catalogCode(c: Configuration): string {
     case 'narozne':
       return `${type}-${endingOf(c).toUpperCase()}-R${pad3(c.radiusMm)}`
     case 'przedluzane':
-      return `${type}-R${pad3(c.radiusMm)}-L${Math.round(c.lengthMm)}`
+      return `${type}-${endingOf(c) === 'n1' ? 'N1-' : ''}R${pad3(c.radiusMm)}-L${Math.round(c.lengthMm)}`
     case 'obustronne':
       return c.sideExtension
         ? `${DOUBLE_EXTENDED_CODE}-R${c.radiusMm}-W${c.widthMm}-Z${Math.round(c.zMm)}`
@@ -171,6 +177,10 @@ export function calculate(config: Configuration): Result {
     errors.push(`Przy wysokości H powyżej ${TALL_HEIGHT_MM} mm dostępny jest tylko laminat gładki – zmień materiał.`)
   }
   if (config.typeId === 'przedluzane') {
+    const n1 = extensionMm(config.extLeftMm)
+    if (n1 > 0 && !(n1 >= CORNER_EXTENSION.min && n1 <= CORNER_EXTENSION.max)) {
+      errors.push(`Przedłużenie N1: wpisz 0 (brak) albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm.`)
+    }
     const min = config.radiusMm + EXTENDED_LENGTH.minAboveRadius
     if (!(config.lengthMm >= min && config.lengthMm <= EXTENDED_LENGTH.max)) {
       errors.push(`Wymiar L dla R${config.radiusMm} musi mieścić się w zakresie ${min}–${EXTENDED_LENGTH.max} mm.`)

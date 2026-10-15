@@ -80,7 +80,7 @@ export function finishText(config: Configuration): string {
   return `${material.name}${color ? `, ${color}` : ''}`
 }
 
-/** Przedłużenia w skrócie do tabeli: „0 mm”, „lewe 30 / prawe 50 mm”, „600 mm (L 700)”, „2 × 140 mm (Z 200)”. */
+/** Przedłużenia w skrócie do tabeli: „0 mm”, „lewe 30 / prawe 50 mm”, „600 mm (L 700) + N1 30 mm”, „2 × 140 mm (Z 200)”. */
 export function extensionsText(config: Configuration): string {
   const r = config.radiusMm
   switch (config.typeId) {
@@ -89,8 +89,10 @@ export function extensionsText(config: Configuration): string {
       const right = extensionMm(config.extRightMm)
       return left || right ? `lewe ${left} / prawe ${right} mm` : '0 mm'
     }
-    case 'przedluzane':
-      return `${Math.round(config.lengthMm - r)} mm (L ${Math.round(config.lengthMm)})`
+    case 'przedluzane': {
+      const n1 = extensionMm(config.extLeftMm)
+      return `${Math.round(config.lengthMm - r)} mm (L ${Math.round(config.lengthMm)})${n1 ? ` + N1 ${n1} mm` : ''}`
+    }
     case 'obustronne':
       return config.sideExtension ? `2 × ${Math.round(config.zMm - r)} mm (Z ${Math.round(config.zMm)})` : '0 mm'
     default:
