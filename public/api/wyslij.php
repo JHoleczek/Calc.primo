@@ -70,6 +70,9 @@ $notes = $str($contact['notes'] ?? '', 2000);
 if (!preg_match('/^[0-9 +()\-]{6,40}$/', $phone) || strlen(preg_replace('/\D/', '', $phone)) < 9) {
     fail(400, 'Podaj poprawny numer telefonu.');
 }
+if ($company === '') {
+    fail(400, 'Podaj imię i nazwisko albo nazwę firmy.');
+}
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     fail(400, 'Podaj poprawny adres e-mail.');
 }
@@ -250,48 +253,83 @@ foreach ($items as $it) {
 }
 $sumText = zl($sum) . ($unpriced ? " + $unpriced poz. do ustalenia" : '');
 
-// Mail do biura: krótki nagłówek z kontaktem, tabela pozycji, na dole cena za całość.
+// Mail do biura – gotowy do przekazania klientowi („Przekaż dalej”): dane klienta, uwagi, tabela pozycji,
+// suma netto, informacja o dekorze, przycisk akceptacji i stopka firmy. Bez danych wewnętrznych (m², linki).
 $images = [];
-$cell = 'padding:6px 8px;border:1px solid #ddd;vertical-align:top';
-$num2 = static fn(?float $v): string => $v === null ? '—' : number_format($v, 2, ',', ' ');
-$cols = ['LP', 'Kod', 'Wysokość', 'Przedłużenia', 'Dekor', 'Ryflowanie', 'Bryła', 'Cena jedn.', 'Ilość', 'm²'];
+$vat = 0.23;
+$fmtPln = static fn(float $v): string => number_format($v, 0, ',', ' ') . ' PLN';
+$sumNet = $unpriced ? null : $sum;
+$hasLaminate = false;
+$th = 'padding:9px 8px;font-size:11px;letter-spacing:.06em;text-align:left';
+$td = 'padding:10px 8px;border-bottom:1px solid #e6e3dc;vertical-align:top';
 $rows = '';
 $textRows = '';
 foreach ($items as $i => $it) {
     $lp = $i + 1;
-    $values = [
-        (string)$lp,
-        $it['code'],
-        $it['height'] !== null ? $it['height'] . ' mm' : '—',
-        $it['ext'] !== '' ? $it['ext'] : '—',
-        $it['finish'] !== '' ? $it['finish'] : '—',
-        trim($it['fluting'] . ' ' . $it['flutingName']),
-        $it['body'] ? 'TAK' : 'NIE',
-        zl($it['unit']),
-        $it['qty'] . ' szt.',
-        $num2($it['area']),
-    ];
-    $rows .= '<tr>' . implode('', array_map(static fn($v, $k) => '<td style="' . $cell . ($k >= 7 ? ';text-align:right;white-space:nowrap' : '') . '">' . h($v) . '</td>', $values, array_keys($values))) . '</tr>';
-    $textRows .= implode(' | ', $values) . "\n";
+    $laminate = str_starts_with($it['finish'], 'Laminat');
+    $hasLaminate = $hasLaminate || $laminate;
+    // Dekor po stronie klienta: w tabeli tylko gwiazdka, wyjaśnienie pod sumą.
+    $finish = preg_replace('/\s*\(koszt laminatu po stronie klienta\)$/u', '', $it['finish']);
+    $rows .= '<tr>'
+        . '<td style="' . $td . '">' . $lp . '</td>'
+        . '<td style="' . $td . '"><b>' . h($it['code']) . '</b></td>'
+        . '<td style="' . $td . ';white-space:nowrap">' . ($it['height'] !== null ? $it['height'] . '&nbsp;mm' : '—') . '</td>'
+        . '<td style="' . $td . '">' . h($finish !== '' ? $finish : '—') . ($laminate ? '&nbsp;<sup style="color:#b08a3e">*</sup>' : '') . '</td>'
+        . '<td style="' . $td . '">' . h($it['fluting']) . '</td>'
+        . '<td style="' . $td . '">' . ($it['body'] ? 'TAK' : 'NIE') . '</td>'
+        . '<td style="' . $td . ';text-align:right;white-space:nowrap">' . $it['qty'] . '&nbsp;szt.</td>'
+        . '</tr>';
+    $textRows .= "$lp | {$it['code']} | " . ($it['height'] ?? '—') . " mm | $finish" . ($laminate ? ' *' : '') . " | {$it['fluting']} | " . ($it['body'] ? 'TAK' : 'NIE') . " | {$it['qty']} szt.\n";
 }
 
-$who = $company !== '' ? $company : $email;
-$contact = implode(' · ', array_filter([$company, $email, $phone, $notes !== '' ? "Uwagi: $notes" : '']));
-$officeHtml = '<!doctype html><html><body style="margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;color:#151515;font-size:13px">'
-    . '<p style="margin:0 0 12px"><b>' . h($number) . '</b> · ' . h($date) . '<br>' . h($contact) . '</p>'
-    . '<table style="border-collapse:collapse;font-size:13px">'
-    . '<tr style="background:#f0ece2;text-align:left">' . implode('', array_map(static fn($c) => '<th style="' . $cell . '">' . h($c) . '</th>', $cols)) . '</tr>'
-    . $rows
-    . '<tr><td colspan="9" style="' . $cell . ';text-align:right;font-weight:bold">CENA ZA CAŁOŚĆ (netto)</td>'
-    . '<td style="' . $cell . ';text-align:right;font-weight:bold;white-space:nowrap">' . h($sumText) . '</td></tr>'
-    . '</table>'
-    . ($offerUrl !== '' ? '<p style="margin:12px 0 0;font-size:12px"><a href="' . h($offerUrl) . '">Utwórz ofertę</a></p>' : '')
-    . '</body></html>';
+$who = $company;
+$telHref = 'tel:' . preg_replace('/[^0-9+]/', '', $phone);
+$officePhone = '691-766-559';
+$acceptHref = 'mailto:' . $config['client_reply_to'] . '?subject=' . rawurlencode("Akceptuję wycenę $number");
+$sumHtml = $sumNet === null
+    ? '<div style="font-size:15px">Suma NETTO: <b style="font-size:20px">' . h($sumText) . '</b></div>'
+    : '<div style="font-size:15px">Suma NETTO: <b style="font-size:20px">' . h($fmtPln($sumNet)) . '</b></div>'
+      . '<div style="font-size:13px;color:#8a8780;margin-top:2px">+23% VAT · brutto ' . h($fmtPln(round($sumNet * (1 + $vat)))) . '</div>';
+$label = 'color:#8a8780;padding-right:24px';
+$officeHtml = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>'
+    . '<body style="margin:0;padding:24px 12px;background:#f2f1ee;font-family:Arial,Helvetica,sans-serif;color:#151515">'
+    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
+    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff">'
+    . '<tr><td style="background:#151515;padding:18px 28px">'
+    . '<span style="color:#edc880;font-size:13px;letter-spacing:.12em;font-weight:bold">PRIMO MEBLE</span>'
+    . '<span style="color:#a9a8a0;font-size:13px;float:right">Wycena nr ' . h($number) . '</span></td></tr>'
+    . '<tr><td style="padding:28px 28px 8px"><table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.7">'
+    . '<tr><td style="' . $label . '">Klient:</td><td><b>' . h($company) . '</b></td></tr>'
+    . '<tr><td style="' . $label . '">Mail:</td><td><a href="mailto:' . h($email) . '" style="color:#151515">' . h($email) . '</a></td></tr>'
+    . '<tr><td style="' . $label . '">Tel:</td><td><a href="' . h($telHref) . '" style="color:#151515">' . h($phone) . '</a></td></tr>'
+    . '</table></td></tr>'
+    . ($notes !== '' ? '<tr><td style="padding:12px 28px 4px"><div style="font-size:11px;letter-spacing:.1em;color:#8a8780;font-weight:bold">UWAGI</div>'
+        . '<div style="font-size:14px;line-height:1.5;padding:8px 12px;margin-top:6px;background:#f7f5ef;border-left:3px solid #edc880">' . nl2br(h($notes)) . '</div></td></tr>' : '')
+    . '<tr><td style="padding:24px 28px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;border-collapse:collapse">'
+    . '<tr style="background:#151515;color:#ffffff">'
+    . '<th style="' . $th . '">LP</th><th style="' . $th . '">PRODUKT</th><th style="' . $th . '">H</th><th style="' . $th . '">WYGLĄD</th>'
+    . '<th style="' . $th . '">RYFLOWANIE</th><th style="' . $th . '">BRYŁA</th><th style="' . $th . ';text-align:right">ILOŚĆ</th></tr>'
+    . $rows . '</table></td></tr>'
+    . '<tr><td style="padding:18px 28px 0;text-align:right">' . $sumHtml . '</td></tr>'
+    . ($hasLaminate ? '<tr><td style="padding:16px 28px 0"><div style="font-size:12px;line-height:1.5;color:#6b5a33;background:#fbf6ea;padding:10px 12px">'
+        . '<b>*</b> Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.</div></td></tr>' : '')
+    . '<tr><td style="padding:28px 28px 32px" align="center">'
+    . '<a href="' . h($acceptHref) . '" style="display:inline-block;background:#edc880;color:#151515;text-decoration:none;font-weight:bold;font-size:14px;letter-spacing:.08em;padding:14px 34px">AKCEPTUJĘ WYCENĘ</a>'
+    . '<div style="font-size:12px;color:#8a8780;margin-top:10px">lub zadzwoń: <a href="tel:+48691766559" style="color:#8a8780">' . $officePhone . '</a></div></td></tr>'
+    . '<tr><td style="background:#151515;padding:20px 28px;color:#a9a8a0;font-size:12px;line-height:1.6">'
+    . '<span style="color:#edc880;font-weight:bold;letter-spacing:.1em">PRIMO MEBLE</span><br>'
+    . 'Primo Duda Krzysztof, Marek Skiba s.c. · ul. Michała Glinki 7, 41-905 Bytom<br>'
+    . 'NIP 6262940701 · tel. ' . $officePhone . ' · <a href="https://www.primomeble.pl" style="color:#a9a8a0">www.primomeble.pl</a></td></tr>'
+    . '</table></td></tr></table></body></html>';
 
-$officeText = "$number · $date\n$contact\n\n" . implode(' | ', $cols) . "\n$textRows\nCENA ZA CAŁOŚĆ (netto): $sumText\n"
-    . ($offerUrl !== '' ? "\nUtwórz ofertę: $offerUrl\n" : '');
+$officeText = "PRIMO MEBLE – Wycena nr $number\n\nKlient: $company\nMail: $email\nTel: $phone\n"
+    . ($notes !== '' ? "\nUWAGI: $notes\n" : '')
+    . "\nLP | PRODUKT | H | WYGLĄD | RYFLOWANIE | BRYŁA | ILOŚĆ\n$textRows\n"
+    . ($sumNet === null ? "Suma NETTO: $sumText\n" : 'Suma NETTO: ' . $fmtPln($sumNet) . "\n+23% VAT · brutto " . $fmtPln(round($sumNet * (1 + $vat))) . "\n")
+    . ($hasLaminate ? "\n* Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.\n" : '')
+    . "\nAkceptuję wycenę: odpowiedz na tego maila lub zadzwoń $officePhone.\n\nPRIMO MEBLE · Primo Duda Krzysztof, Marek Skiba s.c. · ul. Michała Glinki 7, 41-905 Bytom · NIP 6262940701 · www.primomeble.pl\n";
 
-$sentOffice = send_mail($config, $config['office_email'], "Nowe zapytanie $number – $who", $officeHtml, $officeText, $email, $images);
+$sentOffice = send_mail($config, $config['office_email'], "Wycena $number – $who", $officeHtml, $officeText, $email, $images);
 if (!$sentOffice) {
     fail(500, "Nie udało się wysłać wiadomości (zapytanie zapisane jako $number).");
 }

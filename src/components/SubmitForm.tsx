@@ -32,7 +32,7 @@ export function SubmitForm({ lines, onClear }: Props) {
   const submit = async () => {
     setTouched(true)
     if (empty || invalid || Object.keys(errors).length > 0) {
-      const first = (['phone', 'email'] as const).find((k) => errors[k])
+      const first = (['company', 'phone', 'email'] as const).find((k) => errors[k])
       if (first) document.getElementById(`quote-${first}`)?.focus()
       return
     }
@@ -139,9 +139,14 @@ export function SubmitForm({ lines, onClear }: Props) {
       <p className="cta__desc">Zostaw kontakt – przygotujemy wycenę koszyka i odezwiemy się. To nie jest zamówienie ani płatność.</p>
 
       <div className="cta__fields">
+        {field('company', 'Imię i nazwisko lub firma *', {
+          type: 'text',
+          autoComplete: 'name',
+          placeholder: 'np. Jan Kowalski lub Meble Kowalski sp. z o.o.',
+          required: true,
+        })}
         {field('phone', 'Telefon *', { type: 'tel', autoComplete: 'tel', inputMode: 'tel', required: true })}
         {field('email', 'E-mail *', { type: 'email', autoComplete: 'email', required: true })}
-        {field('company', 'Firma (opcjonalnie)', { type: 'text', autoComplete: 'organization' })}
         <label className="field">
           <span className="field__label">Uwagi (opcjonalnie)</span>
           <textarea id="quote-notes" className={`text-input${contact.notes.trim() ? ' text-input--filled' : ''}`} rows={3} value={contact.notes} onChange={set('notes')} />

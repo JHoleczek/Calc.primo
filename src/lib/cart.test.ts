@@ -88,10 +88,11 @@ describe('koszyk', () => {
     expect(cartTotals(lines).unpriced).toBe(1)
   })
 
-  it('wymaga telefonu i e-maila, firma opcjonalna', () => {
+  it('wymaga klienta (imię i nazwisko lub firma), telefonu i e-maila', () => {
     expect(contactErrors({ phone: '', email: '', company: '', notes: '' })).toHaveProperty('phone')
+    expect(contactErrors({ phone: '', email: '', company: '', notes: '' })).toHaveProperty('company')
     expect(contactErrors({ phone: '12', email: 'x', company: '', notes: '' })).toHaveProperty('email')
-    expect(contactErrors({ phone: '+48 600 100 200', email: 'jan@firma.pl', company: '', notes: '' })).toEqual({})
+    expect(contactErrors({ phone: '+48 600 100 200', email: 'jan@firma.pl', company: 'Jan Kowalski', notes: '' })).toEqual({})
   })
 
   it('koszyk zapisany starszą wersją dostaje nowe pola', () => {

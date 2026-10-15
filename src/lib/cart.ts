@@ -131,6 +131,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 /** Błędy danych kontaktowych (telefon i e-mail wymagane, firma opcjonalna). */
 export function contactErrors(c: Contact): Partial<Record<keyof Contact, string>> {
   const errors: Partial<Record<keyof Contact, string>> = {}
+  if (!c.company.trim()) errors.company = 'Podaj imię i nazwisko albo nazwę firmy.'
   const digits = c.phone.replace(/\D/g, '')
   if (!c.phone.trim()) errors.phone = 'Podaj numer telefonu.'
   else if (!PHONE_RE.test(c.phone.trim()) || digits.length < 9 || digits.length > 15)
