@@ -5,7 +5,7 @@ import { sendQuote } from '../lib/sendQuote'
 
 interface Props {
   lines: CartLine[]
-  /** Wyczyszczenie koszyka po wysłaniu zapytania. */
+  /** Wyczyszczenie koszyka – od razu po udanym wysłaniu zapytania. */
   onClear: () => void
 }
 
@@ -41,6 +41,8 @@ export function SubmitForm({ lines, onClear }: Props) {
       // Pole-pułapka na boty: wypełnione = udajemy sukces bez wysyłki.
       if (!honey) setNumber((await sendQuote(lines, contact)).number)
       setStatus('sent')
+      // Zapytanie poszło – koszyk czyścimy od razu (podziękowanie zostaje na ekranie).
+      onClear()
     } catch (e) {
       // Odpowiedź serwisu wysyłki (np. prośba o aktywację) – pomaga ustalić przyczynę.
       setErrorDetail(e instanceof Error ? e.message : String(e))
@@ -71,16 +73,14 @@ export function SubmitForm({ lines, onClear }: Props) {
           {contact.phone.trim() ? ` lub odezwiemy się pod numer ${contact.phone.trim()}` : ''}.
         </p>
         <p className="cta__desc">To nie jest zamówienie ani płatność – zamówienie składasz dopiero po akceptacji oferty.</p>
+        <p className="cta__desc">Koszyk został wyczyszczony.</p>
         <div className="cta__actions">
           <button
             type="button"
             className="link-btn"
-            onClick={() => {
-              onClear()
-              setStatus('idle')
-            }}
+            onClick={() => setStatus('idle')}
           >
-            Wyczyść koszyk i zacznij od nowa
+            Zacznij nowe zapytanie
           </button>
         </div>
       </div>
