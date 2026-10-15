@@ -16,9 +16,9 @@ return [
     // Odpowiedzi klientów trafiają do tej skrzynki (przekierowanie ustawia się w panelu cyber_folks).
     'client_reply_to' => 'kalkulator@primomeble.pl',
 
-    // Ukryta kopia (BCC) każdego potwierdzenia wysłanego klientowi – archiwum wysłanych maili w Gmailu.
-    // Klient tego adresu nie widzi. Pusty = bez kopii.
-    'archive_bcc' => 'kalkulator@primomeble.pl',
+    // Ukryta kopia (BCC) potwierdzenia dla klienta – wyłączona: potwierdzenie idzie tylko do klienta,
+    // a do biura trafia osobny mail z wyceną. Pusty = bez kopii.
+    'archive_bcc' => '',
 
     // Adres kalkulatora (z ukośnikiem na końcu) – z niego budowane są linki „Rzut” i „Utwórz ofertę”.
     'site_url' => 'https://primomeble.pl/kalkulator/',
