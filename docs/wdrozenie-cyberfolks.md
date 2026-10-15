@@ -30,7 +30,7 @@ W panelu ustaw PHP w wersji **8.1 lub nowszej**.
 2. W repozytorium GitHub: Settings → Secrets and variables → Actions → dodaj:
    - `FTP_SERVER` – adres serwera FTP z panelu,
    - `FTP_USERNAME`, `FTP_PASSWORD`,
-   - `FTP_DIR` – katalog docelowy z ukośnikiem na końcu, np. `/domains/primomeble.pl/public_html/kalkulator/`.
+   - konto FTP musi startować w katalogu kalkulatora (`public_html/kalkulator`) – wgrywanie idzie do jego „/”.
 3. Każdy push uruchamia „Deploy na cyber_folks” (zakładka Actions). Bez sekretów krok wgrywania jest pomijany.
 
 ## 4. Test po wdrożeniu

@@ -1,6 +1,6 @@
 # Publikacja kalkulatora na hostingu cyber_folks (FTP) – wersja z własną wysyłką zapytań (api/wyslij.php).
 # Uruchamia się przy pushu, ale wgrywa pliki tylko wtedy, gdy w repozytorium są ustawione sekrety FTP
-# (Settings → Secrets and variables → Actions): FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_DIR.
+# (Settings → Secrets and variables → Actions): FTP_SERVER, FTP_USERNAME, FTP_PASSWORD (konto FTP z katalogiem kalkulatora).
 name: Deploy na cyber_folks
 
 on:
@@ -31,7 +31,7 @@ jobs:
       - run: npx tsc -b && npx vite build --base=./
       - name: Brak sekretów FTP – pomijam wgrywanie
         if: env.HAS_FTP != 'true'
-        run: echo "Ustaw sekrety FTP_SERVER, FTP_USERNAME, FTP_PASSWORD i FTP_DIR, aby wgrywać na cyber_folks."
+        run: echo "Ustaw sekrety FTP_SERVER, FTP_USERNAME i FTP_PASSWORD, aby wgrywać na cyber_folks."
       # lftp: szyfrowane FTP (FTPS), bez usuwania plików na serwerze (dane zapytań w api/data zostają).
       # Błędy połączenia trafiają do adnotacji przebiegu, żeby było widać przyczynę bez pobierania logów.
       - name: Wgranie przez FTPS
