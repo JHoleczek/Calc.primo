@@ -41,41 +41,33 @@ jobs:
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           # Hasło tylko w zmiennej środowiskowej (lftp --env-password) – bez wstawiania do polecenia.
           LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_DIR: ${{ secrets.FTP_DIR }}
+          # Konto FTP startuje od razu w katalogu kalkulatora (primomeble.pl/kalkulator), więc cel to „/”.
+          TARGET: /
         run: |
           sudo apt-get update -qq > /dev/null && sudo apt-get install -y -qq lftp > /dev/null
           set +e
-          # Szybki test, czy serwer w ogóle przyjmuje połączenia na porcie 21 (blokady zagraniczne / firewall).
-          if timeout 10 bash -c "</dev/tcp/$FTP_SERVER/21" 2>/dev/null; then echo "::notice::Port 21 na $FTP_SERVER otwarty"; else echo "::error::Brak połączenia z $FTP_SERVER:21 (serwer odrzuca połączenia z GitHuba – sprawdź blokadę FTP z zagranicy w panelu)"; fi
-          lftp -c "
-            debug 3;
-            set ftp:ssl-force true;
-            set ftp:ssl-protect-data true;
-            set ssl:verify-certificate yes;
-            set ftp:passive-mode true;
-            set net:timeout 20;
-            set net:max-retries 2;
-            set net:reconnect-interval-base 5;
-            open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER;
-            mirror --reverse --verbose --parallel=3 --exclude-glob api/data/ dist/ \"$FTP_DIR\"
-          " > lftp.log 2>&1
+          ftp() {
+            lftp -c "set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes;
+              set ftp:passive-mode true; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 5;
+              open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER; $1"
+          }
+          ftp "debug 3; mirror --reverse --verbose --parallel=3 --exclude-glob api/data/ dist/ $TARGET" > lftp.log 2>&1
           code=$?
           cat lftp.log
           if [ $code -ne 0 ]; then
-            grep -E '\*\*\*\*|<---|--->|Fatal|refused|timed out|certificate|Login|Connect' lftp.log | grep -v PASS | head -n 25 | sed 's/^/::error::/'
-            # Diagnostyka bez hasła: czy serwer rozmawia bez szyfrowania (problem z TLS) czy zrywa każde połączenie (blokada IP).
-            lftp -c "debug 3; set ftp:ssl-allow false; set net:max-retries 1; set net:timeout 15; open ftp://$FTP_SERVER; quote NOOP" > diag.log 2>&1
-            grep -E '\*\*\*\*|<---|--->' diag.log | head -n 8 | sed 's/^/::warning::bez TLS: /'
-            echo "::warning::IP runnera: $(curl -s https://api.ipify.org)"
+            grep -E '\*\*\*\*|<---|Fatal|refused|timed out|certificate|Login' lftp.log | grep -v PASS | head -n 20 | sed 's/^/::error::/'
             exit $code
           fi
-          echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików do $FTP_DIR"
-          # Gdzie dokładnie trafiły pliki (pełna ścieżka na serwerze) i czy jest tam skrypt wysyłki.
-          lftp -c "set ftp:ssl-force true; set ssl:verify-certificate yes; open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER; cd \"$FTP_DIR\"; pwd; cls -l api/wyslij.php index.html" > where.log 2>&1
-          sed 's/^/::notice::serwer: /' where.log | head -n 5
-          # Diagnostyka: którą wersję strona faktycznie podaje i gdzie na koncie leżą inne kopie kalkulatora.
-          live=$(curl -s https://primomeble.pl/kalkulator/ | grep -o 'assets/index-[^"]*\.js' | head -1)
-          echo "::notice::na żywo: $live · wgrane: $(grep -o 'assets/index-[^"]*\.js' dist/index.html)"
-          curl -sI https://primomeble.pl/kalkulator/ | grep -iE '^(server|x-litespeed|cache|age|x-cache|cf-)' | sed 's/^/::notice::nagłówek: /'
-          lftp -c "set ftp:ssl-force true; set ssl:verify-certificate yes; open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER; cls -l /; cls -l /kalkulator/index.html /kalkulator/api; cls -l /public_html | head -n 5" > find.log 2>&1
-          grep -v '^\s*$' find.log | sed 's/^/::notice::kopia: /' | head -n 40
+          echo "::notice::Wgrano $(grep -c 'Transferring file' lftp.log) plików"
+          # Sprzątanie po wcześniejszym wgrywaniu do złej ścieżki (kopia w kalkulator/domains/…).
+          ftp "rm -r -f ${TARGET}domains" > /dev/null 2>&1
+          # Kontrola: czy strona na żywo podaje właśnie wgraną wersję.
+          sleep 5
+          live=$(curl -s -H 'Cache-Control: no-cache' "https://primomeble.pl/kalkulator/?v=$GITHUB_RUN_ID" | grep -o 'assets/index-[^"]*\.js' | head -1)
+          built=$(grep -o 'assets/index-[^"]*\.js' dist/index.html)
+          if [ "$live" = "$built" ]; then
+            echo "::notice::Na żywo: nowa wersja ($built)"
+          else
+            echo "::error::Na żywo jest inna wersja ($live) niż wgrana ($built)"
+            exit 1
+          fi
