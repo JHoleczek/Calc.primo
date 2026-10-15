@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChoiceGroup } from './components/ChoiceGroup'
 import { DimIcon } from './components/DimIcon'
 import { IconL, IconW, IconZ } from './components/LineIcons'
@@ -26,6 +26,7 @@ import {
 import { Cart } from './components/Cart'
 import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CookieNotice, PrivacyDialog, SiteFooter } from './components/SiteFooter'
+import { SentNotice } from './components/SentNotice'
 import { SubmitForm } from './components/SubmitForm'
 import { BODY_ICON, TYPE_ICONS } from './config/images'
 import { BODY_SURCHARGE } from './config/pricing'
@@ -192,6 +193,8 @@ export default function App() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [cartMessage, setCartMessage] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sent, setSent] = useState<{ number: string | null; email: string } | null>(null)
+  const closeSent = useCallback(() => setSent(null), [])
   // Polityka prywatności (opcjonalnie od razu na sekcji o cookies).
   const [privacy, setPrivacy] = useState<{ open: boolean; section?: 'cookies' }>({ open: false })
   const openPrivacy = (section?: 'cookies') => setPrivacy({ open: true, section })
@@ -592,6 +595,7 @@ export default function App() {
 
       <CookieNotice onPrivacy={openPrivacy} />
       <PrivacyDialog open={privacy.open} section={privacy.section} onClose={() => setPrivacy({ open: false })} />
+      {sent && <SentNotice number={sent.number} email={sent.email} onClose={closeSent} />}
       <CartButton count={pieces} open={drawerOpen} onClick={() => setDrawerOpen(true)} />
       <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <Cart
@@ -609,9 +613,16 @@ export default function App() {
           footer={
             <SubmitForm
               lines={lines}
-              onClear={() => {
+              onSent={(receipt) => {
+                // Po wysłaniu: koszyk pusty, panel zamknięty, konfigurator od nowa, na środku powiadomienie.
                 setCart([])
                 setEditingId(null)
+                setCartMessage('')
+                setDrawerOpen(false)
+                setConfig(DEFAULT_CONFIGURATION)
+                setFormKey((k) => k + 1)
+                window.scrollTo({ top: 0 })
+                setSent(receipt)
               }}
             />
           }

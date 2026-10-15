@@ -5,24 +5,23 @@ import { sendQuote } from '../lib/sendQuote'
 
 interface Props {
   lines: CartLine[]
-  /** Wyczyszczenie koszyka – od razu po udanym wysłaniu zapytania. */
-  onClear: () => void
+  /** Udane wysłanie: numer zapytania i e-mail klienta (powiadomienie, czyszczenie koszyka, reset). */
+  onSent: (receipt: { number: string | null; email: string }) => void
 }
 
-type Status = 'idle' | 'form' | 'sending' | 'sent' | 'error'
+type Status = 'idle' | 'form' | 'sending' | 'error'
 
 /**
  * Koniec koszyka: „Zapytaj o wycenę” → telefon, e-mail, (firma) → wysyłka do biura.
  * Biuro dostaje m², ceny i proponowaną odpowiedź; klient ich nie widzi.
  */
-export function SubmitForm({ lines, onClear }: Props) {
+export function SubmitForm({ lines, onSent }: Props) {
   const [contact, setContact] = useState<Contact>(EMPTY_CONTACT)
   const [status, setStatus] = useState<Status>('idle')
   const [touched, setTouched] = useState(false)
   const [honey, setHoney] = useState('')
   const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no')
   const [errorDetail, setErrorDetail] = useState('')
-  const [number, setNumber] = useState<string | null>(null)
   const empty = lines.length === 0
   const invalid = lines.some((l) => l.result.errors.length > 0)
   const errors = contactErrors(contact)
@@ -39,10 +38,13 @@ export function SubmitForm({ lines, onClear }: Props) {
     setStatus('sending')
     try {
       // Pole-pułapka na boty: wypełnione = udajemy sukces bez wysyłki.
-      if (!honey) setNumber((await sendQuote(lines, contact)).number)
-      setStatus('sent')
-      // Zapytanie poszło – koszyk czyścimy od razu (podziękowanie zostaje na ekranie).
-      onClear()
+      const number = honey ? null : (await sendQuote(lines, contact)).number
+      // Zapytanie poszło: formularz wraca do stanu początkowego, resztę (powiadomienie, koszyk) robi strona.
+      const email = contact.email.trim()
+      setContact(EMPTY_CONTACT)
+      setTouched(false)
+      setStatus('idle')
+      onSent({ number, email })
     } catch (e) {
       // Odpowiedź serwisu wysyłki (np. prośba o aktywację) – pomaga ustalić przyczynę.
       setErrorDetail(e instanceof Error ? e.message : String(e))
@@ -62,30 +64,6 @@ export function SubmitForm({ lines, onClear }: Props) {
     }
   }
   const phoneLink = <a href={`tel:+48${CONTACT.phone.replace(/\D/g, '')}`}>{CONTACT.phone}</a>
-
-  if (status === 'sent') {
-    return (
-      <div className="submit" id="wyslij" role="status">
-        <h3 className="submit__title">Dziękujemy – zapytanie {number ? `${number} ` : ''}wysłane</h3>
-        <p className="cta__desc">
-          {number ? `Potwierdzenie wysłaliśmy na ${contact.email.trim()}. ` : ''}
-          Biuro sprawdzi wymiary i przygotuje ofertę – prześlemy ją na {contact.email.trim() || 'podany adres e-mail'}
-          {contact.phone.trim() ? ` lub odezwiemy się pod numer ${contact.phone.trim()}` : ''}.
-        </p>
-        <p className="cta__desc">To nie jest zamówienie ani płatność – zamówienie składasz dopiero po akceptacji oferty.</p>
-        <p className="cta__desc">Koszyk został wyczyszczony.</p>
-        <div className="cta__actions">
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => setStatus('idle')}
-          >
-            Zacznij nowe zapytanie
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   if (status === 'idle') {
     return (

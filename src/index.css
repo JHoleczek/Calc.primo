@@ -2797,3 +2797,106 @@ body.offer-mode {
 .dim-card__fields {
   align-items: flex-start;
 }
+
+/* ---------- Powiadomienie po wysłaniu zapytania (środek ekranu, znika samo) ---------- */
+
+.sent-notice {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.55);
+  animation: sent-fade 0.25s ease-out;
+}
+
+.sent-notice__card {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 32px 28px 30px;
+  overflow: hidden;
+  text-align: center;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+  animation: sent-pop 0.3s ease-out;
+}
+
+.sent-notice__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.sent-notice__icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: var(--on-gold);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sent-notice__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.sent-notice__number {
+  margin: 6px 0 0;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+
+.sent-notice__text {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Pasek odliczający do automatycznego zamknięcia. */
+.sent-notice__bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--gold);
+  transform-origin: left;
+  animation: sent-countdown linear forwards;
+}
+
+@keyframes sent-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sent-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes sent-countdown {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sent-notice,
+  .sent-notice__card {
+    animation: none;
+  }
+}
