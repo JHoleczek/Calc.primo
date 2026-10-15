@@ -77,5 +77,5 @@ jobs:
           live=$(curl -s https://primomeble.pl/kalkulator/ | grep -o 'assets/index-[^"]*\.js' | head -1)
           echo "::notice::na żywo: $live · wgrane: $(grep -o 'assets/index-[^"]*\.js' dist/index.html)"
           curl -sI https://primomeble.pl/kalkulator/ | grep -iE '^(server|x-litespeed|cache|age|x-cache|cf-)' | sed 's/^/::notice::nagłówek: /'
-          lftp -c "set ftp:ssl-force true; set ssl:verify-certificate yes; open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER; cd /; pwd; cls -1d domains/*/public_html/kalkulator domains/*/private_html/kalkulator public_html/kalkulator domains/*/public_html/*/kalkulator" > find.log 2>&1
-          sed 's/^/::notice::kopia: /' find.log | head -n 10
+          lftp -c "set ftp:ssl-force true; set ssl:verify-certificate yes; open --env-password -u \"$FTP_USERNAME\" ftp://$FTP_SERVER; cls -l /domains; cls -l /domains/primomeble.pl; cls -l /domains/primomeble.pl/private_html/kalkulator/index.html /domains/primomeble.pl/public_html/kalkulator/index.html; cat /domains/primomeble.pl/private_html/kalkulator/index.html" > find.log 2>&1
+          grep -v '^\s*$' find.log | sed 's/^/::notice::kopia: /' | head -n 40
