@@ -194,7 +194,13 @@ export default function App() {
   const [cartMessage, setCartMessage] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [sent, setSent] = useState<{ number: string | null; email: string } | null>(null)
-  const closeSent = useCallback(() => setSent(null), [])
+  // Po zamknięciu powiadomienia konfigurator wraca na górę (panel na desktopie ma własny scroll).
+  const closeSent = useCallback(() => {
+    setSent(null)
+    const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    document.querySelector('.layout__config')?.scrollTo({ top: 0, behavior })
+    window.scrollTo({ top: 0, behavior })
+  }, [])
   // Polityka prywatności (opcjonalnie od razu na sekcji o cookies).
   const [privacy, setPrivacy] = useState<{ open: boolean; section?: 'cookies' }>({ open: false })
   const openPrivacy = (section?: 'cookies') => setPrivacy({ open: true, section })
@@ -621,7 +627,6 @@ export default function App() {
                 setDrawerOpen(false)
                 setConfig(DEFAULT_CONFIGURATION)
                 setFormKey((k) => k + 1)
-                window.scrollTo({ top: 0 })
                 setSent(receipt)
               }}
             />

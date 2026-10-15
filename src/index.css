@@ -2823,6 +2823,37 @@ body.offer-mode {
   animation: sent-pop 0.3s ease-out;
 }
 
+.sent-notice__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.sent-notice__close:hover,
+.sent-notice__close:focus-visible {
+  color: var(--text);
+  background: rgb(255 255 255 / 0.08);
+}
+
+.sent-notice__close svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 .sent-notice__icon {
   display: inline-grid;
   place-items: center;

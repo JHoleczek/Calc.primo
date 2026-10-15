@@ -20,6 +20,11 @@ export function SentNotice({ number, email, onClose }: { number: string | null; 
   return (
     <div className="sent-notice" onClick={onClose}>
       <div className="sent-notice__card" role="status" aria-live="polite">
+        <button type="button" className="sent-notice__close" onClick={onClose} aria-label="Zamknij powiadomienie">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6 18 18M18 6 6 18" />
+          </svg>
+        </button>
         <span className="sent-notice__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
             <path d="M5 12.5 10 17.5 19 7" />
