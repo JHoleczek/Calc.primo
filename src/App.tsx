@@ -173,7 +173,7 @@ function MmInput({
         </span>
       </label>
       {caption && (
-        <span className="sr-only" id={`${id}-caption`}>
+        <span className="mm-field__caption" id={`${id}-caption`}>
           {caption}
         </span>
       )}
@@ -294,7 +294,7 @@ export default function App() {
           min={CORNER_EXTENSION.min}
           max={CORNER_EXTENSION.max}
           zeroIsEmpty
-          caption={`brak albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
+          caption={`lewe · ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
           onChange={(v) => set('extLeftMm', v)}
         />
         <MmInput
@@ -304,7 +304,7 @@ export default function App() {
           min={CORNER_EXTENSION.min}
           max={CORNER_EXTENSION.max}
           zeroIsEmpty
-          caption={`brak albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
+          caption={`prawe · ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
           onChange={(v) => set('extRightMm', v)}
         />
       </DimCard>,
@@ -321,7 +321,7 @@ export default function App() {
           value={config.lengthMm}
           min={min}
           max={EXTENDED_LENGTH.max}
-          caption={`${min}–${EXTENDED_LENGTH.max} mm`}
+          caption={`od ${min} do ${EXTENDED_LENGTH.max} mm`}
           onChange={(v) => set('lengthMm', v)}
         />
       </DimCard>,
@@ -333,7 +333,7 @@ export default function App() {
           min={CORNER_EXTENSION.min}
           max={CORNER_EXTENSION.max}
           zeroIsEmpty
-          caption={`brak albo ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
+          caption={`0 (brak) lub ${CORNER_EXTENSION.min}–${CORNER_EXTENSION.max} mm`}
           onChange={(v) => set('extLeftMm', v)}
         />
       </DimCard>,
@@ -360,7 +360,7 @@ export default function App() {
           min={zMin}
           max={DOUBLE_Z.max}
           zeroIsEmpty
-          caption={`brak albo ${zMin}–${DOUBLE_Z.max} mm`}
+          caption={`0 (brak) lub ${zMin}–${DOUBLE_Z.max} mm`}
           onChange={(v) => setConfig((c) => ({ ...c, sideExtension: v > 0, zMm: v > 0 ? v : c.zMm }))}
         />
       </DimCard>,

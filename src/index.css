@@ -2786,3 +2786,14 @@ body.offer-mode {
   margin-top: 12px !important;
   font-size: 12px;
 }
+
+/* Zakres pola (np. „0 (brak) lub 10–50 mm”) – drobny podpis pod polem wymiaru. */
+.mm-field__caption {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.dim-card__fields {
+  align-items: flex-start;
+}
