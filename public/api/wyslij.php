@@ -1,8 +1,9 @@
 <?php
 // Zapytanie o wycenę z kalkulatora frontów giętych.
-// 1) sprawdza dane, 2) nadaje numer ZP/RRRR/NNNN, 3) zapisuje kopię zapytania,
-// 4) wysyła mail do biura (z cenami wstępnymi, rysunkami i przyciskiem „Utwórz ofertę”),
-// 5) wysyła klientowi potwierdzenie BEZ cen („to nie jest zamówienie”).
+// 1) sprawdza dane, 2) nadaje numer ZP/RRRR/NNNN, 3) zapisuje zapytanie (z tajnym kluczem wysyłki),
+// 4) wysyła do biura mail wewnętrzny: dane klienta, podgląd wyceny i przycisk „Wyślij wycenę klientowi”,
+// 5) wysyła klientowi potwierdzenie przyjęcia BEZ cen („to nie jest zamówienie”).
+// Gotową wycenę klient dostaje dopiero po kliknięciu przycisku przez biuro (wyslij-wycene.php).
 // Odpowiedź: JSON { ok: true, number } albo { ok: false, message }.
 
 declare(strict_types=1);
@@ -11,7 +12,9 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 
+define('KALKULATOR', true);
 $config = require __DIR__ . '/config.php';
+require __DIR__ . '/lib.php';
 
 function respond(int $status, array $data): never
 {
@@ -23,16 +26,6 @@ function respond(int $status, array $data): never
 function fail(int $status, string $message): never
 {
     respond($status, ['ok' => false, 'message' => $message]);
-}
-
-function h(string $s): string
-{
-    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
-function zl(?float $v): string
-{
-    return $v === null ? 'do ustalenia' : number_format($v, 0, ',', ' ') . ' zł';
 }
 
 // ---------- Wejście ----------
@@ -102,15 +95,6 @@ foreach (array_values($itemsIn) as $i => $it) {
     }
     $num = static fn($v): ?float => is_int($v) || is_float($v) ? max(0.0, min(10_000_000.0, (float)$v)) : null;
 
-    // Miniatura rzutu (PNG) – tylko do maila dla biura.
-    $png = null;
-    if (is_string($it['png'] ?? null) && $it['png'] !== '') {
-        $bin = base64_decode($it['png'], true);
-        if ($bin !== false && strlen($bin) <= 400_000 && str_starts_with($bin, "\x89PNG\r\n\x1a\n")) {
-            $png = $bin;
-        }
-    }
-
     $items[] = [
         'code' => $code,
         'fluting' => $fluting,
@@ -125,7 +109,6 @@ foreach (array_values($itemsIn) as $i => $it) {
         'unit' => $num($it['unit'] ?? null),
         'total' => $num($it['total'] ?? null),
         'rzut' => $rzut,
-        'png' => $png,
     ];
 }
 
@@ -136,14 +119,10 @@ if (!preg_match('/^[A-Za-z0-9_-]{1,30000}$/', $offer)) {
 
 // ---------- Katalog danych, limit, numer ----------
 
-$dataDir = rtrim($config['data_dir'], '/');
-foreach ([$dataDir, "$dataDir/zapytania", "$dataDir/limit"] as $dir) {
-    if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
-        fail(500, 'Błąd serwera (katalog danych).');
-    }
-}
-if (!is_file("$dataDir/.htaccess")) {
-    file_put_contents("$dataDir/.htaccess", "Require all denied\nDeny from all\n");
+try {
+    $dataDir = data_dir($config);
+} catch (RuntimeException $e) {
+    fail(500, $e->getMessage());
 }
 
 // Limit zapytań z jednego IP (skrót adresu, bez zapisywania samego IP).
@@ -179,162 +158,52 @@ $number = sprintf('%s/%s/%04d', $config['number_prefix'], $year, $seq);
 $fileId = str_replace('/', '-', $number);
 $date = date('d.m.Y H:i');
 
-// Kopia zapytania (bez obrazków) – na wypadek problemu z pocztą i do etapu 2 (panel biura).
+// Zapytanie zapisane na serwerze – z niego biuro wysyła wycenę klientowi (tajny klucz w linku).
+$token = bin2hex(random_bytes(16));
 $record = [
     'number' => $number,
     'date' => date('c'),
     'contact' => compact('phone', 'email', 'company', 'notes'),
-    'items' => array_map(static fn($it) => array_diff_key($it, ['png' => 1]), $items),
+    'items' => $items,
     'offer' => $offer,
+    'token' => $token,
+    'sentToClient' => [],
 ];
-file_put_contents("$dataDir/zapytania/$fileId.json", json_encode($record, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX);
-
-// ---------- Poczta ----------
-
-/**
- * Wysyła mail HTML + tekst; obrazki (PNG) dołączone jako inline (cid:).
- * @param array<string, string> $images cid => dane PNG
- */
-function send_mail(array $config, string $to, string $subject, string $html, string $text, string $replyTo, array $images = [], string $bcc = ''): bool
-{
-    $eol = "\r\n";
-    $b64 = static fn(string $s): string => rtrim(chunk_split(base64_encode($s), 76, $eol));
-    $alt = 'alt-' . bin2hex(random_bytes(8));
-    $altPart = "--$alt$eol"
-        . "Content-Type: text/plain; charset=UTF-8$eol"
-        . "Content-Transfer-Encoding: base64$eol$eol" . $b64($text) . $eol
-        . "--$alt$eol"
-        . "Content-Type: text/html; charset=UTF-8$eol"
-        . "Content-Transfer-Encoding: base64$eol$eol" . $b64($html) . $eol
-        . "--$alt--$eol";
-
-    if ($images) {
-        $rel = 'rel-' . bin2hex(random_bytes(8));
-        $contentType = "multipart/related; boundary=\"$rel\"";
-        $body = "--$rel$eol" . "Content-Type: multipart/alternative; boundary=\"$alt\"$eol$eol" . $altPart;
-        foreach ($images as $cid => $png) {
-            $body .= "--$rel$eol"
-                . "Content-Type: image/png; name=\"$cid.png\"$eol"
-                . "Content-Transfer-Encoding: base64$eol"
-                . "Content-ID: <$cid>$eol"
-                . "Content-Disposition: inline; filename=\"$cid.png\"$eol$eol"
-                . $b64($png) . $eol;
-        }
-        $body .= "--$rel--$eol";
-    } else {
-        $contentType = "multipart/alternative; boundary=\"$alt\"";
-        $body = $altPart;
-    }
-
-    $from = $config['from_email'];
-    $headers = implode($eol, [
-        'From: ' . mb_encode_mimeheader($config['from_name'], 'UTF-8', 'B') . " <$from>",
-        "Reply-To: $replyTo",
-        ...($bcc !== '' && filter_var($bcc, FILTER_VALIDATE_EMAIL) ? ["Bcc: $bcc"] : []),
-        'MIME-Version: 1.0',
-        "Content-Type: $contentType",
-        'X-Mailer: kalkulator-frontow',
-    ]);
-    return mail($to, mb_encode_mimeheader($subject, 'UTF-8', 'B'), $body, $headers, '-f' . $from);
+try {
+    save_record($config, $record);
+} catch (RuntimeException $e) {
+    fail(500, $e->getMessage());
 }
 
-$site = $config['site_url'];
-$offerUrl = $offer !== '' ? $site . '#oferta=' . $offer . '&nr=' . rawurlencode($number) : '';
-$sum = 0.0;
-$unpriced = 0;
-$pieces = 0;
-foreach ($items as $it) {
-    $pieces += $it['qty'];
-    if ($it['total'] === null) {
-        $unpriced++;
-    } else {
-        $sum += $it['total'];
-    }
-}
-$sumText = zl($sum) . ($unpriced ? " + $unpriced poz. do ustalenia" : '');
+// ---------- Mail wewnętrzny do biura ----------
 
-// Mail do biura – gotowy do przekazania klientowi („Przekaż dalej”): dane klienta, uwagi, tabela pozycji,
-// suma netto, informacja o dekorze, przycisk akceptacji i stopka firmy. Bez danych wewnętrznych (m², linki).
-$images = [];
-$vat = 0.23;
-$fmtPln = static fn(float $v): string => number_format($v, 0, ',', ' ') . ' PLN';
-$sumNet = $unpriced ? null : $sum;
-$hasLaminate = false;
-$th = 'padding:9px 8px;font-size:11px;letter-spacing:.06em;text-align:left';
-$td = 'padding:10px 8px;border-bottom:1px solid #e6e3dc;vertical-align:top';
-$rows = '';
-$textRows = '';
-foreach ($items as $i => $it) {
-    $lp = $i + 1;
-    $laminate = str_starts_with($it['finish'], 'Laminat');
-    $hasLaminate = $hasLaminate || $laminate;
-    // Dekor po stronie klienta: w tabeli tylko gwiazdka, wyjaśnienie pod sumą.
-    $finish = preg_replace('/\s*\(koszt laminatu po stronie klienta\)$/u', '', $it['finish']);
-    $rows .= '<tr>'
-        . '<td style="' . $td . '">' . $lp . '</td>'
-        . '<td style="' . $td . '"><b>' . h($it['code']) . '</b></td>'
-        . '<td style="' . $td . ';white-space:nowrap">' . ($it['height'] !== null ? $it['height'] . '&nbsp;mm' : '—') . '</td>'
-        . '<td style="' . $td . '">' . h($finish !== '' ? $finish : '—') . ($laminate ? '&nbsp;<sup style="color:#b08a3e">*</sup>' : '') . '</td>'
-        . '<td style="' . $td . '">' . h($it['fluting']) . '</td>'
-        . '<td style="' . $td . '">' . ($it['body'] ? 'TAK' : 'NIE') . '</td>'
-        . '<td style="' . $td . ';text-align:right;white-space:nowrap">' . $it['qty'] . '&nbsp;szt.</td>'
-        . '</tr>';
-    $textRows .= "$lp | {$it['code']} | " . ($it['height'] ?? '—') . " mm | $finish" . ($laminate ? ' *' : '') . " | {$it['fluting']} | " . ($it['body'] ? 'TAK' : 'NIE') . " | {$it['qty']} szt.\n";
-}
-
-$who = $company;
+[, , $quoteText, $quoteCard] = client_quote($config, $record);
+$sendUrl = $config['site_url'] . 'api/wyslij-wycene.php?nr=' . rawurlencode($fileId) . '&t=' . $token;
 $telHref = 'tel:' . preg_replace('/[^0-9+]/', '', $phone);
-$officePhone = '691-766-559';
-$acceptHref = 'mailto:' . $config['client_reply_to'] . '?subject=' . rawurlencode("Akceptuję wycenę $number");
-$sumHtml = $sumNet === null
-    ? '<div style="font-size:15px">Suma NETTO: <b style="font-size:20px">' . h($sumText) . '</b></div>'
-    : '<div style="font-size:15px">Suma NETTO: <b style="font-size:20px">' . h($fmtPln($sumNet)) . '</b></div>'
-      . '<div style="font-size:13px;color:#8a8780;margin-top:2px">+23% VAT · brutto ' . h($fmtPln(round($sumNet * (1 + $vat)))) . '</div>';
-$label = 'color:#8a8780;padding-right:24px';
-$officeHtml = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>'
-    . '<body style="margin:0;padding:24px 12px;background:#f2f1ee;font-family:Arial,Helvetica,sans-serif;color:#151515">'
-    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
-    . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff">'
-    . '<tr><td style="background:#151515;padding:18px 28px">'
-    . '<span style="color:#edc880;font-size:13px;letter-spacing:.12em;font-weight:bold">PRIMO MEBLE</span>'
-    . '<span style="color:#a9a8a0;font-size:13px;float:right">Wycena nr ' . h($number) . '</span></td></tr>'
-    . '<tr><td style="padding:28px 28px 8px"><table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.7">'
+$label = 'color:#8a8780;padding:3px 24px 3px 0;vertical-align:top';
+$officeHtml = email_document(
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff;margin:0 auto 20px">'
+    . '<tr><td style="padding:22px 28px 6px;font-size:12px;letter-spacing:.1em;color:#8a8780;font-weight:bold">NOWE ZAPYTANIE ' . h($number) . ' · ' . h($date) . '</td></tr>'
+    . '<tr><td style="padding:6px 28px 4px"><table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6">'
     . '<tr><td style="' . $label . '">Klient:</td><td><b>' . h($company) . '</b></td></tr>'
     . '<tr><td style="' . $label . '">Mail:</td><td><a href="mailto:' . h($email) . '" style="color:#151515">' . h($email) . '</a></td></tr>'
     . '<tr><td style="' . $label . '">Tel:</td><td><a href="' . h($telHref) . '" style="color:#151515">' . h($phone) . '</a></td></tr>'
     . '</table></td></tr>'
-    . ($notes !== '' ? '<tr><td style="padding:12px 28px 4px"><div style="font-size:11px;letter-spacing:.1em;color:#8a8780;font-weight:bold">UWAGI</div>'
-        . '<div style="font-size:14px;line-height:1.5;padding:8px 12px;margin-top:6px;background:#f7f5ef;border-left:3px solid #edc880">' . nl2br(h($notes)) . '</div></td></tr>' : '')
-    . '<tr><td style="padding:24px 28px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;border-collapse:collapse">'
-    . '<tr style="background:#151515;color:#ffffff">'
-    . '<th style="' . $th . '">LP</th><th style="' . $th . '">PRODUKT</th><th style="' . $th . '">H</th><th style="' . $th . '">WYGLĄD</th>'
-    . '<th style="' . $th . '">RYFLOWANIE</th><th style="' . $th . '">BRYŁA</th><th style="' . $th . ';text-align:right">ILOŚĆ</th></tr>'
-    . $rows . '</table></td></tr>'
-    . '<tr><td style="padding:18px 28px 0;text-align:right">' . $sumHtml . '</td></tr>'
-    . ($hasLaminate ? '<tr><td style="padding:16px 28px 0"><div style="font-size:12px;line-height:1.5;color:#6b5a33;background:#fbf6ea;padding:10px 12px">'
-        . '<b>*</b> Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.</div></td></tr>' : '')
-    . '<tr><td style="padding:28px 28px 32px" align="center">'
-    . '<a href="' . h($acceptHref) . '" style="display:inline-block;background:#edc880;color:#151515;text-decoration:none;font-weight:bold;font-size:14px;letter-spacing:.08em;padding:14px 34px">AKCEPTUJĘ WYCENĘ</a>'
-    . '<div style="font-size:12px;color:#8a8780;margin-top:10px">lub zadzwoń: <a href="tel:+48691766559" style="color:#8a8780">' . $officePhone . '</a></div></td></tr>'
-    . '<tr><td style="background:#151515;padding:20px 28px;color:#a9a8a0;font-size:12px;line-height:1.6">'
-    . '<span style="color:#edc880;font-weight:bold;letter-spacing:.1em">PRIMO MEBLE</span><br>'
-    . 'Primo Duda Krzysztof, Marek Skiba s.c. · ul. Michała Glinki 7, 41-905 Bytom<br>'
-    . 'NIP 6262940701 · tel. ' . $officePhone . ' · <a href="https://www.primomeble.pl" style="color:#a9a8a0">www.primomeble.pl</a></td></tr>'
-    . '</table></td></tr></table></body></html>';
+    . '<tr><td style="padding:16px 28px 24px">'
+    . '<a href="' . h($sendUrl) . '" style="display:inline-block;background:#edc880;color:#151515;text-decoration:none;font-weight:bold;font-size:14px;letter-spacing:.08em;padding:14px 28px">WYŚLIJ WYCENĘ KLIENTOWI</a>'
+    . '<div style="font-size:12px;color:#8a8780;margin-top:8px">Otworzy się strona z potwierdzeniem – wycena pójdzie na ' . h($email) . '. Poniżej podgląd tego, co dostanie klient.</div>'
+    . '</td></tr></table>'
+    . $quoteCard
+);
+$officeText = "NOWE ZAPYTANIE $number ($date)\n\nKlient: $company\nMail: $email\nTel: $phone\n\n"
+    . "Wyślij wycenę klientowi: $sendUrl\n\n--- Podgląd wyceny dla klienta ---\n\n$quoteText";
 
-$officeText = "PRIMO MEBLE – Wycena nr $number\n\nKlient: $company\nMail: $email\nTel: $phone\n"
-    . ($notes !== '' ? "\nUWAGI: $notes\n" : '')
-    . "\nLP | PRODUKT | H | WYGLĄD | RYFLOWANIE | BRYŁA | ILOŚĆ\n$textRows\n"
-    . ($sumNet === null ? "Suma NETTO: $sumText\n" : 'Suma NETTO: ' . $fmtPln($sumNet) . "\n+23% VAT · brutto " . $fmtPln(round($sumNet * (1 + $vat))) . "\n")
-    . ($hasLaminate ? "\n* Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.\n" : '')
-    . "\nAkceptuję wycenę: odpowiedz na tego maila lub zadzwoń $officePhone.\n\nPRIMO MEBLE · Primo Duda Krzysztof, Marek Skiba s.c. · ul. Michała Glinki 7, 41-905 Bytom · NIP 6262940701 · www.primomeble.pl\n";
-
-$sentOffice = send_mail($config, $config['office_email'], "Wycena $number – $who", $officeHtml, $officeText, $email, $images);
-if (!$sentOffice) {
+if (!send_mail($config, $config['office_email'], "Zapytanie $number – $company", $officeHtml, $officeText, $email)) {
     fail(500, "Nie udało się wysłać wiadomości (zapytanie zapisane jako $number).");
 }
 
-// Potwierdzenie dla klienta – bez cen, tylko kody (żadnych dowolnych tekstów z formularza).
+// ---------- Potwierdzenie przyjęcia dla klienta (bez cen) ----------
+
 $list = '';
 $listText = '';
 foreach ($items as $i => $it) {
@@ -345,19 +214,17 @@ foreach ($items as $i => $it) {
 $clientHtml = '<!doctype html><html><body style="margin:0;padding:24px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#151515">'
     . '<div style="max-width:620px;margin:0 auto;background:#fff;padding:24px">'
     . '<h1 style="margin:0 0 12px;font-size:20px">Dziękujemy – otrzymaliśmy zapytanie ' . h($number) . '</h1>'
-    . '<p>Przygotujemy ofertę i prześlemy ją na ten adres, zwykle w ciągu 1–2 dni roboczych.</p>'
-    . '<p style="background:#f6f1e4;padding:12px"><b>To nie jest zamówienie ani oferta.</b> Wiążącą cenę i termin podamy w ofercie przesłanej przez biuro.</p>'
+    . '<p>Przygotujemy wycenę i prześlemy ją na ten adres, zwykle w ciągu 1–2 dni roboczych.</p>'
+    . '<p style="background:#f6f1e4;padding:12px"><b>To nie jest zamówienie ani oferta.</b> Wiążącą cenę i termin podamy w wycenie przesłanej przez biuro.</p>'
     . '<p style="margin:16px 0 4px"><b>Pozycje w zapytaniu:</b></p><ul style="margin:0;padding-left:20px">' . $list . '</ul>'
-    . '<p style="margin-top:20px">Pytania? Odpowiedz na tę wiadomość albo zadzwoń.</p>'
+    . '<p style="margin-top:20px">Pytania? Odpowiedz na tę wiadomość albo zadzwoń: ' . OFFICE_PHONE . '.</p>'
     . '<p style="color:#555;font-size:13px">Primo Meble</p>'
     . '</div></body></html>';
-$clientText = "Dziękujemy – otrzymaliśmy zapytanie $number.\n\nPrzygotujemy ofertę i prześlemy ją na ten adres, zwykle w ciągu 1–2 dni roboczych.\n\n"
-    . "To nie jest zamówienie ani oferta. Wiążącą cenę i termin podamy w ofercie przesłanej przez biuro.\n\n"
-    . "Pozycje w zapytaniu:\n$listText\nPytania? Odpowiedz na tę wiadomość.\n\nPrimo Meble\n";
+$clientText = "Dziękujemy – otrzymaliśmy zapytanie $number.\n\nPrzygotujemy wycenę i prześlemy ją na ten adres, zwykle w ciągu 1–2 dni roboczych.\n\n"
+    . "To nie jest zamówienie ani oferta. Wiążącą cenę i termin podamy w wycenie przesłanej przez biuro.\n\n"
+    . "Pozycje w zapytaniu:\n$listText\nPytania? Odpowiedz na tę wiadomość albo zadzwoń: " . OFFICE_PHONE . ".\n\nPrimo Meble\n";
 
-// Błąd potwierdzenia nie zatrzymuje zapytania – biuro już je ma.
-// „Odpowiedz” u klienta → firmowa skrzynka (nigdy prywatny adres odbiorcy zapytań).
-// Ukryta kopia do archiwum (config: archive_bcc) – wszystkie potwierdzenia widać w Gmailu.
-send_mail($config, $email, "Otrzymaliśmy zapytanie $number – Primo Meble", $clientHtml, $clientText, $config['client_reply_to'] ?? $config['from_email'], [], (string)($config['archive_bcc'] ?? ''));
+// Błąd potwierdzenia nie zatrzymuje zapytania – biuro już je ma. Potwierdzenie idzie tylko do klienta.
+send_mail($config, $email, "Otrzymaliśmy zapytanie $number – Primo Meble", $clientHtml, $clientText, $config['client_reply_to'] ?? $config['from_email']);
 
 respond(200, ['ok' => true, 'number' => $number]);
