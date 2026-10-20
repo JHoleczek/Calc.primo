@@ -72,6 +72,19 @@ bez oferty z biura nie da się złożyć zamówienia.
   biuro poprawia ceny netto, VAT, zadatek, termin i numer konta, zapisuje PDF i wysyła klientowi.
 - Wdrożenie na cyber_folks: `docs/wdrozenie-cyberfolks.md`.
 
+## Tryb biura (tylko dla Primo)
+
+Tajny link `…/kalkulator/#biuro=KLUCZ` (klucz zna biuro; w kodzie jest tylko jego skrót SHA-256 w `src/lib/admin.ts`).
+Po pierwszym wejściu przeglądarka pamięta tryb biura do kliknięcia „Wyjdź z trybu biura”, a klucz znika z paska adresu.
+
+- podsumowanie pokazuje cenę 1 szt. z cennika (netto, brutto, rozpisanie m² × stawka × dopłaty),
+- koszyk biura jest osobny od koszyka klienta; w każdej pozycji można wpisać własną cenę netto/szt. (albo przywrócić cennik),
+- rabat % na całość, sumy netto / VAT / brutto,
+- „Generuj PDF” drukuje wycenę w układzie wyceny z maila (okno druku → „Zapisz jako PDF”).
+
+Zmiana klucza: wygeneruj nowy, wpisz jego SHA-256 (`echo -n KLUCZ | sha256sum`) w `ADMIN_KEY_SHA256` i wdroż.
+Cennik nadal jest w publicznym kodzie strony – link chroni widok cen, nie same stawki.
+
 ## Założenia obliczeń
 
 - R to promień **lica zewnętrznego** (powierzchnia wewnętrzna ma R − 18 mm).

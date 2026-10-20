@@ -28,19 +28,24 @@ import { CartButton, CartDrawer } from './components/CartDrawer'
 import { CookieNotice, PrivacyDialog, SiteFooter } from './components/SiteFooter'
 import { SentNotice } from './components/SentNotice'
 import { SubmitForm } from './components/SubmitForm'
+import { AdminLinePrice, AdminQuote } from './components/AdminQuote'
 import { BODY_ICON, TYPE_ICONS } from './config/images'
 import { BODY_SURCHARGE } from './config/pricing'
 import { allowedRadius, calculate, DEFAULT_CONFIGURATION, endingOf, isTall, type Configuration } from './lib/calculate'
 import { extensionMm } from './lib/frontPath'
 import { configFromHash } from './lib/share'
+import { leaveAdmin } from './lib/admin'
+import { priceLine } from './lib/pricing'
 import {
   addItem,
+  ADMIN_STORAGE_KEY,
   cartLines,
   duplicateItem,
   loadCart,
   removeItem,
   saveCart,
   setQty,
+  setUnitPrice,
   updateItem,
   type CartItem,
 } from './lib/cart'
@@ -182,14 +187,16 @@ function MmInput({
   )
 }
 
-export default function App() {
+export default function App({ admin = false }: { admin?: boolean }) {
   // Link „Rzut” z maila (#rzut=…) otwiera dany front od razu w rzucie z góry.
   const [linked] = useState(() => configFromHash(window.location.hash))
   const [config, setConfig] = useState<Configuration>(linked ?? DEFAULT_CONFIGURATION)
   const result = useMemo(() => calculate(config), [config])
 
   // Koszyk: zapisywany w przeglądarce, żeby przetrwał odświeżenie strony.
-  const [cart, setCart] = useState<CartItem[]>(loadCart)
+  // Tryb biura ma osobny koszyk (nie miesza się z koszykiem klienta w tej samej przeglądarce).
+  const storageKey = admin ? ADMIN_STORAGE_KEY : undefined
+  const [cart, setCart] = useState<CartItem[]>(() => loadCart(storageKey))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [cartMessage, setCartMessage] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -206,7 +213,7 @@ export default function App() {
   const openPrivacy = (section?: 'cookies') => setPrivacy({ open: true, section })
   // Zmiana klucza przebudowuje pola formularza po wczytaniu frontu do edycji.
   const [formKey, setFormKey] = useState(0)
-  useEffect(() => saveCart(cart), [cart])
+  useEffect(() => saveCart(cart, storageKey), [cart, storageKey])
   const lines = useMemo(() => cartLines(cart), [cart])
   const pieces = lines.reduce((n, l) => n + l.item.qty, 0)
   const editingIndex = cart.findIndex((i) => i.id === editingId)
@@ -535,6 +542,14 @@ export default function App() {
           <p className="page-head__specs">
             Kalkulator frontów giętych · grubość {THICKNESS_MM} mm · H do {HEIGHT_RANGE.max} mm
           </p>
+          {admin && (
+            <p className="admin-badge">
+              <span>Tryb biura</span> ceny widoczne tylko tutaj ·{' '}
+              <button type="button" className="link-btn" onClick={leaveAdmin}>
+                Wyjdź z trybu biura
+              </button>
+            </p>
+          )}
         </header>
 
         {editingId && (
@@ -569,7 +584,7 @@ export default function App() {
           </label>
         </form>
 
-        <ResultPanel result={result}>
+        <ResultPanel result={result} price={admin ? priceLine(config, result, 1) : undefined}>
           <div className="add-bar">
             {editingId ? (
               <>
@@ -616,20 +631,29 @@ export default function App() {
               ✕
             </button>
           }
+          itemExtra={
+            admin
+              ? (line, i) => <AdminLinePrice line={line} index={i} onPrice={(p) => setCart((c) => setUnitPrice(c, line.item.id, p))} />
+              : undefined
+          }
           footer={
-            <SubmitForm
-              lines={lines}
-              onSent={(receipt) => {
-                // Po wysłaniu: koszyk pusty, panel zamknięty, konfigurator od nowa, na środku powiadomienie.
-                setCart([])
-                setEditingId(null)
-                setCartMessage('')
-                setDrawerOpen(false)
-                setConfig(DEFAULT_CONFIGURATION)
-                setFormKey((k) => k + 1)
-                setSent(receipt)
-              }}
-            />
+            admin ? (
+              <AdminQuote lines={lines} />
+            ) : (
+              <SubmitForm
+                lines={lines}
+                onSent={(receipt) => {
+                  // Po wysłaniu: koszyk pusty, panel zamknięty, konfigurator od nowa, na środku powiadomienie.
+                  setCart([])
+                  setEditingId(null)
+                  setCartMessage('')
+                  setDrawerOpen(false)
+                  setConfig(DEFAULT_CONFIGURATION)
+                  setFormKey((k) => k + 1)
+                  setSent(receipt)
+                }}
+              />
+            )
           }
         />
       </CartDrawer>

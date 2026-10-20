@@ -9,6 +9,8 @@ export interface CartItem {
   id: string
   config: Configuration
   qty: number
+  /** Tryb biura: cena netto za sztukę wpisana ręcznie zamiast ceny z cennika. */
+  unitPrice?: number
 }
 
 export const MAX_QTY = 999
@@ -23,7 +25,17 @@ export function addItem(cart: CartItem[], config: Configuration, qty = 1): CartI
 }
 
 export function updateItem(cart: CartItem[], id: string, config: Configuration): CartItem[] {
-  return cart.map((item) => (item.id === id ? { ...item, config: { ...config } } : item))
+  // Zmieniony front = cena znów z cennika (ręczna cena dotyczyła poprzedniej konfiguracji).
+  return cart.map((item) => (item.id === id ? { id: item.id, qty: item.qty, config: { ...config } } : item))
+}
+
+/** Tryb biura: ręczna cena netto za sztukę; null = wróć do ceny z cennika. */
+export function setUnitPrice(cart: CartItem[], id: string, price: number | null): CartItem[] {
+  return cart.map((item) => {
+    if (item.id !== id) return item
+    const { unitPrice: _old, ...rest } = item
+    return price === null || !Number.isFinite(price) || price < 0 ? rest : { ...rest, unitPrice: Math.round(price * 100) / 100 }
+  })
 }
 
 export function removeItem(cart: CartItem[], id: string): CartItem[] {
@@ -48,12 +60,18 @@ export interface CartLine {
   /** m² dla całej pozycji (sztuka × ilość) – tylko do wiadomości dla biura. */
   areaM2: number
   price: LinePrice
+  /** Cena netto za sztukę: ręczna (tryb biura) albo z cennika; null = do ustalenia. */
+  unitNet: number | null
+  /** Wartość pozycji netto (sztuka × ilość). */
+  net: number | null
 }
 
 export function cartLines(cart: CartItem[]): CartLine[] {
   return cart.map((item) => {
     const result = calculate(item.config)
-    return { item, result, areaM2: result.areaM2 * item.qty, price: priceLine(item.config, result, item.qty) }
+    const price = priceLine(item.config, result, item.qty)
+    const unitNet = result.errors.length > 0 ? null : (item.unitPrice ?? price.unitPrice)
+    return { item, result, areaM2: result.areaM2 * item.qty, price, unitNet, net: unitNet === null ? null : unitNet * item.qty }
   })
 }
 
@@ -170,25 +188,31 @@ export const inquirySubject = (lines: CartLine[]) =>
 // --- Zapis w przeglądarce (tylko wygoda: pusty lub niedostępny storage nie psuje strony) ---
 
 const STORAGE_KEY = 'primo-koszyk-v1'
+/** Koszyk trybu biura trzymany osobno od koszyka klienta. */
+export const ADMIN_STORAGE_KEY = 'primo-koszyk-biuro-v1'
 
-export function loadCart(): CartItem[] {
+export function loadCart(key = STORAGE_KEY): CartItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(key)
     const parsed: unknown = raw ? JSON.parse(raw) : []
     if (!Array.isArray(parsed)) return []
     return parsed
       .filter(
         (x): x is CartItem => !!x && typeof x.id === 'string' && typeof x.qty === 'number' && !!x.config && typeof x.config === 'object',
       )
-      .map((x) => ({ ...x, config: normalizeConfiguration(x.config) }))
+      .map(({ unitPrice, ...x }) => ({
+        ...x,
+        config: normalizeConfiguration(x.config),
+        ...(typeof unitPrice === 'number' && Number.isFinite(unitPrice) ? { unitPrice } : {}),
+      }))
   } catch {
     return []
   }
 }
 
-export function saveCart(cart: CartItem[]) {
+export function saveCart(cart: CartItem[], key = STORAGE_KEY) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart))
+    localStorage.setItem(key, JSON.stringify(cart))
   } catch {
     // Brak dostępu do storage (tryb prywatny itp.) – koszyk działa do odświeżenia strony.
   }

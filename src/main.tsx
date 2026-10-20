@@ -7,9 +7,20 @@ import '@fontsource/figtree/600.css'
 import './index.css'
 import App from './App.tsx'
 import { OfferPage } from './components/OfferPage'
+import { detectAdmin } from './lib/admin'
 import { offerFromHash } from './lib/share'
 
 // Link „Utwórz ofertę” z maila do biura (#oferta=…) otwiera edytor oferty zamiast kalkulatora.
 const offer = offerFromHash(window.location.hash)
 
-createRoot(document.getElementById('root')!).render(<StrictMode>{offer ? <OfferPage data={offer} /> : <App />}</StrictMode>)
+// Link biura wklejony do już otwartej karty zmienia tylko „#” – przeładuj, żeby go sprawdzić.
+window.addEventListener('hashchange', () => {
+  if (window.location.hash.startsWith('#biuro=')) window.location.reload()
+})
+
+const root = createRoot(document.getElementById('root')!)
+if (offer) root.render(<StrictMode><OfferPage data={offer} /></StrictMode>)
+// Tryb biura (tajny link #biuro=…) ustalany przed pierwszym renderem – osobny koszyk, ceny, PDF.
+else void detectAdmin()
+  .catch(() => false)
+  .then((admin) => root.render(<StrictMode><App admin={admin} /></StrictMode>))

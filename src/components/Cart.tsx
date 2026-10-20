@@ -13,6 +13,8 @@ interface Props {
   headerAction?: ReactNode
   /** Treść pod sumami (np. „Zapytaj o wycenę”). */
   footer?: ReactNode
+  /** Tryb biura: dodatkowa treść pozycji (cena). */
+  itemExtra?: (line: CartLine, index: number) => ReactNode
 }
 
 /** Polska odmiana: 1 pozycja, 2–4 pozycje, 5+ pozycji (z wyjątkiem 12–14). */
@@ -51,7 +53,7 @@ function QtyStepper({ id, qty, label, onQty }: { id: string; qty: number; label:
   )
 }
 
-export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, headerAction, footer }: Props) {
+export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, headerAction, footer, itemExtra }: Props) {
   const totals = cartTotals(lines)
 
   return (
@@ -90,6 +92,7 @@ export function Cart({ lines, editingId, onQty, onEdit, onDuplicate, onRemove, h
                       <QtyStepper id={item.id} qty={item.qty} label={result.code} onQty={(q) => onQty(item.id, q)} />
                       <p className="cart-item__sum">{item.qty} szt.</p>
                     </div>
+                    {itemExtra?.(l, i)}
                     <div className="cart-item__actions">
                       <button type="button" className="link-btn" onClick={() => onEdit(item.id)} aria-label={`Edytuj pozycję ${i + 1}`}>
                         Edytuj
