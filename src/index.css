@@ -3116,7 +3116,7 @@ body.offer-mode {
   color: var(--muted);
 }
 
-/* Dokument wyceny: na ekranie ukryty, w druku zastępuje stronę (układ jak wycena w mailu). */
+/* Dokument wyceny: na ekranie ukryty, w druku zastępuje stronę. Wersja do druku: czarno-biała, bez teł. */
 .qdoc {
   display: none;
 }
@@ -3134,30 +3134,27 @@ body.offer-mode {
 
   .qdoc {
     display: block;
-    color: #151515;
+    color: #000;
     background: #fff;
     font-family: Figtree, Arial, Helvetica, sans-serif;
-    font-size: 13px;
-    line-height: 1.5;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
-  .qdoc__bar,
-  .qdoc__foot {
-    padding: 16px 24px;
-    background: #151515;
-    color: #a9a8a0;
+  .qdoc a {
+    color: inherit;
   }
 
   .qdoc__bar {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #000;
+    font-size: 13px;
   }
 
   .qdoc__brand {
-    color: #edc880;
     font-weight: 700;
     letter-spacing: 0.12em;
   }
@@ -3166,7 +3163,7 @@ body.offer-mode {
     display: flex;
     justify-content: space-between;
     gap: 24px;
-    padding: 20px 24px 0;
+    padding-top: 14px;
   }
 
   .qdoc__meta p {
@@ -3175,57 +3172,53 @@ body.offer-mode {
 
   .qdoc__label {
     display: block;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #8a8780;
+    color: #555;
   }
 
   .qdoc__reach {
     display: block;
-    color: #5b5953;
   }
 
   .qdoc__intro {
-    margin: 0;
-    padding: 20px 24px 0;
-    font-size: 14px;
-    line-height: 1.6;
+    margin: 14px 0 0;
+    font-size: 13px;
   }
 
   .qdoc__notes {
-    margin: 14px 24px 0;
+    margin-top: 12px;
   }
 
   .qdoc__notes p {
-    margin: 6px 0 0;
-    padding: 8px 12px;
+    margin: 4px 0 0;
+    padding-left: 10px;
     white-space: pre-line;
-    background: #f7f5ef;
-    border-left: 3px solid #edc880;
+    border-left: 2px solid #000;
   }
 
   .qdoc__table {
-    width: calc(100% - 48px);
-    margin: 22px 24px 0;
+    width: 100%;
+    margin-top: 16px;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .qdoc__table th {
-    padding: 8px;
-    font-size: 10px;
+    padding: 6px;
+    font-size: 9px;
     letter-spacing: 0.06em;
     text-align: left;
-    color: #fff;
-    background: #151515;
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
   }
 
   .qdoc__table td {
-    padding: 9px 8px;
-    vertical-align: top;
-    border-bottom: 1px solid #e6e3dc;
+    padding: 6px;
+    vertical-align: middle;
+    border-bottom: 1px solid #bbb;
   }
 
   .qdoc__table tr {
@@ -3240,13 +3233,25 @@ body.offer-mode {
     white-space: nowrap;
   }
 
-  .qdoc__star {
-    margin-left: 2px;
-    color: #b08a3e;
+  .qdoc__plan-cell {
+    width: 42mm;
+    padding: 2px 6px !important;
+  }
+
+  /* Rzut z góry odwrócony do druku: białe tło, czarny rysunek, szare wymiary. */
+  .qdoc__plan {
+    --draw-line: #000;
+    --draw-dim: #555;
+    --draw-text: #000;
+    --draw-axis: #777;
+
+    display: block;
+    width: 40mm;
+    height: 25mm;
   }
 
   .qdoc__sum {
-    padding: 16px 24px 0;
+    padding-top: 12px;
     text-align: right;
     break-inside: avoid;
   }
@@ -3255,63 +3260,31 @@ body.offer-mode {
     margin: 0;
   }
 
-  .qdoc__sub {
-    font-size: 13px;
-    color: #5b5953;
-  }
-
   .qdoc__total {
     margin-top: 4px !important;
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .qdoc__total b {
-    font-size: 20px;
+    font-size: 17px;
   }
 
-  .qdoc__vat {
-    font-size: 13px;
-    color: #8a8780;
-  }
-
-  .qdoc__laminate {
-    margin: 14px 24px 0;
-    padding: 10px 12px;
-    font-size: 12px;
-    color: #6b5a33;
-    background: #fbf6ea;
+  .qdoc__laminate,
+  .qdoc__cta {
+    margin: 14px 0 0;
+    font-size: 11px;
   }
 
   .qdoc__cta {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    padding: 26px 24px 28px;
     break-inside: avoid;
   }
 
-  .qdoc__btn {
-    padding: 13px 20px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .qdoc__btn--gold {
-    color: #151515;
-    background: #edc880;
-  }
-
-  .qdoc__btn--dark {
-    color: #edc880;
-    background: #151515;
-  }
-
   .qdoc__foot {
-    font-size: 11px;
-    line-height: 1.6;
+    margin-top: 20px;
+    padding-top: 8px;
+    font-size: 10px;
+    color: #444;
+    border-top: 1px solid #000;
     break-inside: avoid;
   }
 }

@@ -1,10 +1,34 @@
 import { createPortal } from 'react-dom'
-import { COMPANY, CONTACT } from '../config/catalog'
+import { COMPANY, CONTACT, PUBLIC_QUOTE_EMAIL } from '../config/catalog'
 import { finishText, type CartLine, type Contact } from '../lib/cart'
+import type { Configuration } from '../lib/calculate'
+import { planGeometry } from '../lib/planGeometry'
 import { acceptMailto, pln, type QuoteTotals } from '../lib/quote'
+import { PlanContent } from './PlanDrawing'
 
-// Wycena do PDF (tryb biura): ten sam układ co wycena wysyłana klientowi mailem.
+// Wycena do PDF (tryb biura): treść jak wycena z maila, ale w wersji do druku –
+// czarno-biała, bez teł i przycisków, z rzutem z góry przy każdej pozycji.
 // Na ekranie niewidoczna; przy drukowaniu („Zapisz jako PDF”) zastępuje całą stronę.
+
+/** Układ miniatury rzutu [px]: opisy i wymiary liczone dla tej wielkości, potem skalowane w druku. */
+const THUMB_W = 300
+const THUMB_H = 220
+
+/** Rzut z góry do druku: czarny rysunek na białym tle (kolory z .qdoc__plan). */
+function PlanThumb({ config, id }: { config: Configuration; id: string }) {
+  const geo = planGeometry(config, Math.min(THUMB_W, THUMB_H))
+  const { x, y, w, h } = geo.view
+  const px = Math.max(w / THUMB_W, h / THUMB_H)
+  const cx = x + w / 2
+  const cy = y + h / 2
+  const vw = THUMB_W * px
+  const vh = THUMB_H * px
+  return (
+    <svg className="plan qdoc__plan" viewBox={`${cx - vw / 2} ${cy - vh / 2} ${vw} ${vh}`} preserveAspectRatio="xMidYMid meet">
+      <PlanContent geo={geo} px={px} hatchId={`qdoc-hatch-${id}`} />
+    </svg>
+  )
+}
 
 interface Props {
   lines: CartLine[]
@@ -62,6 +86,7 @@ export function QuoteDocument({ lines, totals, number, contact, date }: Props) {
         <thead>
           <tr>
             <th>LP</th>
+            <th>RZUT Z GÓRY</th>
             <th>PRODUKT</th>
             <th>H</th>
             <th>WYGLĄD</th>
@@ -76,13 +101,16 @@ export function QuoteDocument({ lines, totals, number, contact, date }: Props) {
             return (
               <tr key={l.item.id}>
                 <td>{i + 1}</td>
+                <td className="qdoc__plan-cell">
+                  <PlanThumb config={l.item.config} id={l.item.id.replace(/[^\w-]/g, '')} />
+                </td>
                 <td>
                   <b>{l.result.code}</b>
                 </td>
                 <td className="qdoc__nowrap">{l.item.config.heightMm} mm</td>
                 <td>
                   {finishText(l.item.config).replace(LAMINATE_NOTE, '')}
-                  {lam && <sup className="qdoc__star">*</sup>}
+                  {lam && <sup>*</sup>}
                 </td>
                 <td>{l.result.flutingCode}</td>
                 <td>{l.item.config.body ? 'TAK' : 'NIE'}</td>
@@ -122,14 +150,11 @@ export function QuoteDocument({ lines, totals, number, contact, date }: Props) {
         </p>
       )}
 
-      <div className="qdoc__cta">
-        <a className="qdoc__btn qdoc__btn--gold" href={acceptMailto(number, totals, client)}>
-          ODPOWIEDZ I POTWIERDŹ
-        </a>
-        <a className="qdoc__btn qdoc__btn--dark" href={`tel:+48${CONTACT.phone.replace(/\D/g, '')}`}>
-          ZADZWOŃ {CONTACT.phone}
-        </a>
-      </div>
+      <p className="qdoc__cta">
+        Aby potwierdzić wycenę, napisz na{' '}
+        <a href={acceptMailto(number, totals, client)}>{PUBLIC_QUOTE_EMAIL}</a> lub zadzwoń:{' '}
+        <a href={`tel:+48${CONTACT.phone.replace(/\D/g, '')}`}>{CONTACT.phone}</a>.
+      </p>
 
       <footer className="qdoc__foot">
         <span className="qdoc__brand">PRIMO MEBLE</span>

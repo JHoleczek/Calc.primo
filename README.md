@@ -80,7 +80,7 @@ Po pierwszym wejściu przeglądarka pamięta tryb biura do kliknięcia „Wyjdź
 - podsumowanie pokazuje cenę 1 szt. z cennika (netto, brutto, rozpisanie m² × stawka × dopłaty),
 - koszyk biura jest osobny od koszyka klienta; w każdej pozycji można wpisać własną cenę netto/szt. (albo przywrócić cennik),
 - rabat % na całość, sumy netto / VAT / brutto,
-- „Generuj PDF” drukuje wycenę w układzie wyceny z maila (okno druku → „Zapisz jako PDF”).
+- „Generuj PDF” drukuje wycenę (treść jak w mailu, wersja do druku: czarno-biała, z rzutem z góry przy każdej pozycji; okno druku → „Zapisz jako PDF”).
 
 Zmiana klucza: wygeneruj nowy, wpisz jego SHA-256 (`echo -n KLUCZ | sha256sum`) w `ADMIN_KEY_SHA256` i wdroż.
 Cennik nadal jest w publicznym kodzie strony – link chroni widok cen, nie same stawki.
