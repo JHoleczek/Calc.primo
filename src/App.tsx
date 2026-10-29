@@ -265,21 +265,21 @@ export default function App({ admin = false }: { admin?: boolean }) {
         : // Przedłużenia znaczą co innego w każdym typie – po zmianie typu startujemy od zera.
           { ...c, typeId, radiusMm: allowedRadius(typeId, c.radiusMm), extLeftMm: 0, extRightMm: 0 },
     )
-  // Laminat tylko gładki: przy wyborze laminatu ryflowanie wraca do FG.
+  // Laminat i akryl tylko gładkie: przy ich wyborze ryflowanie wraca do FG.
   const setMaterial = (materialId: MaterialId) =>
     setConfig((c) => ({
       ...c,
       materialId,
       flutingId: MATERIALS.find((m) => m.id === materialId)?.smoothOnly ? SMOOTH_FLUTING_ID : c.flutingId,
-      // Pole pod materiałem znaczy co innego (kolor RAL / bejca / dekor) – po zmianie zaczynamy od pustego.
+      // Pole pod materiałem znaczy co innego (kolor RAL / kolor akrylu / bejca / dekor) – po zmianie zaczynamy od pustego.
       color: materialId === c.materialId ? c.color : '',
     }))
   // Powyżej 2780 mm tylko laminat gładki – przełączamy materiał od razu.
-  const smoothOnlyMaterial = MATERIALS.find((m) => m.smoothOnly) ?? MATERIALS[0]
+  const tallMaterial = MATERIALS.find((m) => m.tallAllowed) ?? MATERIALS[0]
   const setHeight = (heightMm: number) =>
     setConfig((c) =>
-      isTall(heightMm) && heightMm <= HEIGHT_RANGE.max && !MATERIALS.find((m) => m.id === c.materialId)?.smoothOnly
-        ? { ...c, heightMm, materialId: smoothOnlyMaterial.id, flutingId: SMOOTH_FLUTING_ID }
+      isTall(heightMm) && heightMm <= HEIGHT_RANGE.max && !MATERIALS.find((m) => m.id === c.materialId)?.tallAllowed
+        ? { ...c, heightMm, materialId: tallMaterial.id, flutingId: SMOOTH_FLUTING_ID, color: c.materialId === tallMaterial.id ? c.color : '' }
         : { ...c, heightMm },
     )
   const tall = isTall(config.heightMm)
@@ -453,12 +453,12 @@ export default function App({ admin = false }: { admin?: boolean }) {
           value={config.materialId}
           onChange={setMaterial}
           variant="cards"
-          columns={3}
+          columns={2}
           choices={MATERIALS.map((m) => ({
             value: m.id,
             label: m.name,
             hint: m.note ? `${m.hint} · ${m.note.replace(/\.$/, '').toLowerCase()}` : m.hint,
-            disabled: tall && !m.smoothOnly,
+            disabled: tall && !m.tallAllowed,
             disabledReason: `Niedostępne przy H > ${TALL_HEIGHT_MM} mm`,
           }))}
         />
@@ -516,7 +516,7 @@ export default function App({ admin = false }: { admin?: boolean }) {
               icon: <FlutingProfile profile={f.profile} />,
               // Laminat tylko gładki: pozostałe ryflowania widoczne, ale wyszarzone.
               disabled: material.smoothOnly && f.id !== SMOOTH_FLUTING_ID,
-              disabledReason: material.id === 'laminat' ? 'Niedostępne dla laminatu' : `Niedostępne: ${material.name}`,
+              disabledReason: { laminat: 'Niedostępne dla laminatu', akrylowe: 'Niedostępne dla akrylu' }[material.id as string] ?? `Niedostępne: ${material.name}`,
             }))}
           />
           {selectedFluting.profile && (

@@ -142,7 +142,7 @@ export const FLUTINGS: Fluting[] = [
   { id: 'FR13', name: 'Klin 10', profile: { shape: 'v', widthMm: 8, pitchMm: 18, depthMm: 5 } },
 ]
 
-export type MaterialId = 'laminat' | 'fornirowane' | 'lakierowane'
+export type MaterialId = 'laminat' | 'fornirowane' | 'lakierowane' | 'akrylowe'
 
 export interface Material {
   id: MaterialId
@@ -151,13 +151,15 @@ export interface Material {
   hint: string
   /** Tylko lico gładkie (bez ryflowania). */
   smoothOnly: boolean
+  /** Dostępny także przy H powyżej TALL_HEIGHT_MM (tylko laminat). */
+  tallAllowed?: boolean
   /** Pole tekstowe pod materiałem: tytuł sekcji, podpis, podpowiedź w pustym polu. */
   field: { title: string; label: string; placeholder: string; required: boolean }
   /** Ważna informacja dla klienta (np. kto pokrywa koszt laminatu). */
   note?: string
 }
 
-// Kolejność kart: lakier, fornir, laminat.
+// Kolejność kart: lakier, akryl, fornir, laminat.
 export const MATERIALS: Material[] = [
   {
     id: 'lakierowane',
@@ -165,6 +167,14 @@ export const MATERIALS: Material[] = [
     hint: 'Wszystkie ryflowania',
     smoothOnly: false,
     field: { title: 'Kolor', label: 'Kolor farby', placeholder: 'np. RAL 9010, NCS S 0502-Y', required: true },
+  },
+  {
+    id: 'akrylowe',
+    name: 'Akrylowe',
+    hint: 'Tylko gładki (FG)',
+    smoothOnly: true,
+    field: { title: 'Kolor', label: 'Kolor akrylu', placeholder: 'Kolor / symbol akrylu', required: true },
+    note: 'Lewa strona i krawędzie lakierowane są pod kolor akrylu.',
   },
   {
     id: 'fornirowane',
@@ -178,6 +188,7 @@ export const MATERIALS: Material[] = [
     name: 'Laminat',
     hint: 'Tylko gładki (FG)',
     smoothOnly: true,
+    tallAllowed: true,
     field: {
       title: 'Dekor',
       label: 'Numer dekoru / numer i symbol laminatu',

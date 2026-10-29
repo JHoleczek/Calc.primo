@@ -198,9 +198,9 @@ export function VisualizationPanel({ config, result, initialView = '3d' }: Props
           <div>
             <dt>{material.field.title}</dt>
             <dd className="viz__color">
-              {material.id === 'lakierowane' && paint && <span className="viz__swatch" style={{ background: paint.hex }} aria-hidden="true" />}
+              {(material.id === 'lakierowane' || material.id === 'akrylowe') && paint && <span className="viz__swatch" style={{ background: paint.hex }} aria-hidden="true" />}
               {colorText}
-              {material.id === 'lakierowane' && (
+              {(material.id === 'lakierowane' || material.id === 'akrylowe') && (
                 <span className="viz__color-note">{paint ? `(${paint.source}, poglądowo)` : '(nierozpoznany)'}</span>
               )}
             </dd>

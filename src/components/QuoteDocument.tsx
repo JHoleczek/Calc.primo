@@ -42,6 +42,7 @@ const LAMINATE_NOTE = /\s*\(koszt laminatu po stronie klienta\)$/
 
 export function QuoteDocument({ lines, totals, number, contact, date }: Props) {
   const laminate = lines.some((l) => l.item.config.materialId === 'laminat')
+  const acrylic = lines.some((l) => l.item.config.materialId === 'akrylowe')
   const client = contact.company.trim()
   const reach = [contact.email.trim(), contact.phone.trim()].filter(Boolean).join(' · ')
   const notes = contact.notes.trim()
@@ -111,6 +112,7 @@ export function QuoteDocument({ lines, totals, number, contact, date }: Props) {
                 <td>
                   {finishText(l.item.config).replace(LAMINATE_NOTE, '')}
                   {lam && <sup>*</sup>}
+                  {l.item.config.materialId === 'akrylowe' && <sup>**</sup>}
                 </td>
                 <td>{l.result.flutingCode}</td>
                 <td>{l.item.config.body ? 'TAK' : 'NIE'}</td>
@@ -147,6 +149,11 @@ export function QuoteDocument({ lines, totals, number, contact, date }: Props) {
       {laminate && (
         <p className="qdoc__laminate">
           <b>*</b> Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.
+        </p>
+      )}
+      {acrylic && (
+        <p className="qdoc__laminate">
+          <b>**</b> Akryl: lewa strona i krawędzie lakierowane są pod kolor akrylu.
         </p>
       )}
 

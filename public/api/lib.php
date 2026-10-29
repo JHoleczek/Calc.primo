@@ -125,6 +125,7 @@ function client_quote(array $config, array $rec): array
     $notes = (string)($rec['contact']['notes'] ?? '');
     $sum = record_sum($rec);
     $hasLaminate = false;
+    $hasAcrylic = false;
     $th = 'padding:9px 8px;font-size:11px;letter-spacing:.06em;text-align:left';
     $td = 'padding:10px 8px;border-bottom:1px solid #e6e3dc;vertical-align:top';
     $rows = '';
@@ -134,6 +135,8 @@ function client_quote(array $config, array $rec): array
         $finish = (string)($it['finish'] ?? '');
         $laminate = str_starts_with($finish, 'Laminat');
         $hasLaminate = $hasLaminate || $laminate;
+        $acrylic = str_starts_with($finish, 'Akryl');
+        $hasAcrylic = $hasAcrylic || $acrylic;
         // Dekor po stronie klienta: w tabeli tylko gwiazdka, wyjaśnienie pod sumą.
         $finish = (string)preg_replace('/\s*\(koszt laminatu po stronie klienta\)$/u', '', $finish);
         $height = isset($it['height']) && $it['height'] !== null ? $it['height'] . ' mm' : '—';
@@ -141,12 +144,12 @@ function client_quote(array $config, array $rec): array
             . '<td style="' . $td . '">' . $lp . '</td>'
             . '<td style="' . $td . '"><b>' . h($it['code']) . '</b></td>'
             . '<td style="' . $td . ';white-space:nowrap">' . h($height) . '</td>'
-            . '<td style="' . $td . '">' . h($finish !== '' ? $finish : '—') . ($laminate ? '&nbsp;<sup style="color:#b08a3e">*</sup>' : '') . '</td>'
+            . '<td style="' . $td . '">' . h($finish !== '' ? $finish : '—') . ($laminate ? '&nbsp;<sup style="color:#b08a3e">*</sup>' : '') . ($acrylic ? '&nbsp;<sup style="color:#b08a3e">**</sup>' : '') . '</td>'
             . '<td style="' . $td . '">' . h($it['fluting']) . '</td>'
             . '<td style="' . $td . '">' . (!empty($it['body']) ? 'TAK' : 'NIE') . '</td>'
             . '<td style="' . $td . ';text-align:right;white-space:nowrap">' . (int)$it['qty'] . '&nbsp;szt.</td>'
             . '</tr>';
-        $textRows .= "$lp | {$it['code']} | $height | $finish" . ($laminate ? ' *' : '') . " | {$it['fluting']} | "
+        $textRows .= "$lp | {$it['code']} | $height | $finish" . ($laminate ? ' *' : '') . ($acrylic ? ' **' : '') . " | {$it['fluting']} | "
             . (!empty($it['body']) ? 'TAK' : 'NIE') . " | {$it['qty']} szt.\n";
     }
 
@@ -172,6 +175,8 @@ function client_quote(array $config, array $rec): array
         . '<tr><td style="padding:18px 28px 0;text-align:right">' . $sumHtml . '</td></tr>'
         . ($hasLaminate ? '<tr><td style="padding:16px 28px 0"><div style="font-size:12px;line-height:1.5;color:#6b5a33;background:#fbf6ea;padding:10px 12px">'
             . '<b>*</b> Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.</div></td></tr>' : '')
+        . ($hasAcrylic ? '<tr><td style="padding:' . ($hasLaminate ? '8px' : '16px') . ' 28px 0"><div style="font-size:12px;line-height:1.5;color:#6b5a33;background:#fbf6ea;padding:10px 12px">'
+            . '<b>**</b> Akryl: lewa strona i krawędzie lakierowane są pod kolor akrylu.</div></td></tr>' : '')
         . '<tr><td style="padding:28px 20px 32px" align="center">'
         . '<table role="presentation" cellpadding="0" cellspacing="0"><tr>'
         . '<td style="padding:4px 6px"><a href="' . h(accept_mailto($config, $rec)) . '" style="' . $btn . ';background:#edc880;color:#151515">ODPOWIEDZ I POTWIERDŹ</a></td>'
@@ -189,6 +194,7 @@ function client_quote(array $config, array $rec): array
         . "\nLP | PRODUKT | H | WYGLĄD | RYFLOWANIE | BRYŁA | ILOŚĆ\n$textRows\n"
         . ($sum === null ? "Suma NETTO: do ustalenia\n" : 'Suma NETTO: ' . pln($sum) . "\n+23% VAT · brutto " . pln(round($sum * (1 + VAT_RATE))) . "\n")
         . ($hasLaminate ? "\n* Dekor laminatu po stronie klienta – koszt laminatu nie jest wliczony w cenę.\n" : '')
+        . ($hasAcrylic ? "\n** Akryl: lewa strona i krawędzie lakierowane są pod kolor akrylu.\n" : '')
         . "\nAby potwierdzić wycenę, odpowiedz na tę wiadomość lub zadzwoń: " . OFFICE_PHONE . ".\n"
         . "\nPRIMO MEBLE · Primo Duda Krzysztof, Marek Skiba s.c. · ul. Michała Glinki 7, 41-905 Bytom · NIP 6262940701 · www.primomeble.pl\n";
 

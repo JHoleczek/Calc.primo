@@ -30,14 +30,15 @@ describe('cennik (październik 2026, netto)', () => {
     expect(price({ ...orzech, flutingId: 'FR07' }).rate).toBe(3450)
   })
 
-  it('laminat: 2600 zł/m², zawsze gładki', () => {
-    expect(price({ ...lak, materialId: 'laminat', flutingId: 'FR03' }).rate).toBe(2600)
+  it('laminat: 2000 zł/m², zawsze gładki; akryl: 2600 zł/m², zawsze gładki', () => {
+    expect(price({ ...lak, materialId: 'laminat', flutingId: 'FR03' }).rate).toBe(2000)
+    expect(price({ ...lak, materialId: 'akrylowe', flutingId: 'FR03' }).rate).toBe(2600)
   })
 
   it('bryła +25%, H > 2780 +30% – dopłaty mnożone', () => {
     expect(price({ ...lak, body: true }).rate).toBeCloseTo(2250)
     const tall = price({ ...lak, materialId: 'laminat', heightMm: 3000, body: true })
     expect(tall.surcharges.map((s) => s.rate)).toEqual([0.3, 0.25])
-    expect(tall.rate).toBeCloseTo(2600 * 1.3 * 1.25)
+    expect(tall.rate).toBeCloseTo(2000 * 1.3 * 1.25)
   })
 })

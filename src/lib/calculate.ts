@@ -157,7 +157,7 @@ function catalogCode(c: Configuration): string {
 
 export function calculate(config: Configuration): Result {
   const material = MATERIALS.find((m) => m.id === config.materialId) ?? MATERIALS[0]
-  // Laminat występuje tylko jako gładki – ryflowanie ignorujemy.
+  // Laminat i akryl występują tylko jako gładkie – ryflowanie ignorujemy.
   const flutingId = material.smoothOnly ? SMOOTH_FLUTING_ID : config.flutingId
   const fluting = FLUTINGS.find((f) => f.id === flutingId) ?? FLUTINGS[0]
 
@@ -173,7 +173,7 @@ export function calculate(config: Configuration): Result {
       }
     }
   }
-  if (isTall(config.heightMm) && config.heightMm <= HEIGHT_RANGE.max && !material.smoothOnly) {
+  if (isTall(config.heightMm) && config.heightMm <= HEIGHT_RANGE.max && !material.tallAllowed) {
     errors.push(`Przy wysokości H powyżej ${TALL_HEIGHT_MM} mm dostępny jest tylko laminat gładki – zmień materiał.`)
   }
   if (config.typeId === 'przedluzane') {
@@ -235,7 +235,7 @@ export function calculate(config: Configuration): Result {
     notes.push({ level: 'warning', text: `Wpisz: ${material.field.label.toLowerCase()} – wymagane do zamówienia.` })
   }
   if (needsField && color !== '') {
-    const label = { lakierowane: 'Lakierowanie w kolorze', fornirowane: 'Bejca', laminat: 'Dekor' }[material.id]
+    const label = { lakierowane: 'Lakierowanie w kolorze', akrylowe: 'Akryl w kolorze', fornirowane: 'Bejca', laminat: 'Dekor' }[material.id]
     notes.push({ level: 'addon', text: `${label}: ${color}` })
   }
   if (material.note) notes.push({ level: 'info', text: material.note })

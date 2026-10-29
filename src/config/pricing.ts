@@ -13,16 +13,18 @@ export interface MaterialPrices {
   raw?: number
 }
 
-/** Klucz stawki: lakier, fornir dębowy, fornir orzechowy, laminat. */
-export type PriceKey = 'lakierowane' | 'dab' | 'orzech' | 'laminat'
+/** Klucz stawki: lakier, akryl, fornir dębowy, fornir orzechowy, laminat. */
+export type PriceKey = 'lakierowane' | 'akrylowe' | 'dab' | 'orzech' | 'laminat'
 
 // Cennik szefa (cennik_giete.xlsx, październik 2026). Stawki netto.
 export const PRICES_PER_M2: Record<PriceKey, MaterialPrices> = {
   lakierowane: { smooth: 1800, fluted: 2600, flutedSpecial: { FR07: 2750, FR12: 2750 }, raw: 1200 },
   dab: { smooth: 2700, fluted: 3100, flutedSpecial: { FR07: 3250, FR12: 3250 }, raw: 2000 },
   orzech: { smooth: 2850, fluted: 3200, flutedSpecial: { FR07: 3450, FR12: 3450 }, raw: 2100 },
+  // Tylko gładki (październik 2026).
+  akrylowe: { smooth: 2600, fluted: null },
   // Tylko gładki; sam laminat kupuje / pokrywa klient.
-  laminat: { smooth: 2600, fluted: null },
+  laminat: { smooth: 2000, fluted: null },
 }
 
 /** Fornir bejcowany: dopłata do stawki [zł/m²] (gładki i ryflowany). */

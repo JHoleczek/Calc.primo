@@ -61,7 +61,7 @@ function FrontMesh({ geometry, materialId, colorHex }: FrontSceneProps) {
     () =>
       new THREE.MeshStandardMaterial({
         color,
-        roughness: materialId === 'lakierowane' ? 0.45 : 0.7,
+        roughness: materialId === 'akrylowe' ? 0.25 : materialId === 'lakierowane' ? 0.45 : 0.7,
         // Odsuwa powierzchnie, żeby linie obramowania nie migotały.
         polygonOffset: true,
         polygonOffsetFactor: 1,

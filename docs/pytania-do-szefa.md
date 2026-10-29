@@ -5,11 +5,13 @@
 | Materiał | Gładki (FG) | Ryflowany | FR07 i FR12 | Surowe |
 |---|---|---|---|---|
 | Lakierowane | 1800 | 2600 | 2750 | 1200 |
+| Akrylowe (tylko gładki) | 2600 | – | – | – |
 | Fornir dąb | 2700 | 3100 | 3250 | 2000 |
 | Fornir orzech amerykański | 2850 | 3200 | 3450 | 2100 |
-| Laminat (tylko gładki) | 2600 | – | – | – |
+| Laminat (tylko gładki) | 2000 | – | – | – |
 
-Fornir bejcowany: +100 zł/m². Laminat: koszt samego laminatu po stronie klienta. H > 2780 mm +30%, bryła +25% –
+Fornir bejcowany: +100 zł/m². Laminat: koszt samego laminatu po stronie klienta (stawka 2000 od końca października 2026). Akryl: lewa strona i krawędzie
+lakierowane pod kolor akrylu. H > 2780 mm +30%, bryła +25% –
 dopłaty mnożone (potwierdzone). Przedłużenia – tylko m², bez dopłaty (potwierdzone). Bryła – bez dodatkowych
 wymiarów, w kalkulatorze grafika i „+25%” (potwierdzone).
 

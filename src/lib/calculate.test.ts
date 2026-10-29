@@ -98,6 +98,7 @@ describe('calculate', () => {
   it('H > 2780: tylko laminat gładki', () => {
     expect(calculate({ ...base, heightMm: 2800, materialId: 'lakierowane', color: 'RAL 9010' }).errors[0]).toContain('laminat')
     expect(calculate({ ...base, heightMm: 2800, materialId: 'laminat' }).errors).toEqual([])
+    expect(calculate({ ...base, heightMm: 2800, materialId: 'akrylowe', color: 'biały' }).errors[0]).toContain('laminat')
     expect(calculate({ ...base, heightMm: 2780, materialId: 'lakierowane', color: 'RAL 9010' }).errors).toEqual([])
   })
 })
