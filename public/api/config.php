@@ -3,8 +3,9 @@
 // Nie ma tu haseł: PHP wysyła pocztę przez serwer pocztowy hostingu (funkcja mail()).
 
 return [
-    // Kto dostaje zapytania – firmowa skrzynka kalkulatora (przekierowanie dalej ustawia się w panelu cyber_folks).
-    'office_email' => 'kalkulator@primomeble.pl',
+    // Kto dostaje zapytania (mail do biura z wyceną) – skrzynka Google biura: w aplikacji Gmail
+    // powiadomienia przychodzą od razu. Na kalkulator@ (IMAP, wysyłka „do siebie”) Gmail nie powiadamiał.
+    'office_email' => 'biuro.primomeble@gmail.com',
 
     // Nadawca maili – skrzynka założona w panelu cyber_folks na domenie strony
     // (np. kalkulator@primomeble.pl). Musi być na tej samej domenie co hosting,

@@ -17,7 +17,7 @@ Maile muszą wychodzić z adresu na Waszej domenie (np. `kalkulator@primomeble.p
 
 Plik `public/api/config.php` (bez haseł – można trzymać w repozytorium):
 
-- `office_email` – kto dostaje zapytania (teraz kalkulator@primomeble.pl),
+- `office_email` – kto dostaje zapytania (teraz biuro.primomeble@gmail.com – konto Google, natychmiastowe powiadomienia w Gmailu),
 - `from_email` – skrzynka z punktu 1,
 - `site_url` – adres kalkulatora z ukośnikiem na końcu, np. `https://primomeble.pl/kalkulator/`,
 - `data_dir` – gdzie zapisywać licznik i kopie zapytań (najlepiej katalog poza `public_html`).
