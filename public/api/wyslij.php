@@ -35,11 +35,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 
 // Tylko z naszej strony (przeglądarka zawsze wysyła Origin przy POST z fetch).
-$siteOrigin = preg_replace('#^(https?://[^/]+).*$#', '$1', $config['site_url']);
+// Porównujemy samą domenę (z www i bez, http i https) – strona otwarta przez http:// na telefonie
+// wysyła Origin „http://…” i też jest nasza.
+$siteHost = strtolower((string)parse_url($config['site_url'], PHP_URL_HOST));
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowed = [$siteOrigin, preg_replace('#//www\.#', '//', $siteOrigin), preg_replace('#//(?!www\.)#', '//www.', $siteOrigin)];
-if ($origin !== '' && !in_array($origin, $allowed, true) && !($config['allow_any_origin'] ?? false)) {
-    fail(403, 'Niedozwolone źródło zapytania.');
+$originHost = strtolower((string)parse_url($origin, PHP_URL_HOST));
+$bare = static fn(string $host): string => preg_replace('/^www\./', '', $host);
+if ($origin !== '' && $bare($originHost) !== $bare($siteHost) && !($config['allow_any_origin'] ?? false)) {
+    fail(403, 'Niedozwolone źródło zapytania (' . mb_substr($origin, 0, 80) . ').');
 }
 
 $raw = file_get_contents('php://input', false, null, 0, 4_000_000) ?: '';
